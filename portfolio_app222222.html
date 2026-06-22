@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>My Port — Portfolio Tracker</title>
+<style>
+  :root {
+    --ink: #0E1116;
+    --ink-soft: #4A5160;
+    --paper: #FAF8F4;
+    --paper-raised: #FFFFFF;
+    --line: #E4E0D8;
+    --gain: #1B7A4D;
+    --gain-soft: #E6F4EC;
+    --loss: #B23B2E;
+    --loss-soft: #FBEAE7;
+    --accent: #C98A2C;
+    --accent-soft: #F6ECD9;
+    --mono: 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
+    --serif: 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
+    --sans: -apple-system, 'Inter', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+  }
+  body {
+    padding-bottom: 90px;
+    min-height: 100vh;
+  }
+
+  .topbar {
+    position: sticky; top: 0; z-index: 20;
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    padding: max(16px, env(safe-area-inset-top)) 20px 12px;
+  }
+  .topbar-row {
+    display: flex; align-items: baseline; justify-content: space-between;
+  }
+  .brand {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+  .brand .dot { color: var(--accent); }
+  .port-switch {
+    display: flex; gap: 6px; margin-top: 14px;
+    overflow-x: auto;
+    -ms-overflow-style: none; scrollbar-width: none;
+  }
+  .port-switch::-webkit-scrollbar { display: none; }
+  .port-chip {
+    flex: 0 0 auto;
+    padding: 7px 14px;
+    border-radius: 100px;
+    border: 1px solid var(--line);
+    background: var(--paper-raised);
+    font-size: 13.5px;
+    font-weight: 600;
+    color: var(--ink-soft);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all .15s ease;
+  }
+  .port-chip.active {
+    background: var(--ink);
+    color: var(--paper);
+    border-color: var(--ink);
+  }
+
+  .section { padding: 22px 20px 0; }
+  .section-label {
+    font-size: 11.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-soft);
+    margin-bottom: 10px;
+  }
+
+  .hero-card {
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 20px;
+    padding: 24px 22px 20px;
+    position: relative;
+    overflow: hidden;
+  }
+  .hero-card::before {
+    content: '';
+    position: absolute; right: -40px; top: -40px;
+    width: 160px; height: 160px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(201,138,44,0.25), transparent 70%);
+  }
+  .hero-label {
+    font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
+    color: rgba(250,248,244,0.55); margin-bottom: 6px;
+  }
+  .hero-value {
+    font-family: var(--mono);
+    font-size: 38px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1.1;
+  }
+  .hero-value .cents { font-size: 22px; opacity: 0.6; }
+  .hero-delta {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 10px;
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 600;
+    padding: 4px 10px 4px 8px;
+    border-radius: 100px;
+  }
+  .hero-delta.up { background: rgba(27,122,77,0.25); color: #7CDDA8; }
+  .hero-delta.down { background: rgba(178,59,46,0.25); color: #F1A89E; }
+
+  .basis-toggle {
+    position: absolute; top: 22px; right: 20px;
+    display: flex; background: rgba(250,248,244,0.12);
+    border-radius: 100px; padding: 3px;
+  }
+  .basis-btn {
+    font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em;
+    padding: 5px 11px; border-radius: 100px; color: rgba(250,248,244,0.6);
+    cursor: pointer; transition: all .15s ease;
+  }
+  .basis-btn.active { background: var(--paper); color: var(--ink); }
+
+  .hero-foot {
+    display: flex; gap: 22px; margin-top: 18px;
+    padding-top: 16px; border-top: 1px solid rgba(250,248,244,0.12);
+  }
+  .hero-foot-item { flex: 1; }
+  .hero-foot-label { font-size: 11px; color: rgba(250,248,244,0.5); margin-bottom: 3px; }
+  .hero-foot-value { font-family: var(--mono); font-size: 15px; font-weight: 600; }
+
+  .holding-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 13px 14px;
+    margin-bottom: 8px;
+  }
+  .holding-ticker {
+    width: 52px; flex: 0 0 auto;
+    font-family: var(--mono); font-weight: 700; font-size: 14.5px;
+  }
+  .holding-mid { flex: 1; min-width: 0; }
+  .holding-shares { font-size: 12px; color: var(--ink-soft); }
+  .holding-bar-track {
+    height: 4px; background: var(--line); border-radius: 4px;
+    margin-top: 6px; overflow: hidden;
+  }
+  .holding-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
+  .holding-right { text-align: right; flex: 0 0 auto; }
+  .holding-value { font-family: var(--mono); font-size: 14.5px; font-weight: 600; }
+  .holding-pl { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .holding-pl.up { color: var(--gain); }
+  .holding-pl.down { color: var(--loss); }
+
+  .txn-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--line);
+  }
+  .txn-row:last-child { border-bottom: none; }
+  .txn-badge {
+    width: 34px; height: 34px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 15px; font-weight: 700; flex: 0 0 auto;
+  }
+  .txn-badge.buy { background: var(--gain-soft); color: var(--gain); }
+  .txn-badge.sell { background: var(--loss-soft); color: var(--loss); }
+  .txn-mid { flex: 1; min-width: 0; }
+  .txn-stock { font-weight: 700; font-size: 14.5px; }
+  .txn-date { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
+  .txn-right { text-align: right; }
+  .txn-amount { font-family: var(--mono); font-weight: 600; font-size: 14px; }
+  .txn-shares { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+
+  .chart-card {
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    padding: 16px 14px 14px;
+  }
+  .chart-meta {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin-bottom: 10px; padding: 0 4px;
+  }
+  .chart-meta-value {
+    font-family: var(--mono); font-size: 17px; font-weight: 700;
+  }
+  .chart-meta-delta {
+    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
+    padding: 2px 8px; border-radius: 100px;
+  }
+  .chart-meta-delta.up { background: var(--gain-soft); color: var(--gain); }
+  .chart-meta-delta.down { background: var(--loss-soft); color: var(--loss); }
+  .line-svg-wrap { position: relative; width: 100%; }
+  .line-svg-wrap svg { display: block; width: 100%; height: auto; }
+  .chart-axis-labels {
+    display: flex; justify-content: space-between;
+    font-size: 10.5px; color: var(--ink-soft); margin-top: 4px; padding: 0 2px;
+  }
+
+  .pie-wrap { display: flex; align-items: center; gap: 18px; }
+  .pie-wrap svg { flex: 0 0 auto; }
+  .legend { flex: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .legend-swatch { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 auto; }
+  .legend-ticker { font-weight: 700; font-family: var(--mono); width: 42px; flex: 0 0 auto; }
+  .legend-pct { color: var(--ink-soft); font-family: var(--mono); margin-left: auto; }
+
+  .bar-chart-wrap {
+    display: flex; align-items: flex-end; gap: 8px;
+    height: 180px; padding: 0 2px 0;
+    overflow-x: auto;
+    -ms-overflow-style: none; scrollbar-width: none;
+  }
+  .bar-chart-wrap::-webkit-scrollbar { display: none; }
+  .bar-col {
+    display: flex; flex-direction: column; align-items: center;
+    flex: 0 0 auto; width: 40px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+  .bar-pct-label {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+    color: var(--ink-soft); margin-bottom: 4px; white-space: nowrap;
+  }
+  .bar-fill {
+    width: 22px;
+    border-radius: 6px 6px 3px 3px;
+    min-height: 3px;
+  }
+  .bar-ticker-label {
+    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    margin-top: 8px; color: var(--ink);
+  }
+  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
+  .empty-state .msg { font-size: 13.5px; }
+
+  .skel {
+    background: linear-gradient(90deg, var(--line) 25%, #ECE8DE 37%, var(--line) 63%);
+    background-size: 400% 100%;
+    animation: shimmer 1.4s ease infinite;
+    border-radius: 10px;
+  }
+  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+
+  .fab {
+    position: fixed;
+    bottom: max(24px, env(safe-area-inset-bottom));
+    right: 20px;
+    width: 58px; height: 58px;
+    border-radius: 50%;
+    background: var(--ink);
+    color: var(--paper);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px;
+    border: none;
+    box-shadow: 0 8px 24px rgba(14,17,22,0.35);
+    cursor: pointer;
+    z-index: 30;
+    transition: transform .12s ease;
+  }
+  .fab:active { transform: scale(0.92); }
+
+  .sheet-backdrop {
+    position: fixed; inset: 0;
+    background: rgba(14,17,22,0.45);
+    z-index: 40;
+    opacity: 0; pointer-events: none;
+    transition: opacity .2s ease;
+  }
+  .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
+  .sheet {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    background: var(--paper);
+    border-radius: 24px 24px 0 0;
+    z-index: 41;
+    transform: translateY(100%);
+    transition: transform .28s cubic-bezier(.32,.72,0,1);
+    max-height: 88vh;
+    overflow-y: auto;
+    padding-bottom: max(28px, env(safe-area-inset-bottom));
+  }
+  .sheet.open { transform: translateY(0); }
+  .sheet-handle {
+    width: 36px; height: 4px; background: var(--line);
+    border-radius: 4px; margin: 12px auto 6px;
+  }
+  .sheet-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 20px 16px;
+  }
+  .sheet-title { font-family: var(--serif); font-size: 19px; font-weight: 600; }
+  .sheet-close {
+    width: 30px; height: 30px; border-radius: 50%;
+    background: var(--line); border: none;
+    font-size: 16px; color: var(--ink-soft);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .sheet-body { padding: 0 20px; }
+
+  .action-toggle {
+    display: flex; gap: 8px; margin-bottom: 18px;
+  }
+  .action-btn {
+    flex: 1; padding: 12px; border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--paper-raised);
+    font-weight: 700; font-size: 14.5px;
+    color: var(--ink-soft);
+    cursor: pointer;
+  }
+  .action-btn.buy.active { border-color: var(--gain); background: var(--gain-soft); color: var(--gain); }
+  .action-btn.sell.active { border-color: var(--loss); background: var(--loss-soft); color: var(--loss); }
+
+  .field { margin-bottom: 14px; }
+  .field-label {
+    font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
+    margin-bottom: 6px; display: block;
+  }
+  .field input, .field select {
+    width: 100%;
+    padding: 13px 14px;
+    border-radius: 12px;
+    border: 1.5px solid var(--line);
+    background: var(--paper-raised);
+    font-size: 16px;
+    font-family: var(--sans);
+    color: var(--ink);
+    appearance: none;
+  }
+  .field input:focus, .field select:focus {
+    outline: none; border-color: var(--ink);
+  }
+  .field-row { display: flex; gap: 10px; }
+  .field-row .field { flex: 1; }
+
+  .submit-btn {
+    width: 100%; padding: 15px;
+    border-radius: 14px; border: none;
+    background: var(--ink); color: var(--paper);
+    font-size: 15.5px; font-weight: 700;
+    margin-top: 6px;
+    cursor: pointer;
+  }
+  .submit-btn:disabled { opacity: 0.5; }
+
+  .form-msg {
+    font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px;
+  }
+  .form-msg.error { color: var(--loss); }
+  .form-msg.success { color: var(--gain); }
+
+  .setup-banner {
+    margin: 16px 20px 0;
+    background: var(--accent-soft);
+    border: 1px solid #E5C98A;
+    border-radius: 12px;
+    padding: 12px 14px;
+    font-size: 13px;
+    color: #7A5414;
+    line-height: 1.5;
+  }
+  .setup-banner code {
+    background: rgba(0,0,0,0.06);
+    padding: 1px 5px; border-radius: 5px; font-size: 12px;
+  }
+  .setup-banner input {
+    width: 100%; margin-top: 8px;
+    padding: 9px 10px; border-radius: 8px;
+    border: 1px solid #E5C98A; font-size: 13px;
+    box-sizing: border-box;
+  }
+  .setup-banner button {
+    margin-top: 8px; padding: 8px 14px;
+    background: var(--ink); color: var(--paper);
+    border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
+  }
+</style>
+</head>
+<body>
+
+  <div class="topbar">
+    <div class="topbar-row">
+      <div class="brand">My Port<span class="dot">.</span></div>
+      <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;">⚙︎</button>
+    </div>
+    <div class="port-switch" id="portSwitch"></div>
+  </div>
+
+  <div id="setupBanner"></div>
+
+  <div class="section">
+    <div class="section-label">มูลค่าพอร์ต</div>
+    <div class="hero-card">
+      <div class="basis-toggle" id="basisToggle">
+        <div class="basis-btn active" data-basis="AVG">AVG</div>
+        <div class="basis-btn" data-basis="FIFO">FIFO</div>
+      </div>
+      <div class="hero-label">มูลค่าปัจจุบัน</div>
+      <div class="hero-value" id="heroValue">—</div>
+      <div class="hero-delta" id="heroDelta" style="display:none"></div>
+      <div class="hero-foot">
+        <div class="hero-foot-item">
+          <div class="hero-foot-label">เงินลงทุน</div>
+          <div class="hero-foot-value" id="footCost">—</div>
+        </div>
+        <div class="hero-foot-item">
+          <div class="hero-foot-label">กำไร/ขาดทุน</div>
+          <div class="hero-foot-value" id="footProfit">—</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">มูลค่าพอร์ตรายวัน</div>
+    <div class="chart-card" id="lineChartCard">
+      <div class="skel" style="height:160px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">สัดส่วนหุ้นในพอร์ต</div>
+    <div class="chart-card" id="pieChartCard">
+      <div class="skel" style="height:200px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">สัดส่วนหุ้น (กราฟแท่ง)</div>
+    <div class="chart-card" id="barChartCard">
+      <div class="skel" style="height:220px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">หุ้นในพอร์ต</div>
+    <div id="holdingsList">
+      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
+      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
+      <div class="skel" style="height:64px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">รายการล่าสุด</div>
+    <div id="txnList" style="background:var(--paper-raised);border:1px solid var(--line);border-radius:14px;padding:4px 14px;">
+      <div class="skel" style="height:50px;margin:10px 0;"></div>
+      <div class="skel" style="height:50px;margin:10px 0;"></div>
+    </div>
+  </div>
+
+  <button class="fab" id="fabAdd">+</button>
+
+  <div class="sheet-backdrop" id="sheetBackdrop"></div>
+  <div class="sheet" id="addSheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-head">
+      <div class="sheet-title">เพิ่มรายการ</div>
+      <button class="sheet-close" id="sheetClose">✕</button>
+    </div>
+    <div class="sheet-body">
+      <div class="action-toggle">
+        <div class="action-btn buy active" data-action="ซื้อ">ซื้อ</div>
+        <div class="action-btn sell" data-action="ขาย">ขาย</div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">พอร์ต</label>
+        <select id="fPort"></select>
+      </div>
+
+      <div class="field">
+        <label class="field-label">ชื่อหุ้น</label>
+        <input type="text" id="fStock" placeholder="เช่น AAPL" autocapitalize="characters">
+      </div>
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label">จำนวนเงินรวม ($)</label>
+          <input type="number" id="fAmount" placeholder="0.00" inputmode="decimal">
+        </div>
+        <div class="field">
+          <label class="field-label">จำนวนหุ้น</label>
+          <input type="number" id="fShares" placeholder="0.000000" inputmode="decimal">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label">วันที่</label>
+        <input type="date" id="fDate">
+      </div>
+
+      <div class="field">
+        <label class="field-label">โน้ต (ไม่บังคับ)</label>
+        <input type="text" id="fNote" placeholder="">
+      </div>
+
+      <button class="submit-btn" id="submitBtn">บันทึกรายการ</button>
+      <div class="form-msg" id="formMsg"></div>
+    </div>
+  </div>
+
+<script>
+// URL ของ Apps Script ที่ deploy ไว้ — ฝังเป็นค่าเริ่มต้น ไม่ต้องกรอกใหม่ทุกครั้ง
+// ถ้า deploy ใหม่แล้ว URL เปลี่ยน ให้กดปุ่ม ⚙︎ ในแอพเพื่อตั้งค่า URL ใหม่ (จะถูกจำไว้แทนตัวนี้)
+let API_URL = localStorage.getItem('portfolio_api_url') || 'https://script.google.com/macros/s/AKfycbwudZpGozY1sQMm_AI0WAJddKk1SnAUE0ZenOwRNmozeetFEkE58ZXfDKOiGBbAMFW_/exec';
+
+const state = {
+  port: 'ALL',
+  basis: 'AVG',
+  summary: null,
+  dashboard: null,
+  transactions: [],
+  ports: [],
+  history: []
+};
+
+const fmt = (n, decimals=2) => {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return Number(n).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
+};
+const fmtPct = (n) => {
+  if (n === null || n === undefined || isNaN(n)) return '—';
+  return (n * 100 >= 0 ? '+' : '') + (n * 100).toFixed(2) + '%';
+};
+
+function showSetupBanner(errorMsg) {
+  const el = document.getElementById('setupBanner');
+  el.innerHTML = `
+    <div class="setup-banner">
+      ${errorMsg ? '⚠️ ' + errorMsg + '<br><br>' : ''}วาง <strong>Web App URL</strong> จาก Apps Script ที่ deploy ไว้ที่นี่
+      (ลงท้ายด้วย <code>/exec</code>)
+      <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${API_URL || ''}">
+      <button id="apiUrlSave">บันทึกและเชื่อมต่อ</button>
+    </div>`;
+  document.getElementById('apiUrlSave').onclick = () => {
+    const val = document.getElementById('apiUrlInput').value.trim();
+    if (val) {
+      localStorage.setItem('portfolio_api_url', val);
+      API_URL = val;
+      el.innerHTML = '';
+      loadAll();
+    }
+  };
+}
+
+document.getElementById('settingsBtn').onclick = () => showSetupBanner();
+
+async function api(action, params = {}) {
+  const url = new URL(API_URL);
+  url.searchParams.set('action', action);
+  Object.entries(params).forEach(([k,v]) => { if (v !== null) url.searchParams.set(k, v); });
+  const res = await fetch(url.toString());
+  return res.json();
+}
+
+async function apiPost(body) {
+  const res = await fetch(API_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(body)
+  });
+  return res.json();
+}
+
+async function loadAll() {
+  if (!API_URL) { showSetupBanner(); return; }
+  try {
+    const [summary, dashboard, ports, txns, history] = await Promise.all([
+      api('summary'),
+      api('dashboard'),
+      api('ports'),
+      api('transactions', { port: state.port === 'ALL' ? null : state.port }),
+      api('history')
+    ]);
+    if (summary.error || dashboard.error || ports.error || txns.error) {
+      const errMsg = summary.error || dashboard.error || ports.error || txns.error;
+      throw new Error(errMsg);
+    }
+    state.summary = summary;
+    state.dashboard = dashboard;
+    state.ports = ports.ports || [];
+    state.transactions = txns.rows || [];
+    state.history = (history && history.rows) || [];
+    renderPortSwitch();
+    renderHero();
+    renderLineChart();
+    renderPieChart();
+    renderBarChart();
+    renderHoldings();
+    renderTransactions();
+    populatePortSelect();
+  } catch (err) {
+    console.error(err);
+    document.getElementById('holdingsList').innerHTML =
+      `<div class="empty-state"><div class="icon">⚠️</div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙︎ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
+    showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
+  }
+}
+
+function renderPortSwitch() {
+  const el = document.getElementById('portSwitch');
+  const ports = ['ALL', ...state.ports];
+  el.innerHTML = ports.map(p =>
+    `<div class="port-chip ${p === state.port ? 'active' : ''}" data-port="${p}">${p === 'ALL' ? 'ทั้งหมด' : p}</div>`
+  ).join('');
+  el.querySelectorAll('.port-chip').forEach(chip => {
+    chip.onclick = () => {
+      state.port = chip.dataset.port;
+      loadAll();
+    };
+  });
+}
+
+function rerenderForBasisOrPort() {
+  renderHero();
+  renderPieChart();
+  renderBarChart();
+  renderHoldings();
+}
+
+function getFilteredSummaryRows() {
+  if (!state.summary) return [];
+  const rows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
+  if (state.port === 'ALL') return rows;
+  return rows.filter(r => r['ชื่อ port'] === state.port);
+}
+
+function renderHero() {
+  const rows = getFilteredSummaryRows();
+  const basis = state.basis;
+  let totalValue = 0, totalCost = 0;
+
+  rows.forEach(r => {
+    totalValue += Number(r['มูลค่าปัจจุบัน']) || 0;
+    totalCost += Number(basis === 'AVG' ? r['ทุน AVG'] : r['ทุน  FIFO']) || 0;
+  });
+
+  const profit = totalValue - totalCost;
+  const profitPct = totalCost ? profit / totalCost : 0;
+
+  const valStr = fmt(totalValue, 2);
+  const [intPart, decPart] = valStr.split('.');
+  document.getElementById('heroValue').innerHTML =
+    `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
+  document.getElementById('footCost').textContent = `$${fmt(totalCost)}`;
+  document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
+  document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
+
+  const deltaEl = document.getElementById('heroDelta');
+  deltaEl.style.display = 'inline-flex';
+  deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
+  deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)} (${basis})`;
+}
+
+function renderLineChart() {
+  const card = document.getElementById('lineChartCard');
+  const data = state.history.filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null);
+  if (data.length < 2) {
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีข้อมูลย้อนหลังพอแสดงกราฟ</div></div>`;
+    return;
+  }
+
+  const W = 600, H = 160, PAD_X = 8, PAD_TOP = 10, PAD_BOTTOM = 4;
+  const values = data.map(d => Number(d['มูลค่าพอร์ต']));
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+
+  const xStep = (W - PAD_X * 2) / (data.length - 1);
+  const points = values.map((v, i) => {
+    const x = PAD_X + i * xStep;
+    const y = PAD_TOP + (1 - (v - min) / range) * (H - PAD_TOP - PAD_BOTTOM);
+    return [x, y];
+  });
+
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H-PAD_BOTTOM} L${points[0][0].toFixed(1)},${H-PAD_BOTTOM} Z`;
+
+  const last = values[values.length - 1];
+  const first = values[0];
+  const totalChange = last - first;
+  const totalChangePct = first ? totalChange / first : 0;
+  const up = totalChange >= 0;
+  const lineColor = up ? '#1B7A4D' : '#B23B2E';
+
+  const firstDate = new Date(data[0]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  const lastDate = new Date(data[data.length-1]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+
+  card.innerHTML = `
+    <div class="chart-meta">
+      <div class="chart-meta-value">$${fmt(last)}</div>
+      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(totalChange))} (${fmtPct(totalChangePct)})</div>
+    </div>
+    <div class="line-svg-wrap">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${areaD}" fill="url(#areaGrad)" stroke="none"/>
+        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${points[points.length-1][0].toFixed(1)}" cy="${points[points.length-1][1].toFixed(1)}" r="3.5" fill="${lineColor}"/>
+      </svg>
+    </div>
+    <div class="chart-axis-labels"><span>${firstDate}</span><span>${lastDate}</span></div>
+  `;
+}
+
+const PIE_COLORS = ['#C98A2C','#1B7A4D','#4A5160','#B23B2E','#7C9CBF','#A66BB5','#D4A95C','#5A8F7B','#9A6B4F','#6E7B8B'];
+
+function renderPieChart() {
+  const card = document.getElementById('pieChartCard');
+  const rows = getFilteredSummaryRows();
+  if (!rows.length) {
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
+    return;
+  }
+  const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
+  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
+
+  const R = 52, CX = 60, CY = 60;
+  let angle = -90;
+  const slices = sorted.map((r, i) => {
+    const value = Number(r['มูลค่าปัจจุบัน']) || 0;
+    const pct = value / total;
+    const sweep = pct * 360;
+    const x1 = CX + R * Math.cos(angle * Math.PI/180);
+    const y1 = CY + R * Math.sin(angle * Math.PI/180);
+    const endAngle = angle + sweep;
+    const x2 = CX + R * Math.cos(endAngle * Math.PI/180);
+    const y2 = CY + R * Math.sin(endAngle * Math.PI/180);
+    const largeArc = sweep > 180 ? 1 : 0;
+    const path = sweep >= 359.9
+      ? `M${CX-R},${CY} A${R},${R} 0 1 1 ${CX+R},${CY} A${R},${R} 0 1 1 ${CX-R},${CY} Z`
+      : `M${CX},${CY} L${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
+    angle = endAngle;
+    return { path, color: PIE_COLORS[i % PIE_COLORS.length], ticker: r['หุ้น'], pct };
+  });
+
+  const slicesSvg = slices.map(s => `<path d="${s.path}" fill="${s.color}" stroke="var(--paper-raised)" stroke-width="1.5"/>`).join('');
+  const legendHtml = slices.map(s => `
+    <div class="legend-item">
+      <div class="legend-swatch" style="background:${s.color}"></div>
+      <div class="legend-ticker">${s.ticker}</div>
+      <div class="legend-pct">${(s.pct*100).toFixed(1)}%</div>
+    </div>`).join('');
+
+  card.innerHTML = `
+    <div class="pie-wrap">
+      <svg width="120" height="120" viewBox="0 0 120 120">${slicesSvg}</svg>
+      <div class="legend">${legendHtml}</div>
+    </div>
+  `;
+}
+
+function renderBarChart() {
+  const card = document.getElementById('barChartCard');
+  const rows = getFilteredSummaryRows();
+  if (!rows.length) {
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
+    return;
+  }
+  const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
+  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
+  const maxPct = Math.max(...sorted.map(r => (Number(r['มูลค่าปัจจุบัน'])||0) / total));
+
+  const MAX_BAR_HEIGHT = 130; // px, leaves room for % label above and ticker label below
+
+  const colsHtml = sorted.map((r, i) => {
+    const value = Number(r['มูลค่าปัจจุบัน']) || 0;
+    const pct = value / total;
+    const heightPx = Math.max(3, (pct / (maxPct || 1)) * MAX_BAR_HEIGHT);
+    const color = PIE_COLORS[i % PIE_COLORS.length];
+    return `
+      <div class="bar-col">
+        <div class="bar-pct-label">${(pct*100).toFixed(1)}%</div>
+        <div class="bar-fill" style="height:${heightPx.toFixed(0)}px;background:${color};"></div>
+        <div class="bar-ticker-label">${r['หุ้น']}</div>
+      </div>`;
+  }).join('');
+
+  card.innerHTML = `<div class="bar-chart-wrap">${colsHtml}</div>`;
+}
+
+function renderHoldings() {
+  const rows = getFilteredSummaryRows();
+  const el = document.getElementById('holdingsList');
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>`;
+    return;
+  }
+  const basis = state.basis;
+  const maxValue = Math.max(...rows.map(r => Number(r['มูลค่าปัจจุบัน']) || 0), 1);
+
+  el.innerHTML = rows
+    .sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0))
+    .map(r => {
+      const value = Number(r['มูลค่าปัจจุบัน']) || 0;
+      const profit = basis === 'AVG' ? Number(r['กำไร AVG']) : Number(r['กำไร FIFO']);
+      const profitPct = basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO']);
+      const up = profit >= 0;
+      const barPct = Math.min(100, (value / maxValue) * 100);
+      const subLabel = state.port === 'ALL' ? r['ชื่อ port'] : ('@$' + fmt(r['price']));
+      return `
+        <div class="holding-row">
+          <div class="holding-ticker">${r['หุ้น']}</div>
+          <div class="holding-mid">
+            <div class="holding-shares">${fmt(r['จำนวนหุ้น'], 4)} หุ้น · ${subLabel}</div>
+            <div class="holding-bar-track"><div class="holding-bar-fill" style="width:${barPct}%"></div></div>
+          </div>
+          <div class="holding-right">
+            <div class="holding-value">$${fmt(value)}</div>
+            <div class="holding-pl ${up?'up':'down'}">${up?'+':''}${fmt(profit)} (${fmtPct(profitPct)})</div>
+          </div>
+        </div>`;
+    }).join('');
+}
+
+function renderTransactions() {
+  const el = document.getElementById('txnList');
+  const txns = state.transactions.filter(t => t['รายการ'] && t['รายการ'] !== 'USD').slice(0, 15);
+  if (!txns.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div class="msg">ยังไม่มีรายการ</div></div>`;
+    return;
+  }
+  el.innerHTML = txns.map(t => {
+    const isBuy = t['action'] === 'ซื้อ';
+    const dateStr = t['Date'] ? new Date(t['Date']).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'}) : '';
+    return `
+      <div class="txn-row">
+        <div class="txn-badge ${isBuy?'buy':'sell'}">${isBuy?'B':'S'}</div>
+        <div class="txn-mid">
+          <div class="txn-stock">${t['รายการ']}</div>
+          <div class="txn-date">${dateStr} · ${t['Port']}</div>
+        </div>
+        <div class="txn-right">
+          <div class="txn-amount">$${fmt(t['รวม $'])}</div>
+          <div class="txn-shares">${fmt(t['จำนวนหุ้น'],4)} หุ้น</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function populatePortSelect() {
+  const sel = document.getElementById('fPort');
+  sel.innerHTML = state.ports.map(p => `<option value="${p}">${p}</option>`).join('');
+}
+
+document.getElementById('basisToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.basis-btn');
+  if (!btn) return;
+  document.querySelectorAll('.basis-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.basis = btn.dataset.basis;
+  renderHero();
+  renderHoldings();
+});
+
+const sheet = document.getElementById('addSheet');
+const backdrop = document.getElementById('sheetBackdrop');
+
+function openSheet() {
+  document.getElementById('fDate').valueAsDate = new Date();
+  sheet.classList.add('open');
+  backdrop.classList.add('open');
+}
+function closeSheet() {
+  sheet.classList.remove('open');
+  backdrop.classList.remove('open');
+  document.getElementById('formMsg').textContent = '';
+  document.getElementById('formMsg').className = 'form-msg';
+}
+document.getElementById('fabAdd').onclick = openSheet;
+document.getElementById('sheetClose').onclick = closeSheet;
+backdrop.onclick = closeSheet;
+
+let selectedAction = 'ซื้อ';
+document.querySelector('.action-toggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.action-btn');
+  if (!btn) return;
+  document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  selectedAction = btn.dataset.action;
+});
+
+document.getElementById('submitBtn').onclick = async () => {
+  const btn = document.getElementById('submitBtn');
+  const msg = document.getElementById('formMsg');
+  const port = document.getElementById('fPort').value;
+  const stock = document.getElementById('fStock').value.trim().toUpperCase();
+  const amount = document.getElementById('fAmount').value;
+  const shares = document.getElementById('fShares').value;
+  const date = document.getElementById('fDate').value;
+  const note = document.getElementById('fNote').value.trim();
+
+  if (!port || !stock || !amount || !shares) {
+    msg.textContent = 'กรุณากรอกข้อมูลให้ครบ';
+    msg.className = 'form-msg error';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.textContent = 'กำลังบันทึก...';
+  msg.textContent = '';
+  msg.className = 'form-msg';
+
+  try {
+    const result = await apiPost({
+      endpoint: 'addTransaction',
+      port,
+      txnAction: selectedAction,
+      stock, totalAmount: amount, shares, date, note
+    });
+
+    if (result.success) {
+      msg.textContent = '✓ บันทึกสำเร็จ';
+      msg.className = 'form-msg success';
+      document.getElementById('fStock').value = '';
+      document.getElementById('fAmount').value = '';
+      document.getElementById('fShares').value = '';
+      document.getElementById('fNote').value = '';
+      setTimeout(() => { closeSheet(); loadAll(); }, 700);
+    } else {
+      msg.textContent = result.error || 'เกิดข้อผิดพลาด';
+      msg.className = 'form-msg error';
+    }
+  } catch (err) {
+    msg.textContent = 'เชื่อมต่อไม่สำเร็จ: ' + err.message;
+    msg.className = 'form-msg error';
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'บันทึกรายการ';
+  }
+};
+
+loadAll();
+</script>
+</body>
+</html>
