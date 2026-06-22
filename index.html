@@ -152,12 +152,12 @@
   .basis-btn.active { background: var(--paper); color: var(--ink); }
 
   .hero-foot {
-    display: flex; gap: 22px; margin-top: 18px;
+    display: flex; gap: 14px; margin-top: 18px;
     padding-top: 16px; border-top: 1px solid rgba(250,248,244,0.12);
   }
-  .hero-foot-item { flex: 1; }
-  .hero-foot-label { font-size: 11px; color: rgba(250,248,244,0.5); margin-bottom: 3px; }
-  .hero-foot-value { font-family: var(--mono); font-size: 15px; font-weight: 600; }
+  .hero-foot-item { flex: 1; min-width: 0; }
+  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; white-space: nowrap; }
+  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
 
   .holding-row {
     display: flex; align-items: center; gap: 12px;
@@ -437,13 +437,24 @@
           <div class="hero-foot-label">กำไร/ขาดทุน</div>
           <div class="hero-foot-value" id="footProfit">—</div>
         </div>
+        <div class="hero-foot-item">
+          <div class="hero-foot-label">เปลี่ยนแปลงวันนี้</div>
+          <div class="hero-foot-value" id="footDailyChange">—</div>
+        </div>
       </div>
     </div>
   </div>
 
   <div class="section">
+    <div class="section-label">มูลค่าพอร์ตรายวัน</div>
+    <div class="chart-card" id="valueChartCard">
+      <div class="skel" style="height:160px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-label">เปลี่ยนแปลงรายวัน</div>
-    <div class="chart-card" id="lineChartCard">
+    <div class="chart-card" id="dailyChangeChartCard">
       <div class="skel" style="height:160px;"></div>
     </div>
   </div>
@@ -620,7 +631,8 @@ async function loadAll() {
     state.history = (history && history.rows) || [];
     renderPortSwitch();
     renderHero();
-    renderLineChart();
+    renderValueLineChart();
+    renderDailyChangeChart();
     renderPieChart();
     renderBarChart();
     renderHoldings();
@@ -696,10 +708,79 @@ function renderHero() {
   deltaEl.style.display = 'inline-flex';
   deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
   deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
+
+  // เปลี่ยนแปลงวันนี้ — ดึงจากแถวล่าสุดใน Sheet History (คอลัมน์ Daily Change / Daily %)
+  const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
+  const footDailyEl = document.getElementById('footDailyChange');
+  if (historyData.length > 0) {
+    const latest = historyData[historyData.length - 1];
+    const dailyChange = Number(latest['Daily Change']) || 0;
+    const dailyPct = Number(latest['Daily %']) || 0;
+    const dailyUp = dailyChange >= 0;
+    footDailyEl.textContent = `${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})`;
+    footDailyEl.style.color = dailyUp ? '#7CDDA8' : '#F1A89E';
+  } else {
+    footDailyEl.textContent = '—';
+  }
 }
 
-function renderLineChart() {
-  const card = document.getElementById('lineChartCard');
+function renderValueLineChart() {
+  const card = document.getElementById('valueChartCard');
+  const data = state.history.filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null);
+  if (data.length < 2) {
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีข้อมูลย้อนหลังพอแสดงกราฟ</div></div>`;
+    return;
+  }
+
+  const W = 600, H = 160, PAD_X = 8, PAD_TOP = 10, PAD_BOTTOM = 4;
+  const values = data.map(d => Number(d['มูลค่าพอร์ต']));
+  const min = Math.min(...values), max = Math.max(...values);
+  const range = (max - min) || 1;
+
+  const xStep = (W - PAD_X * 2) / (data.length - 1);
+  const points = values.map((v, i) => {
+    const x = PAD_X + i * xStep;
+    const y = PAD_TOP + (1 - (v - min) / range) * (H - PAD_TOP - PAD_BOTTOM);
+    return [x, y];
+  });
+
+  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
+  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H-PAD_BOTTOM} L${points[0][0].toFixed(1)},${H-PAD_BOTTOM} Z`;
+
+  const last = values[values.length - 1];
+  const first = values[0];
+  const totalChange = last - first;
+  const totalChangePct = first ? totalChange / first : 0;
+  const up = totalChange >= 0;
+  const lineColor = up ? '#1B7A4D' : '#B23B2E';
+
+  const firstDate = new Date(data[0]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+  const lastDate = new Date(data[data.length-1]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+
+  card.innerHTML = `
+    <div class="chart-meta">
+      <div class="chart-meta-value">$${fmt(last)}</div>
+      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(totalChange))} (${fmtPct(totalChangePct)})</div>
+    </div>
+    <div class="line-svg-wrap">
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
+        <defs>
+          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
+            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+          </linearGradient>
+        </defs>
+        <path d="${areaD}" fill="url(#areaGrad)" stroke="none"/>
+        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
+        <circle cx="${points[points.length-1][0].toFixed(1)}" cy="${points[points.length-1][1].toFixed(1)}" r="3.5" fill="${lineColor}"/>
+      </svg>
+    </div>
+    <div class="chart-axis-labels"><span>${firstDate}</span><span>${lastDate}</span></div>
+  `;
+}
+
+function renderDailyChangeChart() {
+  const card = document.getElementById('dailyChangeChartCard');
   // ใช้ค่า Daily Change ที่คำนวณไว้แล้วใน Sheet History (แถวแรกไม่มีค่า เพราะไม่มีวันก่อนหน้าให้เทียบ)
   const data = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
   if (data.length < 1) {
@@ -726,7 +807,6 @@ function renderLineChart() {
 
   const last = changes[changes.length - 1];
   const up = last >= 0;
-  const lastValue = Number(data[data.length-1]['มูลค่าพอร์ต']) || 0;
   const lastPct = data[data.length-1]['Daily %'];
 
   const firstDate = new Date(data[0]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
