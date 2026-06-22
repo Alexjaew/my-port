@@ -8,7 +8,7 @@
   :root {
     --ink: #0E1116;
     --ink-soft: #4A5160;
-    --paper: #FAF8F4;
+    --paper: #F5F7FA;
     --paper-raised: #FFFFFF;
     --line: #E4E0D8;
     --gain: #1B7A4D;
@@ -102,7 +102,7 @@
   .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
 
   .hero-card {
-    background: var(--ink);
+    background: linear-gradient(135deg,#0E1116 0%,#1A202C 100%);
     color: var(--paper);
     border-radius: 20px;
     padding: 24px 22px 20px;
@@ -445,11 +445,7 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-label">มูลค่าพอร์ตรายวัน</div>
-    <div class="chart-card" id="valueChartCard">
-      <div class="skel" style="height:160px;"></div>
-    </div>
+  
   </div>
 
   <div class="section">
@@ -466,11 +462,7 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-label">สัดส่วนหุ้น (กราฟแท่ง)</div>
-    <div class="chart-card" id="barChartCard">
-      <div class="skel" style="height:220px;"></div>
-    </div>
+  
   </div>
 
   <div class="section">
@@ -488,12 +480,7 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-label">รายการล่าสุด</div>
-    <div id="txnList" style="background:var(--paper-raised);border:1px solid var(--line);border-radius:14px;padding:4px 14px;">
-      <div class="skel" style="height:50px;margin:10px 0;"></div>
-      <div class="skel" style="height:50px;margin:10px 0;"></div>
-    </div>
+  
   </div>
 
   <button class="fab" id="fabAdd">+</button>
