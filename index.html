@@ -249,6 +249,25 @@
     font-family: var(--mono); font-size: 11px; font-weight: 700;
     margin-top: 8px; color: var(--ink);
   }
+
+  .ci-row {
+    display: flex; justify-content: space-between; margin-bottom: 12px;
+  }
+  .ci-item { flex: 1; }
+  .ci-item:last-child { text-align: right; }
+  .ci-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
+  .ci-label { font-size: 12px; color: var(--ink-soft); }
+  .ci-value { font-family: var(--mono); font-size: 18px; font-weight: 700; margin-top: 2px; }
+  .ci-track {
+    height: 14px; border-radius: 8px; overflow: hidden;
+    display: flex; background: var(--line);
+  }
+  .ci-seg-invested { background: var(--accent); height: 100%; }
+  .ci-seg-cash { background: var(--ink-soft); height: 100%; opacity: 0.35; }
+  .ci-pct-row {
+    display: flex; justify-content: space-between; margin-top: 6px;
+    font-size: 11px; color: var(--ink-soft); font-family: var(--mono);
+  }
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
   .empty-state .msg { font-size: 13.5px; }
 
@@ -430,6 +449,13 @@
   </div>
 
   <div class="section">
+    <div class="section-label">เงินสด vs ลงทุนแล้ว</div>
+    <div class="chart-card" id="cashInvestedCard">
+      <div class="skel" style="height:90px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
     <div class="section-label">มูลค่าพอร์ตรายวัน</div>
     <div class="chart-card" id="lineChartCard">
       <div class="skel" style="height:160px;"></div>
@@ -602,6 +628,7 @@ async function loadAll() {
     state.history = (history && history.rows) || [];
     renderPortSwitch();
     renderHero();
+    renderCashInvested();
     renderLineChart();
     renderPieChart();
     renderBarChart();
@@ -644,6 +671,22 @@ function getFilteredSummaryRows() {
   return rows.filter(r => r['ชื่อ port'] === state.port);
 }
 
+// ดึงเงินสดคงเหลือ (แถวที่หุ้น = USD) รวมทุก port ที่มี — ไม่ขึ้นกับ state.port ที่เลือกอยู่
+function getCashBalance() {
+  if (!state.summary) return 0;
+  return state.summary.rows
+    .filter(r => r['หุ้น'] === 'USD')
+    .reduce((sum, r) => sum + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
+}
+
+// มูลค่าหุ้นที่ลงทุนแล้วทั้งหมด (ทุก port, ไม่กรองตาม state.port)
+function getInvestedValue() {
+  if (!state.summary) return 0;
+  return state.summary.rows
+    .filter(r => r['หุ้น'] !== 'USD')
+    .reduce((sum, r) => sum + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
+}
+
 function renderHero() {
   const rows = getFilteredSummaryRows();
   const basis = state.basis;
@@ -669,6 +712,42 @@ function renderHero() {
   deltaEl.style.display = 'inline-flex';
   deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
   deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)} (${basis})`;
+}
+
+function renderCashInvested() {
+  const card = document.getElementById('cashInvestedCard');
+  const cash = getCashBalance();
+  const invested = getInvestedValue();
+  const total = cash + invested;
+
+  if (total <= 0) {
+    card.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="msg">ยังไม่มีข้อมูลเงินสด/เงินลงทุน</div></div>`;
+    return;
+  }
+
+  const investedPct = (invested / total) * 100;
+  const cashPct = (cash / total) * 100;
+
+  card.innerHTML = `
+    <div class="ci-row">
+      <div class="ci-item">
+        <span class="ci-dot" style="background:var(--accent)"></span><span class="ci-label">ลงทุนแล้ว</span>
+        <div class="ci-value">$${fmt(invested)}</div>
+      </div>
+      <div class="ci-item">
+        <span class="ci-label">เงินสดคงเหลือ</span><span class="ci-dot" style="background:var(--ink-soft);opacity:0.5"></span>
+        <div class="ci-value">$${fmt(cash)}</div>
+      </div>
+    </div>
+    <div class="ci-track">
+      <div class="ci-seg-invested" style="width:${investedPct.toFixed(2)}%"></div>
+      <div class="ci-seg-cash" style="width:${cashPct.toFixed(2)}%"></div>
+    </div>
+    <div class="ci-pct-row">
+      <span>${investedPct.toFixed(1)}% ของเงินทั้งหมด</span>
+      <span>รวม $${fmt(total)}</span>
+    </div>
+  `;
 }
 
 function renderLineChart() {
