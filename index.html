@@ -265,24 +265,6 @@
     margin-top: 8px; color: var(--ink);
   }
 
-  .ci-row {
-    display: flex; justify-content: space-between; margin-bottom: 12px;
-  }
-  .ci-item { flex: 1; }
-  .ci-item:last-child { text-align: right; }
-  .ci-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 5px; }
-  .ci-label { font-size: 12px; color: var(--ink-soft); }
-  .ci-value { font-family: var(--mono); font-size: 18px; font-weight: 700; margin-top: 2px; }
-  .ci-track {
-    height: 14px; border-radius: 8px; overflow: hidden;
-    display: flex; background: var(--line);
-  }
-  .ci-seg-invested { background: var(--accent); height: 100%; }
-  .ci-seg-cash { background: var(--ink-soft); height: 100%; opacity: 0.35; }
-  .ci-pct-row {
-    display: flex; justify-content: space-between; margin-top: 6px;
-    font-size: 11px; color: var(--ink-soft); font-family: var(--mono);
-  }
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
   .empty-state .msg { font-size: 13.5px; }
 
@@ -460,14 +442,7 @@
   </div>
 
   <div class="section">
-    <div class="section-label">เงินสด vs ลงทุนแล้ว</div>
-    <div class="chart-card" id="cashInvestedCard">
-      <div class="skel" style="height:90px;"></div>
-    </div>
-  </div>
-
-  <div class="section">
-    <div class="section-label">มูลค่าพอร์ตรายวัน</div>
+    <div class="section-label">เปลี่ยนแปลงรายวัน</div>
     <div class="chart-card" id="lineChartCard">
       <div class="skel" style="height:160px;"></div>
     </div>
@@ -645,7 +620,6 @@ async function loadAll() {
     state.history = (history && history.rows) || [];
     renderPortSwitch();
     renderHero();
-    renderCashInvested();
     renderLineChart();
     renderPieChart();
     renderBarChart();
@@ -689,18 +663,11 @@ function getFilteredSummaryRows() {
 }
 
 // ดึงเงินสดคงเหลือ (แถวที่หุ้น = USD) รวมทุก port ที่มี — ไม่ขึ้นกับ state.port ที่เลือกอยู่
+// ใช้เป็น "เงินต้น" ในการคำนวณกำไร/ขาดทุนรวมในหน้าแรก
 function getCashBalance() {
   if (!state.summary) return 0;
   return state.summary.rows
     .filter(r => r['หุ้น'] === 'USD')
-    .reduce((sum, r) => sum + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
-}
-
-// มูลค่าหุ้นที่ลงทุนแล้วทั้งหมด (ทุก port, ไม่กรองตาม state.port)
-function getInvestedValue() {
-  if (!state.summary) return 0;
-  return state.summary.rows
-    .filter(r => r['หุ้น'] !== 'USD')
     .reduce((sum, r) => sum + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
 }
 
@@ -731,91 +698,49 @@ function renderHero() {
   deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
 }
 
-function renderCashInvested() {
-  const card = document.getElementById('cashInvestedCard');
-  const cash = getCashBalance();
-  const invested = getInvestedValue();
-  const total = cash + invested;
-
-  if (total <= 0) {
-    card.innerHTML = `<div class="empty-state" style="padding:20px;"><div class="msg">ยังไม่มีข้อมูลเงินสด/เงินลงทุน</div></div>`;
-    return;
-  }
-
-  const investedPct = (invested / total) * 100;
-  const cashPct = (cash / total) * 100;
-
-  card.innerHTML = `
-    <div class="ci-row">
-      <div class="ci-item">
-        <span class="ci-dot" style="background:var(--accent)"></span><span class="ci-label">ลงทุนแล้ว</span>
-        <div class="ci-value">$${fmt(invested)}</div>
-      </div>
-      <div class="ci-item">
-        <span class="ci-label">เงินสดคงเหลือ</span><span class="ci-dot" style="background:var(--ink-soft);opacity:0.5"></span>
-        <div class="ci-value">$${fmt(cash)}</div>
-      </div>
-    </div>
-    <div class="ci-track">
-      <div class="ci-seg-invested" style="width:${investedPct.toFixed(2)}%"></div>
-      <div class="ci-seg-cash" style="width:${cashPct.toFixed(2)}%"></div>
-    </div>
-    <div class="ci-pct-row">
-      <span>${investedPct.toFixed(1)}% ของเงินทั้งหมด</span>
-      <span>รวม $${fmt(total)}</span>
-    </div>
-  `;
-}
-
 function renderLineChart() {
   const card = document.getElementById('lineChartCard');
-  const data = state.history.filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null);
-  if (data.length < 2) {
+  // ใช้ค่า Daily Change ที่คำนวณไว้แล้วใน Sheet History (แถวแรกไม่มีค่า เพราะไม่มีวันก่อนหน้าให้เทียบ)
+  const data = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
+  if (data.length < 1) {
     card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีข้อมูลย้อนหลังพอแสดงกราฟ</div></div>`;
     return;
   }
 
-  const W = 600, H = 160, PAD_X = 8, PAD_TOP = 10, PAD_BOTTOM = 4;
-  const values = data.map(d => Number(d['มูลค่าพอร์ต']));
-  const min = Math.min(...values), max = Math.max(...values);
-  const range = (max - min) || 1;
+  const W = 600, H = 160, PAD_X = 8, PAD_TOP = 14, PAD_BOTTOM = 4;
+  const changes = data.map(d => Number(d['Daily Change']));
+  const maxAbs = Math.max(...changes.map(v => Math.abs(v)), 1);
+  const zeroY = PAD_TOP + (H - PAD_TOP - PAD_BOTTOM) / 2;
+  const halfHeight = (H - PAD_TOP - PAD_BOTTOM) / 2;
 
-  const xStep = (W - PAD_X * 2) / (data.length - 1);
-  const points = values.map((v, i) => {
-    const x = PAD_X + i * xStep;
-    const y = PAD_TOP + (1 - (v - min) / range) * (H - PAD_TOP - PAD_BOTTOM);
-    return [x, y];
-  });
+  const barWidth = Math.min(22, (W - PAD_X * 2) / data.length * 0.6);
+  const slot = (W - PAD_X * 2) / data.length;
 
-  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H-PAD_BOTTOM} L${points[0][0].toFixed(1)},${H-PAD_BOTTOM} Z`;
+  const barsSvg = changes.map((v, i) => {
+    const x = PAD_X + i * slot + (slot - barWidth) / 2;
+    const barH = Math.max(2, (Math.abs(v) / maxAbs) * halfHeight);
+    const y = v >= 0 ? zeroY - barH : zeroY;
+    const color = v >= 0 ? '#1B7A4D' : '#B23B2E';
+    return `<rect x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${barWidth.toFixed(1)}" height="${barH.toFixed(1)}" rx="2" fill="${color}"/>`;
+  }).join('');
 
-  const last = values[values.length - 1];
-  const first = values[0];
-  const totalChange = last - first;
-  const totalChangePct = first ? totalChange / first : 0;
-  const up = totalChange >= 0;
-  const lineColor = up ? '#1B7A4D' : '#B23B2E';
+  const last = changes[changes.length - 1];
+  const up = last >= 0;
+  const lastValue = Number(data[data.length-1]['มูลค่าพอร์ต']) || 0;
+  const lastPct = data[data.length-1]['Daily %'];
 
   const firstDate = new Date(data[0]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
   const lastDate = new Date(data[data.length-1]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
 
   card.innerHTML = `
     <div class="chart-meta">
-      <div class="chart-meta-value">$${fmt(last)}</div>
-      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(totalChange))} (${fmtPct(totalChangePct)})</div>
+      <div class="chart-meta-value">${up?'+':''}$${fmt(last)}</div>
+      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmtPct(Number(lastPct)||0)} วันล่าสุด</div>
     </div>
     <div class="line-svg-wrap">
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="${areaD}" fill="url(#areaGrad)" stroke="none"/>
-        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
-        <circle cx="${points[points.length-1][0].toFixed(1)}" cy="${points[points.length-1][1].toFixed(1)}" r="3.5" fill="${lineColor}"/>
+        <line x1="${PAD_X}" y1="${zeroY.toFixed(1)}" x2="${W-PAD_X}" y2="${zeroY.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>
+        ${barsSvg}
       </svg>
     </div>
     <div class="chart-axis-labels"><span>${firstDate}</span><span>${lastDate}</span></div>
