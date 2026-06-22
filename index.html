@@ -85,6 +85,21 @@
     color: var(--ink-soft);
     margin-bottom: 10px;
   }
+  .section-label-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 10px;
+  }
+  .section-label-row .section-label { margin-bottom: 0; }
+  .basis-toggle-inline {
+    display: flex; background: var(--line);
+    border-radius: 100px; padding: 2px;
+  }
+  .basis-btn-inline {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
+    padding: 4px 9px; border-radius: 100px; color: var(--ink-soft);
+    cursor: pointer; transition: all .15s ease;
+  }
+  .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
 
   .hero-card {
     background: var(--ink);
@@ -428,16 +443,12 @@
   <div class="section">
     <div class="section-label">มูลค่าพอร์ต</div>
     <div class="hero-card">
-      <div class="basis-toggle" id="basisToggle">
-        <div class="basis-btn active" data-basis="AVG">AVG</div>
-        <div class="basis-btn" data-basis="FIFO">FIFO</div>
-      </div>
       <div class="hero-label">มูลค่าปัจจุบัน</div>
       <div class="hero-value" id="heroValue">—</div>
       <div class="hero-delta" id="heroDelta" style="display:none"></div>
       <div class="hero-foot">
         <div class="hero-foot-item">
-          <div class="hero-foot-label">เงินลงทุน</div>
+          <div class="hero-foot-label">เงินต้น</div>
           <div class="hero-foot-value" id="footCost">—</div>
         </div>
         <div class="hero-foot-item">
@@ -477,7 +488,13 @@
   </div>
 
   <div class="section">
-    <div class="section-label">หุ้นในพอร์ต</div>
+    <div class="section-label-row">
+      <div class="section-label">หุ้นในพอร์ต</div>
+      <div class="basis-toggle-inline" id="basisToggle">
+        <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
+        <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
+      </div>
+    </div>
     <div id="holdingsList">
       <div class="skel" style="height:64px;margin-bottom:8px;"></div>
       <div class="skel" style="height:64px;margin-bottom:8px;"></div>
@@ -689,29 +706,29 @@ function getInvestedValue() {
 
 function renderHero() {
   const rows = getFilteredSummaryRows();
-  const basis = state.basis;
-  let totalValue = 0, totalCost = 0;
+  let totalValue = 0;
 
   rows.forEach(r => {
     totalValue += Number(r['มูลค่าปัจจุบัน']) || 0;
-    totalCost += Number(basis === 'AVG' ? r['ทุน AVG'] : r['ทุน  FIFO']) || 0;
   });
 
-  const profit = totalValue - totalCost;
-  const profitPct = totalCost ? profit / totalCost : 0;
+  // เงินต้น = เงินสดทั้งหมดที่ฝากเข้าพอร์ตเพื่อลงทุน (ไม่ใช่ทุน AVG/FIFO ของหุ้น)
+  const principal = getCashBalance();
+  const profit = totalValue - principal;
+  const profitPct = principal ? profit / principal : 0;
 
   const valStr = fmt(totalValue, 2);
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
-  document.getElementById('footCost').textContent = `$${fmt(totalCost)}`;
+  document.getElementById('footCost').textContent = `$${fmt(principal)}`;
   document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
   document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
 
   const deltaEl = document.getElementById('heroDelta');
   deltaEl.style.display = 'inline-flex';
   deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
-  deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)} (${basis})`;
+  deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
 }
 
 function renderCashInvested() {
@@ -946,12 +963,11 @@ function populatePortSelect() {
 }
 
 document.getElementById('basisToggle').addEventListener('click', (e) => {
-  const btn = e.target.closest('.basis-btn');
+  const btn = e.target.closest('.basis-btn-inline');
   if (!btn) return;
-  document.querySelectorAll('.basis-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.basis-btn-inline').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   state.basis = btn.dataset.basis;
-  renderHero();
   renderHoldings();
 });
 
