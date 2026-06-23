@@ -192,6 +192,10 @@
   .alloc-gain { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
   .alloc-gain.up { color: var(--gain); }
   .alloc-gain.down { color: var(--loss); }
+  .alloc-dca {
+    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
+    color: var(--accent); margin-top: 3px;
+  }
 
   .txn-row {
     display: flex; align-items: center; gap: 12px;
@@ -556,7 +560,8 @@ const state = {
   dashboard: null,
   transactions: [],
   ports: [],
-  history: []
+  history: [],
+  dca: {}
 };
 
 const fmt = (n, decimals=2) => {
@@ -610,12 +615,13 @@ async function apiPost(body) {
 async function loadAll() {
   if (!API_URL) { showSetupBanner(); return; }
   try {
-    const [summary, dashboard, ports, txns, history] = await Promise.all([
+    const [summary, dashboard, ports, txns, history, dca] = await Promise.all([
       api('summary'),
       api('dashboard'),
       api('ports'),
       api('transactions', { port: state.port === 'ALL' ? null : state.port }),
-      api('history')
+      api('history'),
+      api('dca')
     ]);
     if (summary.error || dashboard.error || ports.error || txns.error) {
       const errMsg = summary.error || dashboard.error || ports.error || txns.error;
@@ -626,6 +632,7 @@ async function loadAll() {
     state.ports = ports.ports || [];
     state.transactions = txns.rows || [];
     state.history = (history && history.rows) || [];
+    state.dca = (dca && dca.dca) || {};
     renderPortSwitch();
     renderHero();
     renderValueLineChart();
@@ -844,6 +851,10 @@ function renderAllocList() {
     const up = profit >= 0;
     const color = PIE_COLORS[i % PIE_COLORS.length];
     const ticker = r['หุ้น'];
+    const dcaPrice = state.dca[ticker];
+    const dcaHtml = (dcaPrice !== undefined && dcaPrice !== null)
+      ? `<div class="alloc-dca">DCA: $${fmt(dcaPrice)}</div>`
+      : '';
     return `
       <div class="alloc-row">
         <div class="alloc-icon" style="background:${color}">${ticker.charAt(0)}</div>
@@ -855,6 +866,7 @@ function renderAllocList() {
         <div class="alloc-right">
           <div class="alloc-value">$${fmt(value)}</div>
           <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})</div>
+          ${dcaHtml}
         </div>
       </div>`;
   }).join('');
