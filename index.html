@@ -223,6 +223,10 @@
   .dca-calc-drop.down { color: var(--gain); }
   .dca-calc-drop.up { color: var(--loss); }
   .dca-calc-hint { color: var(--ink-soft); }
+  .dca-current {
+    font-size: 12px; color: var(--ink-soft); margin-bottom: 4px;
+  }
+  .dca-current b { color: var(--ink); font-weight: 700; }
 
   .txn-row {
     display: flex; align-items: center; gap: 12px;
@@ -940,15 +944,19 @@ function renderAllocList() {
  * อ้างอิงสูตรเดียวกับ Sheet "My stocks": (เงินลงทุนเดิม + เงินใหม่) / (หุ้นเดิม + หุ้นใหม่)
  */
 function renderDcaResultHtml(row, amountStr) {
-  const amount = Number(amountStr);
-  if (!amountStr || isNaN(amount) || amount <= 0) {
-    return `<span class="dca-calc-hint">พิมพ์จำนวนเงินเพื่อดูค่าเฉลี่ยต้นทุนใหม่</span>`;
-  }
   const currentPrice = Number(row['price']) || 0;
   const currentShares = Number(row['จำนวนหุ้น']) || 0;
-  const currentAvgCost = Number(row['ราคา AVG']) || 0;
+  // ราคาที่ได้ (ต้นทุนเฉลี่ยปัจจุบัน) ใช้ค่าเดียวกับคอลัมน์ "ราคาที่ได้" ใน Sheet "My stocks"
+  // ซึ่งตรงกับ "ราคา FIFO" ใน Summary ไม่ใช่ "ราคา AVG"
+  const currentAvgCost = Number(row['ราคา FIFO']) || 0;
+  const currentLine = `<div class="dca-current">ราคาที่ได้ปัจจุบัน: <b>$${fmt(currentAvgCost)}</b></div>`;
+
+  const amount = Number(amountStr);
+  if (!amountStr || isNaN(amount) || amount <= 0) {
+    return `${currentLine}<span class="dca-calc-hint">พิมพ์จำนวนเงินเพื่อดูค่าเฉลี่ยต้นทุนใหม่</span>`;
+  }
   if (currentPrice <= 0) {
-    return `<span class="dca-calc-hint">ไม่มีราคาปัจจุบันสำหรับคำนวณ</span>`;
+    return `${currentLine}<span class="dca-calc-hint">ไม่มีราคาปัจจุบันสำหรับคำนวณ</span>`;
   }
 
   const newShares = amount / currentPrice;
@@ -958,6 +966,7 @@ function renderDcaResultHtml(row, amountStr) {
   const isDrop = diff > 0;
 
   return `
+    ${currentLine}
     ต้นทุนเฉลี่ยใหม่: <b>$${fmt(newAvgCost)}</b>
     <span class="dca-calc-drop ${isDrop?'down':'up'}">
       ${isDrop ? '↓ ลดลง' : '↑ เพิ่มขึ้น'} $${fmt(Math.abs(diff))} (${fmtPct(Math.abs(diffPct))})
