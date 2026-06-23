@@ -148,14 +148,16 @@
   .hero-daily.down b { color: #F1A89E; }
 
   .basis-toggle {
-    position: absolute; top: 22px; right: 20px;
     display: flex; background: rgba(250,248,244,0.12);
     border-radius: 100px; padding: 3px;
+    margin-bottom: 14px;
+    width: fit-content;
   }
   .basis-btn {
-    font-size: 11.5px; font-weight: 700; letter-spacing: 0.02em;
-    padding: 5px 11px; border-radius: 100px; color: rgba(250,248,244,0.6);
+    font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
+    padding: 6px 11px; border-radius: 100px; color: rgba(250,248,244,0.6);
     cursor: pointer; transition: all .15s ease;
+    white-space: nowrap;
   }
   .basis-btn.active { background: var(--paper); color: var(--ink); }
 
@@ -166,6 +168,30 @@
   .hero-foot-item { flex: 1; min-width: 0; }
   .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; white-space: nowrap; }
   .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+
+  .alloc-row {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--paper-raised);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 13px 14px;
+    margin-bottom: 8px;
+  }
+  .alloc-icon {
+    width: 38px; height: 38px; border-radius: 50%;
+    color: #fff; font-weight: 700; font-size: 14px;
+    display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
+  }
+  .alloc-mid { flex: 1; min-width: 0; }
+  .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
+  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .alloc-bar-fill { height: 100%; border-radius: 4px; }
+  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); margin-top: 4px; font-family: var(--mono); }
+  .alloc-right { text-align: right; flex: 0 0 auto; }
+  .alloc-value { font-family: var(--mono); font-size: 14px; font-weight: 600; }
+  .alloc-gain { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
+  .alloc-gain.up { color: var(--gain); }
+  .alloc-gain.down { color: var(--loss); }
 
   .holding-row {
     display: flex; align-items: center; gap: 12px;
@@ -433,7 +459,11 @@
   <div class="section">
     <div class="section-label">มูลค่าพอร์ต</div>
     <div class="hero-card">
-      <div class="hero-label">มูลค่าปัจจุบัน</div>
+      <div class="basis-toggle" id="valueModeToggle">
+        <div class="basis-btn active" data-mode="market">มูลค่าตามราคาตลาด</div>
+        <div class="basis-btn" data-mode="cost">มูลค่าตามต้นทุน</div>
+      </div>
+      <div class="hero-label" id="heroLabel">มูลค่าปัจจุบัน</div>
       <div class="hero-value" id="heroValue">—</div>
       <div class="hero-delta" id="heroDelta" style="display:none"></div>
       <div class="hero-daily" id="heroDaily" style="display:none"></div>
@@ -443,7 +473,7 @@
           <div class="hero-foot-value" id="footCost">—</div>
         </div>
         <div class="hero-foot-item">
-          <div class="hero-foot-label">กำไร/ขาดทุน</div>
+          <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน</div>
           <div class="hero-foot-value" id="footProfit">—</div>
         </div>
       </div>
@@ -468,6 +498,15 @@
     <div class="section-label">สัดส่วนหุ้น (กราฟแท่ง)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:220px;"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-label">สัดส่วนการลงทุน</div>
+    <div id="allocList">
+      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
+      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
+      <div class="skel" style="height:64px;"></div>
     </div>
   </div>
 
@@ -553,6 +592,7 @@ let API_URL = localStorage.getItem('portfolio_api_url') || 'https://script.googl
 const state = {
   port: 'ALL',
   basis: 'AVG',
+  valueMode: 'market',
   summary: null,
   dashboard: null,
   transactions: [],
@@ -632,6 +672,7 @@ async function loadAll() {
     renderValueLineChart();
     renderPieChart();
     renderBarChart();
+    renderAllocList();
     renderHoldings();
     renderTransactions();
     populatePortSelect();
@@ -661,6 +702,7 @@ function rerenderForBasisOrPort() {
   renderHero();
   renderPieChart();
   renderBarChart();
+  renderAllocList();
   renderHoldings();
 }
 
@@ -682,29 +724,49 @@ function getCashBalance() {
 
 function renderHero() {
   const rows = getFilteredSummaryRows();
-  let totalValue = 0;
+  let marketValue = 0, costValue = 0;
 
   rows.forEach(r => {
-    totalValue += Number(r['มูลค่าปัจจุบัน']) || 0;
+    marketValue += Number(r['มูลค่าปัจจุบัน']) || 0;
+    costValue += Number(r['ทุน AVG']) || 0;
   });
 
   // เงินต้น = เงินสดทั้งหมดที่ฝากเข้าพอร์ตเพื่อลงทุน (ไม่ใช่ทุน AVG/FIFO ของหุ้น)
   const principal = getCashBalance();
-  const profit = totalValue - principal;
-  const profitPct = principal ? profit / principal : 0;
 
-  const valStr = fmt(totalValue, 2);
+  const isMarket = state.valueMode === 'market';
+  const displayValue = isMarket ? marketValue : costValue;
+
+  document.getElementById('heroLabel').textContent = isMarket ? 'มูลค่าปัจจุบัน' : 'มูลค่าตามต้นทุน (AVG)';
+
+  const valStr = fmt(displayValue, 2);
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
   document.getElementById('footCost').textContent = `$${fmt(principal)}`;
-  document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
-  document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
 
   const deltaEl = document.getElementById('heroDelta');
   deltaEl.style.display = 'inline-flex';
-  deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
-  deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
+
+  if (isMarket) {
+    // โหมดมูลค่าตามราคาตลาด: กำไร/ขาดทุน = มูลค่าปัจจุบัน เทียบกับเงินต้นที่ฝากเข้ามา
+    const profit = marketValue - principal;
+    const profitPct = principal ? profit / principal : 0;
+    document.getElementById('footProfitLabel').textContent = 'กำไร/ขาดทุน';
+    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
+    document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
+    deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
+    deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
+  } else {
+    // โหมดมูลค่าตามต้นทุน: เทียบทุน AVG ของหุ้น กับเงินต้นที่ฝากเข้ามา (ส่วนต่างจากการ reinvest กำไร)
+    const diff = costValue - principal;
+    const diffPct = principal ? diff / principal : 0;
+    document.getElementById('footProfitLabel').textContent = 'ส่วนต่างจากเงินต้น';
+    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
+    document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
+    deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
+    deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
+  }
 
   // เปลี่ยนแปลงวันนี้ — ดึงจากแถวล่าสุดใน Sheet History (คอลัมน์ Daily Change / Daily %)
   const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
@@ -853,6 +915,41 @@ function renderBarChart() {
   card.innerHTML = `<div class="bar-chart-wrap">${colsHtml}</div>`;
 }
 
+function renderAllocList() {
+  const el = document.getElementById('allocList');
+  const rows = getFilteredSummaryRows();
+  if (!rows.length) {
+    el.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
+    return;
+  }
+  const basis = state.basis;
+  const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
+  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
+
+  el.innerHTML = sorted.map((r, i) => {
+    const value = Number(r['มูลค่าปัจจุบัน']) || 0;
+    const pct = (value / total) * 100;
+    const profit = basis === 'AVG' ? Number(r['กำไร AVG']) : Number(r['กำไร FIFO']);
+    const profitPct = basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO']);
+    const up = profit >= 0;
+    const color = PIE_COLORS[i % PIE_COLORS.length];
+    const ticker = r['หุ้น'];
+    return `
+      <div class="alloc-row">
+        <div class="alloc-icon" style="background:${color}">${ticker.charAt(0)}</div>
+        <div class="alloc-mid">
+          <div class="alloc-ticker">${ticker}</div>
+          <div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
+          <div class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</div>
+        </div>
+        <div class="alloc-right">
+          <div class="alloc-value">$${fmt(value)}</div>
+          <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})</div>
+        </div>
+      </div>`;
+  }).join('');
+}
+
 function renderHoldings() {
   const rows = getFilteredSummaryRows();
   const el = document.getElementById('holdingsList');
@@ -923,7 +1020,17 @@ document.getElementById('basisToggle').addEventListener('click', (e) => {
   document.querySelectorAll('.basis-btn-inline').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   state.basis = btn.dataset.basis;
+  renderAllocList();
   renderHoldings();
+});
+
+document.getElementById('valueModeToggle').addEventListener('click', (e) => {
+  const btn = e.target.closest('.basis-btn');
+  if (!btn) return;
+  document.querySelectorAll('#valueModeToggle .basis-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  state.valueMode = btn.dataset.mode;
+  renderHero();
 });
 
 const sheet = document.getElementById('addSheet');
