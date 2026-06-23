@@ -463,13 +463,6 @@
   </div>
 
   <div class="section">
-    <div class="section-label">สัดส่วนหุ้นในพอร์ต</div>
-    <div class="chart-card" id="pieChartCard">
-      <div class="skel" style="height:200px;"></div>
-    </div>
-  </div>
-
-  <div class="section">
     <div class="section-label">สัดส่วนหุ้น (กราฟแท่ง)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:220px;"></div>
@@ -636,7 +629,6 @@ async function loadAll() {
     renderPortSwitch();
     renderHero();
     renderValueLineChart();
-    renderPieChart();
     renderBarChart();
     renderAllocList();
     renderTransactions();
@@ -665,7 +657,6 @@ function renderPortSwitch() {
 
 function rerenderForBasisOrPort() {
   renderHero();
-  renderPieChart();
   renderBarChart();
   renderAllocList();
 }
@@ -805,51 +796,6 @@ function renderValueLineChart() {
 
 const PIE_COLORS = ['#C98A2C','#1B7A4D','#4A5160','#B23B2E','#7C9CBF','#A66BB5','#D4A95C','#5A8F7B','#9A6B4F','#6E7B8B'];
 
-function renderPieChart() {
-  const card = document.getElementById('pieChartCard');
-  const rows = getFilteredSummaryRows();
-  if (!rows.length) {
-    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
-    return;
-  }
-  const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
-  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
-
-  const R = 52, CX = 60, CY = 60;
-  let angle = -90;
-  const slices = sorted.map((r, i) => {
-    const value = Number(r['มูลค่าปัจจุบัน']) || 0;
-    const pct = value / total;
-    const sweep = pct * 360;
-    const x1 = CX + R * Math.cos(angle * Math.PI/180);
-    const y1 = CY + R * Math.sin(angle * Math.PI/180);
-    const endAngle = angle + sweep;
-    const x2 = CX + R * Math.cos(endAngle * Math.PI/180);
-    const y2 = CY + R * Math.sin(endAngle * Math.PI/180);
-    const largeArc = sweep > 180 ? 1 : 0;
-    const path = sweep >= 359.9
-      ? `M${CX-R},${CY} A${R},${R} 0 1 1 ${CX+R},${CY} A${R},${R} 0 1 1 ${CX-R},${CY} Z`
-      : `M${CX},${CY} L${x1.toFixed(2)},${y1.toFixed(2)} A${R},${R} 0 ${largeArc} 1 ${x2.toFixed(2)},${y2.toFixed(2)} Z`;
-    angle = endAngle;
-    return { path, color: PIE_COLORS[i % PIE_COLORS.length], ticker: r['หุ้น'], pct };
-  });
-
-  const slicesSvg = slices.map(s => `<path d="${s.path}" fill="${s.color}" stroke="var(--paper-raised)" stroke-width="1.5"/>`).join('');
-  const legendHtml = slices.map(s => `
-    <div class="legend-item">
-      <div class="legend-swatch" style="background:${s.color}"></div>
-      <div class="legend-ticker">${s.ticker}</div>
-      <div class="legend-pct">${(s.pct*100).toFixed(1)}%</div>
-    </div>`).join('');
-
-  card.innerHTML = `
-    <div class="pie-wrap">
-      <svg width="120" height="120" viewBox="0 0 120 120">${slicesSvg}</svg>
-      <div class="legend">${legendHtml}</div>
-    </div>
-  `;
-}
-
 function renderBarChart() {
   const card = document.getElementById('barChartCard');
   const rows = getFilteredSummaryRows();
@@ -933,7 +879,7 @@ function renderTransactions() {
         </div>
         <div class="txn-right">
           <div class="txn-amount">$${fmt(t['รวม $'])}</div>
-          <div class="txn-shares">${fmt(t['จำนวนหุ้น'],4)} หุ้น</div>
+          <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
         </div>
       </div>`;
   }).join('');
