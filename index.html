@@ -193,31 +193,6 @@
   .alloc-gain.up { color: var(--gain); }
   .alloc-gain.down { color: var(--loss); }
 
-  .holding-row {
-    display: flex; align-items: center; gap: 12px;
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    padding: 13px 14px;
-    margin-bottom: 8px;
-  }
-  .holding-ticker {
-    width: 52px; flex: 0 0 auto;
-    font-family: var(--mono); font-weight: 700; font-size: 14.5px;
-  }
-  .holding-mid { flex: 1; min-width: 0; }
-  .holding-shares { font-size: 12px; color: var(--ink-soft); }
-  .holding-bar-track {
-    height: 4px; background: var(--line); border-radius: 4px;
-    margin-top: 6px; overflow: hidden;
-  }
-  .holding-bar-fill { height: 100%; background: var(--accent); border-radius: 4px; }
-  .holding-right { text-align: right; flex: 0 0 auto; }
-  .holding-value { font-family: var(--mono); font-size: 14.5px; font-weight: 600; }
-  .holding-pl { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
-  .holding-pl.up { color: var(--gain); }
-  .holding-pl.down { color: var(--loss); }
-
   .txn-row {
     display: flex; align-items: center; gap: 12px;
     padding: 12px 0;
@@ -502,23 +477,14 @@
   </div>
 
   <div class="section">
-    <div class="section-label">สัดส่วนการลงทุน</div>
-    <div id="allocList">
-      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
-      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
-      <div class="skel" style="height:64px;"></div>
-    </div>
-  </div>
-
-  <div class="section">
     <div class="section-label-row">
-      <div class="section-label">หุ้นในพอร์ต</div>
+      <div class="section-label">สัดส่วนการลงทุน</div>
       <div class="basis-toggle-inline" id="basisToggle">
         <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
         <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
       </div>
     </div>
-    <div id="holdingsList">
+    <div id="allocList">
       <div class="skel" style="height:64px;margin-bottom:8px;"></div>
       <div class="skel" style="height:64px;margin-bottom:8px;"></div>
       <div class="skel" style="height:64px;"></div>
@@ -673,12 +639,11 @@ async function loadAll() {
     renderPieChart();
     renderBarChart();
     renderAllocList();
-    renderHoldings();
     renderTransactions();
     populatePortSelect();
   } catch (err) {
     console.error(err);
-    document.getElementById('holdingsList').innerHTML =
+    document.getElementById('allocList').innerHTML =
       `<div class="empty-state"><div class="icon">⚠️</div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙︎ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
     showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
   }
@@ -703,7 +668,6 @@ function rerenderForBasisOrPort() {
   renderPieChart();
   renderBarChart();
   renderAllocList();
-  renderHoldings();
 }
 
 function getFilteredSummaryRows() {
@@ -728,7 +692,7 @@ function renderHero() {
 
   rows.forEach(r => {
     marketValue += Number(r['มูลค่าปัจจุบัน']) || 0;
-    costValue += Number(r['ทุน AVG']) || 0;
+    costValue += Number(r['ทุน  FIFO']) || 0;
   });
 
   // เงินต้น = เงินสดทั้งหมดที่ฝากเข้าพอร์ตเพื่อลงทุน (ไม่ใช่ทุน AVG/FIFO ของหุ้น)
@@ -737,7 +701,7 @@ function renderHero() {
   const isMarket = state.valueMode === 'market';
   const displayValue = isMarket ? marketValue : costValue;
 
-  document.getElementById('heroLabel').textContent = isMarket ? 'มูลค่าปัจจุบัน' : 'มูลค่าตามต้นทุน (AVG)';
+  document.getElementById('heroLabel').textContent = isMarket ? 'มูลค่าปัจจุบัน' : 'มูลค่าตามต้นทุน (FIFO)';
 
   const valStr = fmt(displayValue, 2);
   const [intPart, decPart] = valStr.split('.');
@@ -758,7 +722,7 @@ function renderHero() {
     deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
   } else {
-    // โหมดมูลค่าตามต้นทุน: เทียบทุน AVG ของหุ้น กับเงินต้นที่ฝากเข้ามา (ส่วนต่างจากการ reinvest กำไร)
+    // โหมดมูลค่าตามต้นทุน: เทียบทุน FIFO ของหุ้น กับเงินต้นที่ฝากเข้ามา (ส่วนต่างจากการ reinvest กำไร)
     const diff = costValue - principal;
     const diffPct = principal ? diff / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'ส่วนต่างจากเงินต้น';
@@ -950,40 +914,6 @@ function renderAllocList() {
   }).join('');
 }
 
-function renderHoldings() {
-  const rows = getFilteredSummaryRows();
-  const el = document.getElementById('holdingsList');
-  if (!rows.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📭</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>`;
-    return;
-  }
-  const basis = state.basis;
-  const maxValue = Math.max(...rows.map(r => Number(r['มูลค่าปัจจุบัน']) || 0), 1);
-
-  el.innerHTML = rows
-    .sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0))
-    .map(r => {
-      const value = Number(r['มูลค่าปัจจุบัน']) || 0;
-      const profit = basis === 'AVG' ? Number(r['กำไร AVG']) : Number(r['กำไร FIFO']);
-      const profitPct = basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO']);
-      const up = profit >= 0;
-      const barPct = Math.min(100, (value / maxValue) * 100);
-      const subLabel = state.port === 'ALL' ? r['ชื่อ port'] : ('@$' + fmt(r['price']));
-      return `
-        <div class="holding-row">
-          <div class="holding-ticker">${r['หุ้น']}</div>
-          <div class="holding-mid">
-            <div class="holding-shares">${fmt(r['จำนวนหุ้น'], 4)} หุ้น · ${subLabel}</div>
-            <div class="holding-bar-track"><div class="holding-bar-fill" style="width:${barPct}%"></div></div>
-          </div>
-          <div class="holding-right">
-            <div class="holding-value">$${fmt(value)}</div>
-            <div class="holding-pl ${up?'up':'down'}">${up?'+':''}${fmt(profit)} (${fmtPct(profitPct)})</div>
-          </div>
-        </div>`;
-    }).join('');
-}
-
 function renderTransactions() {
   const el = document.getElementById('txnList');
   const txns = state.transactions.filter(t => t['รายการ'] && t['รายการ'] !== 'USD').slice(0, 15);
@@ -1021,7 +951,6 @@ document.getElementById('basisToggle').addEventListener('click', (e) => {
   btn.classList.add('active');
   state.basis = btn.dataset.basis;
   renderAllocList();
-  renderHoldings();
 });
 
 document.getElementById('valueModeToggle').addEventListener('click', (e) => {
