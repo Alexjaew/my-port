@@ -169,13 +169,16 @@
   .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; white-space: nowrap; }
   .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
 
-  .alloc-row {
-    display: flex; align-items: center; gap: 12px;
+  .alloc-row-wrap {
     background: var(--paper-raised);
     border: 1px solid var(--line);
     border-radius: 14px;
-    padding: 13px 14px;
     margin-bottom: 8px;
+    overflow: hidden;
+  }
+  .alloc-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 13px 14px;
   }
   .alloc-icon {
     width: 38px; height: 38px; border-radius: 50%;
@@ -192,10 +195,34 @@
   .alloc-gain { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
   .alloc-gain.up { color: var(--gain); }
   .alloc-gain.down { color: var(--loss); }
-  .alloc-dca {
-    font-family: var(--mono); font-size: 10.5px; font-weight: 600;
-    color: var(--accent); margin-top: 3px;
+
+  .dca-calc {
+    border-top: 1px solid var(--line);
+    background: var(--accent-soft);
+    padding: 10px 14px;
   }
+  .dca-calc-input-row {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .dca-calc-label {
+    font-size: 12px; font-weight: 600; color: #7A5414; white-space: nowrap;
+  }
+  .dca-calc-input {
+    flex: 1; min-width: 0;
+    padding: 7px 10px;
+    border-radius: 8px; border: 1px solid #E5C98A;
+    font-size: 14px; font-family: var(--mono);
+    background: var(--paper-raised); color: var(--ink);
+  }
+  .dca-calc-input:focus { outline: none; border-color: var(--accent); }
+  .dca-calc-result {
+    font-size: 12px; margin-top: 7px; color: var(--ink-soft); font-family: var(--mono);
+  }
+  .dca-calc-result b { color: var(--ink); font-weight: 700; }
+  .dca-calc-drop { font-weight: 600; margin-left: 6px; }
+  .dca-calc-drop.down { color: var(--gain); }
+  .dca-calc-drop.up { color: var(--loss); }
+  .dca-calc-hint { color: var(--ink-soft); }
 
   .txn-row {
     display: flex; align-items: center; gap: 12px;
@@ -410,13 +437,25 @@
     background: rgba(0,0,0,0.06);
     padding: 1px 5px; border-radius: 5px; font-size: 12px;
   }
+  .url-input-row {
+    display: flex; gap: 6px; margin-top: 8px;
+  }
   .setup-banner input {
-    width: 100%; margin-top: 8px;
+    flex: 1; min-width: 0;
     padding: 9px 10px; border-radius: 8px;
     border: 1px solid #E5C98A; font-size: 13px;
     box-sizing: border-box;
   }
-  .setup-banner button {
+  #apiUrlClear {
+    flex: 0 0 auto;
+    width: 36px;
+    padding: 9px 0; border-radius: 8px;
+    border: 1px solid #E5C98A;
+    background: var(--paper-raised);
+    color: #7A5414; font-size: 14px; font-weight: 700;
+    cursor: pointer;
+  }
+  .setup-banner button#apiUrlSave {
     margin-top: 8px; padding: 8px 14px;
     background: var(--ink); color: var(--paper);
     border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
@@ -561,7 +600,7 @@ const state = {
   transactions: [],
   ports: [],
   history: [],
-  dca: {}
+  dcaInputs: {} // เก็บค่าเงินที่ผู้ใช้กรอกไว้ในตัวคำนวณ DCA ต่อหุ้น เช่น { RKLB: 50 }
 };
 
 const fmt = (n, decimals=2) => {
@@ -579,7 +618,10 @@ function showSetupBanner(errorMsg) {
     <div class="setup-banner">
       ${errorMsg ? '⚠️ ' + errorMsg + '<br><br>' : ''}วาง <strong>Web App URL</strong> จาก Apps Script ที่ deploy ไว้ที่นี่
       (ลงท้ายด้วย <code>/exec</code>)
-      <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${API_URL || ''}">
+      <div class="url-input-row">
+        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${API_URL || ''}">
+        <button id="apiUrlClear" type="button" title="ลบลิงก์">✕</button>
+      </div>
       <button id="apiUrlSave">บันทึกและเชื่อมต่อ</button>
     </div>`;
   document.getElementById('apiUrlSave').onclick = () => {
@@ -590,6 +632,10 @@ function showSetupBanner(errorMsg) {
       el.innerHTML = '';
       loadAll();
     }
+  };
+  document.getElementById('apiUrlClear').onclick = () => {
+    document.getElementById('apiUrlInput').value = '';
+    document.getElementById('apiUrlInput').focus();
   };
 }
 
@@ -615,13 +661,12 @@ async function apiPost(body) {
 async function loadAll() {
   if (!API_URL) { showSetupBanner(); return; }
   try {
-    const [summary, dashboard, ports, txns, history, dca] = await Promise.all([
+    const [summary, dashboard, ports, txns, history] = await Promise.all([
       api('summary'),
       api('dashboard'),
       api('ports'),
       api('transactions', { port: state.port === 'ALL' ? null : state.port }),
-      api('history'),
-      api('dca')
+      api('history')
     ]);
     if (summary.error || dashboard.error || ports.error || txns.error) {
       const errMsg = summary.error || dashboard.error || ports.error || txns.error;
@@ -632,7 +677,6 @@ async function loadAll() {
     state.ports = ports.ports || [];
     state.transactions = txns.rows || [];
     state.history = (history && history.rows) || [];
-    state.dca = (dca && dca.dca) || {};
     renderPortSwitch();
     renderHero();
     renderValueLineChart();
@@ -851,25 +895,74 @@ function renderAllocList() {
     const up = profit >= 0;
     const color = PIE_COLORS[i % PIE_COLORS.length];
     const ticker = r['หุ้น'];
-    const dcaPrice = state.dca[ticker];
-    const dcaHtml = (dcaPrice !== undefined && dcaPrice !== null)
-      ? `<div class="alloc-dca">DCA: $${fmt(dcaPrice)}</div>`
-      : '';
+    const inputVal = state.dcaInputs[ticker] || '';
+
     return `
-      <div class="alloc-row">
-        <div class="alloc-icon" style="background:${color}">${ticker.charAt(0)}</div>
-        <div class="alloc-mid">
-          <div class="alloc-ticker">${ticker}</div>
-          <div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
-          <div class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</div>
+      <div class="alloc-row-wrap">
+        <div class="alloc-row">
+          <div class="alloc-icon" style="background:${color}">${ticker.charAt(0)}</div>
+          <div class="alloc-mid">
+            <div class="alloc-ticker">${ticker}</div>
+            <div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
+            <div class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</div>
+          </div>
+          <div class="alloc-right">
+            <div class="alloc-value">$${fmt(value)}</div>
+            <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})</div>
+          </div>
         </div>
-        <div class="alloc-right">
-          <div class="alloc-value">$${fmt(value)}</div>
-          <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})</div>
-          ${dcaHtml}
+        <div class="dca-calc">
+          <div class="dca-calc-input-row">
+            <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
+            <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
+          </div>
+          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal)}</div>
         </div>
       </div>`;
   }).join('');
+
+  // ผูก event ให้ input คำนวณใหม่ทุกครั้งที่พิมพ์ (ไม่ reload ข้อมูลทั้งหน้า)
+  el.querySelectorAll('.dca-calc-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const ticker = e.target.dataset.ticker;
+      const val = e.target.value;
+      state.dcaInputs[ticker] = val;
+      const row = sorted.find(r => r['หุ้น'] === ticker);
+      const resultEl = document.getElementById(`dcaResult-${ticker}`);
+      if (resultEl && row) resultEl.innerHTML = renderDcaResultHtml(row, val);
+    });
+  });
+}
+
+/**
+ * คำนวณ DCA แบบ what-if: ถ้าลงเงินเพิ่ม $amount ที่ราคาตลาดปัจจุบัน
+ * ค่าเฉลี่ยต้นทุนใหม่จะเป็นเท่าไหร่ และลดลงจากเดิมกี่ %
+ * อ้างอิงสูตรเดียวกับ Sheet "My stocks": (เงินลงทุนเดิม + เงินใหม่) / (หุ้นเดิม + หุ้นใหม่)
+ */
+function renderDcaResultHtml(row, amountStr) {
+  const amount = Number(amountStr);
+  if (!amountStr || isNaN(amount) || amount <= 0) {
+    return `<span class="dca-calc-hint">พิมพ์จำนวนเงินเพื่อดูค่าเฉลี่ยต้นทุนใหม่</span>`;
+  }
+  const currentPrice = Number(row['price']) || 0;
+  const currentShares = Number(row['จำนวนหุ้น']) || 0;
+  const currentAvgCost = Number(row['ราคา AVG']) || 0;
+  if (currentPrice <= 0) {
+    return `<span class="dca-calc-hint">ไม่มีราคาปัจจุบันสำหรับคำนวณ</span>`;
+  }
+
+  const newShares = amount / currentPrice;
+  const newAvgCost = (currentShares * currentAvgCost + amount) / (currentShares + newShares);
+  const diff = currentAvgCost - newAvgCost; // บวก = ต้นทุนลดลง, ลบ = ต้นทุนเพิ่มขึ้น
+  const diffPct = currentAvgCost ? diff / currentAvgCost : 0;
+  const isDrop = diff > 0;
+
+  return `
+    ต้นทุนเฉลี่ยใหม่: <b>$${fmt(newAvgCost)}</b>
+    <span class="dca-calc-drop ${isDrop?'down':'up'}">
+      ${isDrop ? '↓ ลดลง' : '↑ เพิ่มขึ้น'} $${fmt(Math.abs(diff))} (${fmtPct(Math.abs(diffPct))})
+    </span>
+  `;
 }
 
 function renderTransactions() {
