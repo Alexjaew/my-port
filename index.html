@@ -186,7 +186,9 @@
     display: flex; align-items: center; justify-content: center; flex: 0 0 auto;
   }
   .alloc-mid { flex: 1; min-width: 0; }
+  .alloc-ticker-row { display: flex; align-items: baseline; gap: 8px; }
   .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
+  .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
   .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; }
   .alloc-bar-fill { height: 100%; border-radius: 4px; }
   .alloc-pct { font-size: 11.5px; color: var(--ink-soft); margin-top: 4px; font-family: var(--mono); }
@@ -651,11 +653,11 @@ function showSetupBanner(errorMsg) {
     }
   };
   document.getElementById('apiUrlClear').onclick = () => {
-    // ลบ URL ที่บันทึกไว้ใน localStorage ทั้งหมด แล้วกลับไปใช้ URL เริ่มต้นที่ฝังในไฟล์
-    // กันปัญหากรณีมี URL เก่า/ผิดค้างอยู่ใน localStorage ที่บัง URL เริ่มต้นไว้
+    // ล้างช่อง input ให้ว่าง พร้อมพิมพ์/วาง URL ใหม่ทันที
+    // และลบ URL เก่าที่บันทึกไว้ใน localStorage ออกด้วย กันไม่ให้ค้างมาบัง URL ใหม่ที่จะกรอก
+    document.getElementById('apiUrlInput').value = '';
+    document.getElementById('apiUrlInput').focus();
     localStorage.removeItem('portfolio_api_url');
-    API_URL = DEFAULT_API_URL;
-    document.getElementById('apiUrlInput').value = DEFAULT_API_URL;
   };
 }
 
@@ -680,35 +682,50 @@ async function apiPost(body) {
 
 async function loadAll() {
   if (!API_URL) { showSetupBanner(); return; }
-  try {
-    const [summary, dashboard, ports, txns, history] = await Promise.all([
-      api('summary'),
-      api('dashboard'),
-      api('ports'),
-      api('transactions', { port: state.port === 'ALL' ? null : state.port }),
-      api('history')
-    ]);
-    if (summary.error || dashboard.error || ports.error || txns.error) {
-      const errMsg = summary.error || dashboard.error || ports.error || txns.error;
-      throw new Error(errMsg);
+
+  const MAX_ATTEMPTS = 3;
+  const RETRY_DELAY_MS = [1500, 3000]; // หน่วงก่อน retry ครั้งที่ 2 และ 3
+
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    try {
+      const [summary, dashboard, ports, txns, history] = await Promise.all([
+        api('summary'),
+        api('dashboard'),
+        api('ports'),
+        api('transactions', { port: state.port === 'ALL' ? null : state.port }),
+        api('history')
+      ]);
+      if (summary.error || dashboard.error || ports.error || txns.error) {
+        const errMsg = summary.error || dashboard.error || ports.error || txns.error;
+        throw new Error(errMsg);
+      }
+      state.summary = summary;
+      state.dashboard = dashboard;
+      state.ports = ports.ports || [];
+      state.transactions = txns.rows || [];
+      state.history = (history && history.rows) || [];
+      renderPortSwitch();
+      renderHero();
+      renderValueLineChart();
+      renderBarChart();
+      renderAllocList();
+      renderTransactions();
+      populatePortSelect();
+      return; // สำเร็จแล้ว ไม่ต้องวนต่อ
+    } catch (err) {
+      console.error(`loadAll attempt ${attempt} failed:`, err);
+      if (attempt < MAX_ATTEMPTS) {
+        // Apps Script อาจ "cold start" ช้าหลังไม่มีการเรียกใช้นาน ๆ ลองใหม่อีกครั้งก่อนแจ้ง error
+        document.getElementById('allocList').innerHTML =
+          `<div class="empty-state"><div class="icon">⏳</div><div class="msg">กำลังเชื่อมต่อใหม่... (ครั้งที่ ${attempt + 1})</div></div>`;
+        await new Promise(r => setTimeout(r, RETRY_DELAY_MS[attempt - 1]));
+        continue;
+      }
+      // พยายามครบจำนวนครั้งแล้วยังไม่สำเร็จ ค่อยแจ้ง error จริง
+      document.getElementById('allocList').innerHTML =
+        `<div class="empty-state"><div class="icon">⚠️</div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙︎ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
+      showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
     }
-    state.summary = summary;
-    state.dashboard = dashboard;
-    state.ports = ports.ports || [];
-    state.transactions = txns.rows || [];
-    state.history = (history && history.rows) || [];
-    renderPortSwitch();
-    renderHero();
-    renderValueLineChart();
-    renderBarChart();
-    renderAllocList();
-    renderTransactions();
-    populatePortSelect();
-  } catch (err) {
-    console.error(err);
-    document.getElementById('allocList').innerHTML =
-      `<div class="empty-state"><div class="icon">⚠️</div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙︎ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
-    showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
   }
 }
 
@@ -915,6 +932,7 @@ function renderAllocList() {
     const up = profit >= 0;
     const color = PIE_COLORS[i % PIE_COLORS.length];
     const ticker = r['หุ้น'];
+    const currentPrice = Number(r['price']) || 0;
     const inputVal = state.dcaInputs[ticker] || '';
 
     return `
@@ -922,7 +940,10 @@ function renderAllocList() {
         <div class="alloc-row">
           <div class="alloc-icon" style="background:${color}">${ticker.charAt(0)}</div>
           <div class="alloc-mid">
-            <div class="alloc-ticker">${ticker}</div>
+            <div class="alloc-ticker-row">
+              <div class="alloc-ticker">${ticker}</div>
+              <div class="alloc-current-price">$${fmt(currentPrice)}</div>
+            </div>
             <div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
             <div class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</div>
           </div>
