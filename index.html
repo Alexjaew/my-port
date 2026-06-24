@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" id="themeColorMeta" content="#FAF8F4">
 <title>My Port — Portfolio Tracker</title>
 <style>
   :root {
@@ -17,9 +18,53 @@
     --loss-soft: #FBEAE7;
     --accent: #C98A2C;
     --accent-soft: #F6ECD9;
+    --accent-text: #7A5414;
+    --accent-border: #E5C98A;
+    /* สีคงที่ ไม่เปลี่ยนตาม light/dark theme — ใช้กับ hero card, ปุ่ม + และปุ่ม CTA หลัก
+       เพื่อให้องค์ประกอบเด่นเหล่านี้ดูเหมือนกันเสมอไม่ว่าจะใช้โหมดไหน */
+    --accent-dark: #0E1116;
+    --accent-dark-text: #FAF8F4;
+    --skel-shine: #ECE8DE;
     --mono: 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
     --serif: 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
     --sans: -apple-system, 'Inter', system-ui, sans-serif;
+  }
+
+  /* โหมดมืด: ใช้อัตโนมัติตามการตั้งค่าระบบ (ถ้าผู้ใช้ยังไม่กดเลือกเอง)
+     หรือใช้ตามที่ผู้ใช้กดเลือกไว้ผ่านปุ่ม ☾/☀ (เก็บไว้ใน data-theme) */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ink: #ECE9E2;
+      --ink-soft: #8B92A0;
+      --paper: #121316;
+      --paper-raised: #1C1E23;
+      --line: #2A2D33;
+      --gain: #3DBE7C;
+      --gain-soft: #16291E;
+      --loss: #E8645A;
+      --loss-soft: #2E1916;
+      --accent: #D9A655;
+      --accent-soft: #2B2316;
+      --accent-text: #E0C088;
+      --accent-border: #4A3D24;
+      --skel-shine: #2A2D33;
+    }
+  }
+  :root[data-theme="dark"] {
+    --ink: #ECE9E2;
+    --ink-soft: #8B92A0;
+    --paper: #121316;
+    --paper-raised: #1C1E23;
+    --line: #2A2D33;
+    --gain: #3DBE7C;
+    --gain-soft: #16291E;
+    --loss: #E8645A;
+    --loss-soft: #2E1916;
+    --accent: #D9A655;
+    --accent-soft: #2B2316;
+    --accent-text: #E0C088;
+    --accent-border: #4A3D24;
+    --skel-shine: #2A2D33;
   }
 
   * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
@@ -44,6 +89,7 @@
   .topbar-row {
     display: flex; align-items: baseline; justify-content: space-between;
   }
+  .topbar-actions { display: flex; align-items: center; gap: 4px; }
   .brand {
     font-family: var(--serif);
     font-size: 22px;
@@ -71,9 +117,9 @@
     transition: all .15s ease;
   }
   .port-chip.active {
-    background: var(--ink);
-    color: var(--paper);
-    border-color: var(--ink);
+    background: var(--accent-dark);
+    color: var(--accent-dark-text);
+    border-color: var(--accent-dark);
   }
 
   .section { padding: 22px 20px 0; }
@@ -102,8 +148,8 @@
   .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
 
   .hero-card {
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--accent-dark);
+    color: var(--accent-dark-text);
     border-radius: 20px;
     padding: 24px 22px 20px;
     position: relative;
@@ -159,7 +205,7 @@
     cursor: pointer; transition: all .15s ease;
     white-space: nowrap;
   }
-  .basis-btn.active { background: var(--paper); color: var(--ink); }
+  .basis-btn.active { background: var(--accent-dark-text); color: var(--accent-dark); }
 
   .hero-foot {
     display: flex; gap: 14px; margin-top: 18px;
@@ -207,12 +253,12 @@
     display: flex; align-items: center; gap: 8px;
   }
   .dca-calc-label {
-    font-size: 12px; font-weight: 600; color: #7A5414; white-space: nowrap;
+    font-size: 12px; font-weight: 600; color: var(--accent-text); white-space: nowrap;
   }
   .dca-calc-input {
     flex: 1; min-width: 0;
     padding: 7px 10px;
-    border-radius: 8px; border: 1px solid #E5C98A;
+    border-radius: 8px; border: 1px solid var(--accent-border);
     font-size: 14px; font-family: var(--mono);
     background: var(--paper-raised); color: var(--ink);
   }
@@ -327,7 +373,7 @@
   .empty-state .msg { font-size: 13.5px; }
 
   .skel {
-    background: linear-gradient(90deg, var(--line) 25%, #ECE8DE 37%, var(--line) 63%);
+    background: linear-gradient(90deg, var(--line) 25%, var(--skel-shine) 37%, var(--line) 63%);
     background-size: 400% 100%;
     animation: shimmer 1.4s ease infinite;
     border-radius: 10px;
@@ -340,8 +386,8 @@
     right: 20px;
     width: 58px; height: 58px;
     border-radius: 50%;
-    background: var(--ink);
-    color: var(--paper);
+    background: var(--accent-dark);
+    color: var(--accent-dark-text);
     display: flex; align-items: center; justify-content: center;
     font-size: 26px;
     border: none;
@@ -428,7 +474,7 @@
   .submit-btn {
     width: 100%; padding: 15px;
     border-radius: 14px; border: none;
-    background: var(--ink); color: var(--paper);
+    background: var(--accent-dark); color: var(--accent-dark-text);
     font-size: 15.5px; font-weight: 700;
     margin-top: 6px;
     cursor: pointer;
@@ -444,11 +490,11 @@
   .setup-banner {
     margin: 16px 20px 0;
     background: var(--accent-soft);
-    border: 1px solid #E5C98A;
+    border: 1px solid var(--accent-border);
     border-radius: 12px;
     padding: 12px 14px;
     font-size: 13px;
-    color: #7A5414;
+    color: var(--accent-text);
     line-height: 1.5;
   }
   .setup-banner code {
@@ -461,26 +507,28 @@
   .setup-banner input {
     flex: 1; min-width: 0;
     padding: 9px 10px; border-radius: 8px;
-    border: 1px solid #E5C98A; font-size: 13px;
+    border: 1px solid var(--accent-border); font-size: 13px;
     box-sizing: border-box;
+    background: var(--paper-raised); color: var(--ink);
   }
   #apiUrlClear {
     flex: 0 0 auto;
     width: 36px;
     padding: 9px 0; border-radius: 8px;
-    border: 1px solid #E5C98A;
+    border: 1px solid var(--accent-border);
     background: var(--paper-raised);
-    color: #7A5414; font-size: 14px; font-weight: 700;
+    color: var(--accent-text); font-size: 14px; font-weight: 700;
     cursor: pointer;
   }
   .setup-banner button#apiUrlSave {
     margin-top: 8px; padding: 8px 14px;
-    background: var(--ink); color: var(--paper);
+    background: var(--accent-dark); color: var(--accent-dark-text);
     border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
   }
   .setup-hint {
-    margin-top: 10px; font-size: 11.5px; color: #8A6326;
-    line-height: 1.4; border-top: 1px solid #E5C98A; padding-top: 8px;
+    margin-top: 10px; font-size: 11.5px; color: var(--accent-text);
+    line-height: 1.4; border-top: 1px solid var(--accent-border); padding-top: 8px;
+    opacity: 0.85;
   }
 </style>
 </head>
@@ -489,7 +537,10 @@
   <div class="topbar">
     <div class="topbar-row">
       <div class="brand">My Port<span class="dot">.</span></div>
-      <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;">⚙︎</button>
+      <div class="topbar-actions">
+        <button id="themeToggleBtn" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;">🌙</button>
+        <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;">⚙︎</button>
+      </div>
     </div>
     <div class="port-switch" id="portSwitch"></div>
   </div>
@@ -622,6 +673,21 @@ if (urlParam) {
 }
 let API_URL = urlParam || localStorage.getItem('portfolio_api_url') || DEFAULT_API_URL;
 
+// ----- Dark mode -----
+// ถ้าผู้ใช้กดเลือกธีมเองไว้ก่อน ใช้ตามนั้น (เก็บใน localStorage)
+// ถ้ายังไม่เคยกดเลือก ให้ปล่อยตามการตั้งค่าระบบ (prefers-color-scheme) ผ่าน CSS media query
+const savedTheme = localStorage.getItem('portfolio_theme');
+if (savedTheme) {
+  document.documentElement.setAttribute('data-theme', savedTheme);
+}
+function updateThemeIcon() {
+  const current = document.documentElement.getAttribute('data-theme');
+  const isDark = current === 'dark' ||
+    (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙';
+  document.getElementById('themeColorMeta').setAttribute('content', isDark ? '#121316' : '#FAF8F4');
+}
+
 const state = {
   port: 'ALL',
   basis: 'AVG',
@@ -683,6 +749,16 @@ function showSetupBanner(errorMsg) {
 }
 
 document.getElementById('settingsBtn').onclick = () => showSetupBanner();
+
+document.getElementById('themeToggleBtn').onclick = () => {
+  const current = document.documentElement.getAttribute('data-theme');
+  const isDark = current === 'dark' ||
+    (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const next = isDark ? 'light' : 'dark';
+  document.documentElement.setAttribute('data-theme', next);
+  localStorage.setItem('portfolio_theme', next);
+  updateThemeIcon();
+};
 
 async function api(action, params = {}) {
   const url = new URL(API_URL);
@@ -1184,6 +1260,7 @@ document.getElementById('submitBtn').onclick = async () => {
   }
 };
 
+updateThemeIcon();
 loadAll();
 </script>
 </body>
