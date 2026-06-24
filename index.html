@@ -478,6 +478,10 @@
     background: var(--ink); color: var(--paper);
     border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
   }
+  .setup-hint {
+    margin-top: 10px; font-size: 11.5px; color: #8A6326;
+    line-height: 1.4; border-top: 1px solid #E5C98A; padding-top: 8px;
+  }
 </style>
 </head>
 <body>
@@ -608,7 +612,15 @@
 // URL ของ Apps Script ที่ deploy ไว้ — ฝังเป็นค่าเริ่มต้น ไม่ต้องกรอกใหม่ทุกครั้ง
 // ถ้า deploy ใหม่แล้ว URL เปลี่ยน ให้กดปุ่ม ⚙︎ ในแอพเพื่อตั้งค่า URL ใหม่ (จะถูกจำไว้แทนตัวนี้)
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
-let API_URL = localStorage.getItem('portfolio_api_url') || DEFAULT_API_URL;
+
+// ลำดับความสำคัญในการหา URL: 1) URL parameter ในลิงก์ (?api=...) 2) localStorage 3) ค่าเริ่มต้นที่ฝังในไฟล์
+// เก็บไว้ใน URL parameter ด้วย เพราะ iOS Safari อาจล้าง localStorage ของแอพที่ Add to Home Screen
+// ถ้าไม่ได้เปิดผ่าน Safari ปกตินานเกิน ~7 วัน (ITP) แต่ URL ที่บันทึกไว้ในไอคอนหน้าจอโฮมจะไม่ถูกล้าง
+const urlParam = new URLSearchParams(window.location.search).get('api');
+if (urlParam) {
+  localStorage.setItem('portfolio_api_url', urlParam); // sync กลับเข้า localStorage ด้วย
+}
+let API_URL = urlParam || localStorage.getItem('portfolio_api_url') || DEFAULT_API_URL;
 
 const state = {
   port: 'ALL',
@@ -642,12 +654,18 @@ function showSetupBanner(errorMsg) {
         <button id="apiUrlClear" type="button" title="ลบลิงก์ที่บันทึกไว้ และกลับไปใช้ค่าเริ่มต้น">✕</button>
       </div>
       <button id="apiUrlSave">บันทึกและเชื่อมต่อ</button>
+      <div class="setup-hint">💡 หลังบันทึกแล้ว แนะนำให้ลบ icon บนหน้าจอโฮมเดิม แล้วทำ "Add to Home Screen" ใหม่อีกครั้ง เพื่อให้ icon จำ URL นี้ไว้แบบถาวร ไม่หายแม้ Safari จะล้างข้อมูลแอพที่ไม่ได้เปิดนาน ๆ</div>
     </div>`;
   document.getElementById('apiUrlSave').onclick = () => {
     const val = document.getElementById('apiUrlInput').value.trim();
     if (val) {
       localStorage.setItem('portfolio_api_url', val);
       API_URL = val;
+      // ฝัง URL นี้ไว้ใน address bar ด้วย (?api=...) เพื่อให้ตอน Add to Home Screen
+      // icon ที่ได้จะจำ URL นี้ไว้ในตัวลิงก์เอง ทนต่อการที่ localStorage ถูกล้างได้
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.set('api', val);
+      history.replaceState(null, '', newUrl.toString());
       el.innerHTML = '';
       loadAll();
     }
@@ -658,6 +676,9 @@ function showSetupBanner(errorMsg) {
     document.getElementById('apiUrlInput').value = '';
     document.getElementById('apiUrlInput').focus();
     localStorage.removeItem('portfolio_api_url');
+    const clearedUrl = new URL(window.location.href);
+    clearedUrl.searchParams.delete('api');
+    history.replaceState(null, '', clearedUrl.toString());
   };
 }
 
