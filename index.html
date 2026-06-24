@@ -247,6 +247,18 @@
   .txn-right { text-align: right; }
   .txn-amount { font-family: var(--mono); font-weight: 600; font-size: 14px; }
   .txn-shares { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .txn-delete {
+    flex: 0 0 auto;
+    width: 30px; height: 30px;
+    border-radius: 8px; border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 15px;
+    cursor: pointer;
+    margin-left: 2px;
+  }
+  .txn-delete:active { background: var(--loss-soft); }
+  .txn-delete:disabled { opacity: 0.4; }
 
   .chart-card {
     background: var(--paper-raised);
@@ -593,7 +605,8 @@
 <script>
 // URL ของ Apps Script ที่ deploy ไว้ — ฝังเป็นค่าเริ่มต้น ไม่ต้องกรอกใหม่ทุกครั้ง
 // ถ้า deploy ใหม่แล้ว URL เปลี่ยน ให้กดปุ่ม ⚙︎ ในแอพเพื่อตั้งค่า URL ใหม่ (จะถูกจำไว้แทนตัวนี้)
-let API_URL = localStorage.getItem('portfolio_api_url') || 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
+let API_URL = localStorage.getItem('portfolio_api_url') || DEFAULT_API_URL;
 
 const state = {
   port: 'ALL',
@@ -624,7 +637,7 @@ function showSetupBanner(errorMsg) {
       (ลงท้ายด้วย <code>/exec</code>)
       <div class="url-input-row">
         <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${API_URL || ''}">
-        <button id="apiUrlClear" type="button" title="ลบลิงก์">✕</button>
+        <button id="apiUrlClear" type="button" title="ลบลิงก์ที่บันทึกไว้ และกลับไปใช้ค่าเริ่มต้น">✕</button>
       </div>
       <button id="apiUrlSave">บันทึกและเชื่อมต่อ</button>
     </div>`;
@@ -638,8 +651,11 @@ function showSetupBanner(errorMsg) {
     }
   };
   document.getElementById('apiUrlClear').onclick = () => {
-    document.getElementById('apiUrlInput').value = '';
-    document.getElementById('apiUrlInput').focus();
+    // ลบ URL ที่บันทึกไว้ใน localStorage ทั้งหมด แล้วกลับไปใช้ URL เริ่มต้นที่ฝังในไฟล์
+    // กันปัญหากรณีมี URL เก่า/ผิดค้างอยู่ใน localStorage ที่บัง URL เริ่มต้นไว้
+    localStorage.removeItem('portfolio_api_url');
+    API_URL = DEFAULT_API_URL;
+    document.getElementById('apiUrlInput').value = DEFAULT_API_URL;
   };
 }
 
@@ -995,8 +1011,35 @@ function renderTransactions() {
           <div class="txn-amount">$${fmt(t['รวม $'])}</div>
           <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
         </div>
+        <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้">🗑</button>
       </div>`;
   }).join('');
+
+  el.querySelectorAll('.txn-delete').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const row = btn.dataset.row;
+      const stock = btn.dataset.stock;
+      const confirmed = confirm(`ลบรายการ ${stock} นี้ออกจาก Sheet เลยไหม? การลบนี้ย้อนกลับไม่ได้`);
+      if (!confirmed) return;
+
+      btn.disabled = true;
+      btn.textContent = '...';
+      try {
+        const result = await apiPost({ endpoint: 'deleteTransaction', row: row, stock: stock });
+        if (result.success) {
+          loadAll();
+        } else {
+          alert(result.error || 'ลบไม่สำเร็จ');
+          btn.disabled = false;
+          btn.textContent = '🗑';
+        }
+      } catch (err) {
+        alert('เชื่อมต่อไม่สำเร็จ: ' + err.message);
+        btn.disabled = false;
+        btn.textContent = '🗑';
+      }
+    });
+  });
 }
 
 function populatePortSelect() {
