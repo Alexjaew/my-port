@@ -1382,12 +1382,15 @@ function renderTransactions() {
       : 'ไม่ระบุวันที่';
     const rowsHtml = g.items.map(t => {
       const isBuy = t['action'] === 'ซื้อ';
+      const shortDate = t['Date']
+        ? new Date(t['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+        : '';
       return `
         <div class="txn-row">
           <div class="txn-badge ${isBuy?'buy':'sell'}">${isBuy?'B':'S'}</div>
           <div class="txn-mid">
             <div class="txn-stock">${t['รายการ']}</div>
-            <div class="txn-date">${t['Port']}</div>
+            <div class="txn-date">${shortDate} · ${t['Port']}</div>
           </div>
           <div class="txn-right">
             <div class="txn-amount">$${fmt(t['รวม $'])}</div>
