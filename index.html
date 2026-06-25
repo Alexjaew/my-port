@@ -291,6 +291,22 @@
   .alloc-target-compare.ontarget { background: var(--gain-soft); color: var(--gain); }
   .alloc-target-compare.over { background: var(--loss-soft); color: var(--loss); }
   .alloc-target-compare.under { background: var(--line); color: var(--ink-soft); }
+
+  .alloc-sum-bar {
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 8px;
+    background: var(--paper-raised); border: 1px solid var(--line);
+    border-radius: 12px; padding: 10px 14px; margin-bottom: 10px;
+  }
+  .alloc-sum-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .alloc-sum-label b { color: var(--ink); }
+  .alloc-sum-status {
+    font-size: 11.5px; font-weight: 700; font-family: var(--mono);
+    padding: 3px 10px; border-radius: 100px;
+  }
+  .alloc-sum-status.ontarget { background: var(--gain-soft); color: var(--gain); }
+  .alloc-sum-status.over { background: var(--loss-soft); color: var(--loss); }
+  .alloc-sum-status.under { background: var(--accent-soft); color: var(--accent-text); }
   .dca-calc-suffix { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
   .dca-alloc-projection {
     margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--accent-border);
@@ -319,7 +335,7 @@
     flex: 1; min-width: 0;
     padding: 7px 10px;
     border-radius: 8px; border: 1px solid var(--accent-border);
-    font-size: 14px; font-family: var(--mono);
+    font-size: 16px; font-family: var(--mono);
     background: var(--paper-raised); color: var(--ink);
   }
   .dca-calc-input:focus, .alloc-target-input:focus { outline: none; border-color: var(--accent); }
@@ -574,7 +590,7 @@
   .setup-banner input {
     flex: 1; min-width: 0;
     padding: 9px 10px; border-radius: 8px;
-    border: 1px solid var(--accent-border); font-size: 13px;
+    border: 1px solid var(--accent-border); font-size: 16px;
     box-sizing: border-box;
     background: var(--paper-raised); color: var(--ink);
   }
@@ -660,6 +676,7 @@
         <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
       </div>
     </div>
+    <div id="allocTargetSumBar"></div>
     <div id="allocList">
       <div class="skel" style="height:64px;margin-bottom:8px;"></div>
       <div class="skel" style="height:64px;margin-bottom:8px;"></div>
@@ -1082,11 +1099,41 @@ function renderBarChart() {
   card.innerHTML = `<div class="bar-chart-wrap">${colsHtml}</div>`;
 }
 
+/**
+ * รวม % เป้าหมายที่ผู้ใช้ตั้งไว้ทุกตัว แล้วเทียบกับ 100% ของพอร์ตทั้งหมด
+ * แจ้งว่าเกินหรือขาดไปเท่าไหร่ ช่วยให้ตั้งเป้าหมายแต่ละตัวให้ครบพอดี 100% ได้
+ */
+function updateAllocTargetSumBar() {
+  const bar = document.getElementById('allocTargetSumBar');
+  if (!bar) return;
+  const targets = Object.values(state.allocTargets);
+  if (!targets.length) {
+    bar.innerHTML = '';
+    return;
+  }
+  const sum = targets.reduce((s, v) => s + (Number(v) || 0), 0);
+  const diff = sum - 100;
+  let statusHtml;
+  if (Math.abs(diff) < 0.05) {
+    statusHtml = `<span class="alloc-sum-status ontarget">✓ ครบ 100% พอดี</span>`;
+  } else if (diff > 0) {
+    statusHtml = `<span class="alloc-sum-status over">เกิน 100% ไป ${fmt(diff,1)}%</span>`;
+  } else {
+    statusHtml = `<span class="alloc-sum-status under">ขาดอีก ${fmt(Math.abs(diff),1)}% ถึง 100%</span>`;
+  }
+  bar.innerHTML = `
+    <div class="alloc-sum-bar">
+      <span class="alloc-sum-label">เป้าหมายรวมทั้งหมด: <b>${fmt(sum,1)}%</b></span>
+      ${statusHtml}
+    </div>`;
+}
+
 function renderAllocList() {
   const el = document.getElementById('allocList');
   const rows = getFilteredSummaryRows();
   if (!rows.length) {
     el.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
+    updateAllocTargetSumBar();
     return;
   }
   const basis = state.basis;
@@ -1156,6 +1203,8 @@ function renderAllocList() {
       </div>`;
   }).join('');
 
+  updateAllocTargetSumBar();
+
   // ผูก event ให้ input DCA คำนวณใหม่ทุกครั้งที่พิมพ์ (ไม่ reload ข้อมูลทั้งหน้า)
   el.querySelectorAll('.dca-calc-input').forEach(input => {
     input.addEventListener('input', (e) => {
@@ -1192,6 +1241,7 @@ function renderAllocList() {
         state.allocTargets[ticker] = Math.max(0, Math.min(100, Number(val)));
       }
       saveAllocTargets();
+      updateAllocTargetSumBar(); // อัปเดตยอดรวมทันทีที่พิมพ์ ไม่ต้องรอ re-render ทั้งหน้า
     });
   });
   el.querySelectorAll('.alloc-target-input').forEach(input => {
