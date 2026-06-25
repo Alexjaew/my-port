@@ -246,15 +246,44 @@
   .alloc-ticker-row { display: flex; align-items: baseline; gap: 8px; }
   .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
   .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
-  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: visible; position: relative; }
-  .alloc-bar-fill { height: 100%; border-radius: 4px; overflow: hidden; }
-  .alloc-bar-target-marker {
-    position: absolute; top: -3px; bottom: -3px;
-    width: 2px; background: var(--ink);
-    border-radius: 1px;
-  }
+
+  /* แบบไม่มีเป้าหมาย: แท่งสีตามหุ้น + ปุ่มตั้งเป้าหมาย */
+  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .alloc-bar-fill { height: 100%; border-radius: 4px; }
   .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
   .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+
+  /* แบบมีเป้าหมายแล้ว: สรุปแถบสีตามที่เหลือก่อนถึงเป้า (เขียว=เหลือเยอะ, แดง=เหลือน้อย/เกิน) */
+  .alloc-target-summary-text {
+    font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
+    margin-top: 6px;
+  }
+  .alloc-target-summary-text b { color: var(--ink); }
+  .alloc-room-bar-track {
+    height: 7px; background: var(--line); border-radius: 4px;
+    margin-top: 5px; overflow: hidden;
+  }
+  .alloc-room-bar-fill { height: 100%; border-radius: 4px; transition: width .2s ease; }
+  .alloc-target-footer-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 4px; gap: 8px;
+  }
+  .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); }
+  .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; }
+
+  .alloc-target-add-btn, .alloc-target-edit-btn, .alloc-target-save-btn {
+    font-size: 10.5px; font-weight: 700;
+    color: var(--accent-text); background: var(--accent-soft);
+    border: 1px solid var(--accent-border); border-radius: 100px;
+    padding: 2px 9px; cursor: pointer; white-space: nowrap;
+  }
+  .alloc-target-save-btn { padding: 7px 12px; font-size: 13px; flex: 0 0 auto; }
+
+  .alloc-target-input-row {
+    display: flex; align-items: center; gap: 6px;
+    margin-top: 8px;
+  }
+
   .alloc-target-compare {
     font-size: 10.5px; font-weight: 700; font-family: var(--mono);
     padding: 1px 7px; border-radius: 100px;
@@ -263,6 +292,11 @@
   .alloc-target-compare.over { background: var(--loss-soft); color: var(--loss); }
   .alloc-target-compare.under { background: var(--line); color: var(--ink-soft); }
   .dca-calc-suffix { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
+  .dca-alloc-projection {
+    margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--accent-border);
+    font-size: 12px; color: var(--ink-soft); font-family: var(--mono);
+  }
+  .dca-alloc-projection b { color: var(--ink); }
   .alloc-right { text-align: right; flex: 0 0 auto; }
   .alloc-value { font-family: var(--mono); font-size: 14px; font-weight: 600; }
   .alloc-gain { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
@@ -281,14 +315,14 @@
   .dca-calc-label {
     font-size: 12px; font-weight: 600; color: var(--accent-text); white-space: nowrap;
   }
-  .dca-calc-input {
+  .dca-calc-input, .alloc-target-input {
     flex: 1; min-width: 0;
     padding: 7px 10px;
     border-radius: 8px; border: 1px solid var(--accent-border);
     font-size: 14px; font-family: var(--mono);
     background: var(--paper-raised); color: var(--ink);
   }
-  .dca-calc-input:focus { outline: none; border-color: var(--accent); }
+  .dca-calc-input:focus, .alloc-target-input:focus { outline: none; border-color: var(--accent); }
   .dca-calc-result {
     font-size: 12px; margin-top: 7px; color: var(--ink-soft); font-family: var(--mono);
   }
@@ -1070,6 +1104,7 @@ function renderAllocList() {
     const currentPrice = Number(r['price']) || 0;
     const inputVal = state.dcaInputs[ticker] || '';
     const targetVal = state.allocTargets[ticker];
+    const hasTarget = targetVal !== undefined;
 
     return `
       <div class="alloc-row-wrap">
@@ -1084,13 +1119,26 @@ function renderAllocList() {
               <div class="alloc-ticker">${ticker}</div>
               <div class="alloc-current-price">$${fmt(currentPrice)}</div>
             </div>
-            <div class="alloc-bar-track">
-              <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
-              ${targetVal !== undefined ? `<div class="alloc-bar-target-marker" style="left:${Math.min(100,targetVal).toFixed(1)}%"></div>` : ''}
+
+            <div class="alloc-target-summary" style="display:${hasTarget ? 'block' : 'none'};">
+              ${hasTarget ? renderTargetRoomBarHtml(pct, targetVal, ticker) : ''}
             </div>
-            <div class="alloc-pct-row">
-              <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
-              ${renderTargetCompareHtml(pct, targetVal)}
+
+            <div class="alloc-no-target" style="display:${hasTarget ? 'none' : 'block'};">
+              <div class="alloc-bar-track">
+                <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
+              </div>
+              <div class="alloc-pct-row">
+                <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
+                <button class="alloc-target-add-btn" data-ticker="${ticker}">+ ตั้งเป้าหมาย</button>
+              </div>
+            </div>
+
+            <div class="alloc-target-input-row" id="targetInputRow-${ticker}" style="display:none;">
+              <span class="dca-calc-label">เป้าหมายสัดส่วน</span>
+              <input type="number" class="alloc-target-input" data-ticker="${ticker}" placeholder="เช่น 20" inputmode="decimal" min="0" max="100" value="${hasTarget ? targetVal : ''}">
+              <span class="dca-calc-suffix">%</span>
+              <button class="alloc-target-save-btn" data-ticker="${ticker}">✓</button>
             </div>
           </div>
           <div class="alloc-right">
@@ -1100,32 +1148,40 @@ function renderAllocList() {
         </div>
         <div class="dca-calc">
           <div class="dca-calc-input-row">
-            <span class="dca-calc-label">เป้าหมายสัดส่วน</span>
-            <input type="number" class="dca-calc-input alloc-target-input" data-ticker="${ticker}" placeholder="ไม่จำกัด" inputmode="decimal" min="0" max="100" value="${targetVal !== undefined ? targetVal : ''}">
-            <span class="dca-calc-suffix">%</span>
-          </div>
-          <div class="dca-calc-input-row">
             <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
             <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
           </div>
-          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal)}</div>
+          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal, total)}</div>
         </div>
       </div>`;
   }).join('');
 
-  // ผูก event ให้ input คำนวณใหม่ทุกครั้งที่พิมพ์ (ไม่ reload ข้อมูลทั้งหน้า)
-  el.querySelectorAll('.dca-calc-input:not(.alloc-target-input)').forEach(input => {
+  // ผูก event ให้ input DCA คำนวณใหม่ทุกครั้งที่พิมพ์ (ไม่ reload ข้อมูลทั้งหน้า)
+  el.querySelectorAll('.dca-calc-input').forEach(input => {
     input.addEventListener('input', (e) => {
       const ticker = e.target.dataset.ticker;
       const val = e.target.value;
       state.dcaInputs[ticker] = val;
       const row = sorted.find(r => r['หุ้น'] === ticker);
       const resultEl = document.getElementById(`dcaResult-${ticker}`);
-      if (resultEl && row) resultEl.innerHTML = renderDcaResultHtml(row, val);
+      if (resultEl && row) resultEl.innerHTML = renderDcaResultHtml(row, val, total);
     });
   });
 
-  // ผูก event สำหรับช่องเป้าหมายสัดส่วน — บันทึกลง localStorage แล้ว re-render ทันทีเพื่ออัปเดต marker/เปรียบเทียบ
+  // เปิดช่องกรอกเป้าหมาย (ทั้งกรณีตั้งใหม่ และกรณีแก้ไขของเดิม)
+  el.querySelectorAll('.alloc-target-add-btn, .alloc-target-edit-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ticker = btn.dataset.ticker;
+      const inputRow = document.getElementById(`targetInputRow-${ticker}`);
+      if (inputRow) {
+        inputRow.style.display = 'flex';
+        const input = inputRow.querySelector('.alloc-target-input');
+        if (input) { input.focus(); input.select(); }
+      }
+    });
+  });
+
+  // บันทึกค่าเป้าหมายลง localStorage ทุกครั้งที่พิมพ์ แล้วซ่อนช่องกรอกกลับเป็นแถบสีตอนกดบันทึก/ออกจากช่อง
   el.querySelectorAll('.alloc-target-input').forEach(input => {
     input.addEventListener('input', (e) => {
       const ticker = e.target.dataset.ticker;
@@ -1137,8 +1193,46 @@ function renderAllocList() {
       }
       saveAllocTargets();
     });
+  });
+  el.querySelectorAll('.alloc-target-input').forEach(input => {
     input.addEventListener('blur', () => renderAllocList());
   });
+  el.querySelectorAll('.alloc-target-save-btn').forEach(btn => {
+    btn.addEventListener('click', () => renderAllocList());
+  });
+}
+
+/**
+ * คำนวณสีของแถบ "ที่ว่างเหลือก่อนถึงเป้าหมาย" — เหลือเยอะ = เขียว, เหลือน้อย/เกินแล้ว = เหลือง→แดง
+ * ใช้อัตราส่วน สัดส่วนปัจจุบัน/เป้าหมาย เป็นตัวกำหนด: ยิ่งใกล้หรือเกิน 1 ยิ่งแดง
+ */
+function getRoomColor(ratio) {
+  const clamped = Math.min(Math.max(ratio, 0), 1);
+  const hue = 140 * (1 - clamped); // 140=เขียว ไล่ไปจนถึง 0=แดง ผ่านเหลือง/ส้มตรงกลาง
+  return `hsl(${hue}, 65%, 45%)`;
+}
+
+/**
+ * แสดงแถบสีสรุปสัดส่วนเทียบกับเป้าหมายที่ตั้งไว้ พร้อมปุ่มแก้ไข
+ */
+function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
+  const ratio = targetPct > 0 ? actualPct / targetPct : 0;
+  const barWidth = Math.min(ratio, 1) * 100;
+  const overTarget = ratio > 1;
+  const color = overTarget ? '#D9483B' : getRoomColor(ratio);
+
+  return `
+    <div class="alloc-target-summary-text">
+      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>
+    </div>
+    <div class="alloc-room-bar-track">
+      <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
+    </div>
+    <div class="alloc-target-footer-row">
+      ${overTarget ? `<span class="alloc-target-over-label">⚠ เกินเป้าหมายแล้ว</span>` : `<span class="alloc-target-room-label">เหลือที่ลงทุนได้อีก ${fmt(Math.max(0,targetPct-actualPct),2)}%</span>`}
+      <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ แก้ไข</button>
+    </div>
+  `;
 }
 
 /**
@@ -1160,18 +1254,22 @@ function renderTargetCompareHtml(actualPct, targetPct) {
  * คำนวณ DCA แบบ what-if: ถ้าลงเงินเพิ่ม $amount ที่ราคาตลาดปัจจุบัน
  * ค่าเฉลี่ยต้นทุนใหม่จะเป็นเท่าไหร่ และลดลงจากเดิมกี่ %
  * อ้างอิงสูตรเดียวกับ Sheet "My stocks": (เงินลงทุนเดิม + เงินใหม่) / (หุ้นเดิม + หุ้นใหม่)
+ * พร้อมแสดงสัดส่วน % ของพอร์ตที่จะเปลี่ยนไป ถ้าลงเงินจำนวนนี้เพิ่มจริง (สมมติเป็นเงินใหม่ที่เติมเข้าพอร์ต)
  */
-function renderDcaResultHtml(row, amountStr) {
+function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
   const currentPrice = Number(row['price']) || 0;
   const currentShares = Number(row['จำนวนหุ้น']) || 0;
   // ราคาที่ได้ (ต้นทุนเฉลี่ยปัจจุบัน) ใช้ค่าเดียวกับคอลัมน์ "ราคาที่ได้" ใน Sheet "My stocks"
   // ซึ่งตรงกับ "ราคา FIFO" ใน Summary ไม่ใช่ "ราคา AVG"
   const currentAvgCost = Number(row['ราคา FIFO']) || 0;
+  const currentValue = Number(row['มูลค่าปัจจุบัน']) || 0;
+  const ticker = row['หุ้น'];
+  const targetVal = state.allocTargets[ticker];
   const currentLine = `<div class="dca-current">ราคาที่ได้ปัจจุบัน: <b>$${fmt(currentAvgCost)}</b></div>`;
 
   const amount = Number(amountStr);
   if (!amountStr || isNaN(amount) || amount <= 0) {
-    return `${currentLine}<span class="dca-calc-hint">พิมพ์จำนวนเงินเพื่อดูค่าเฉลี่ยต้นทุนใหม่</span>`;
+    return `${currentLine}<span class="dca-calc-hint">พิมพ์จำนวนเงินเพื่อดูค่าเฉลี่ยต้นทุนและสัดส่วนใหม่</span>`;
   }
   if (currentPrice <= 0) {
     return `${currentLine}<span class="dca-calc-hint">ไม่มีราคาปัจจุบันสำหรับคำนวณ</span>`;
@@ -1183,12 +1281,27 @@ function renderDcaResultHtml(row, amountStr) {
   const diffPct = currentAvgCost ? diff / currentAvgCost : 0;
   const isDrop = diff > 0;
 
+  // สัดส่วนใหม่ ถ้าเงินจำนวนนี้เป็นเงินใหม่ที่เติมเข้าพอร์ตทั้งหมด (ไม่ใช่ย้ายจากหุ้นอื่น)
+  let allocLine = '';
+  if (totalPortfolioValue) {
+    const currentPct = (currentValue / totalPortfolioValue) * 100;
+    const newValue = currentValue + amount;
+    const newTotal = totalPortfolioValue + amount;
+    const newPct = (newValue / newTotal) * 100;
+    allocLine = `
+      <div class="dca-alloc-projection">
+        สัดส่วนใหม่: <b>${fmt(newPct,2)}%</b> (จาก ${fmt(currentPct,2)}%)
+        ${targetVal !== undefined ? renderTargetCompareHtml(newPct, targetVal) : ''}
+      </div>`;
+  }
+
   return `
     ${currentLine}
     ต้นทุนเฉลี่ยใหม่: <b>$${fmt(newAvgCost)}</b>
     <span class="dca-calc-drop ${isDrop?'down':'up'}">
       ${isDrop ? '↓ ลดลง' : '↑ เพิ่มขึ้น'} $${fmt(Math.abs(diff))} (${fmtPct(Math.abs(diffPct))})
     </span>
+    ${allocLine}
   `;
 }
 
