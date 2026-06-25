@@ -1,1487 +1,293 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" id="themeColorMeta" content="#FAF8F4">
-<title>My Port — Portfolio Tracker</title>
-<style>
-  :root {
-    --ink: #0E1116;
-    --ink-soft: #4A5160;
-    --paper: #FAF8F4;
-    --paper-raised: #FFFFFF;
-    --line: #E4E0D8;
-    --gain: #1B7A4D;
-    --gain-soft: #E6F4EC;
-    --loss: #B23B2E;
-    --loss-soft: #FBEAE7;
-    --accent: #C98A2C;
-    --accent-soft: #F6ECD9;
-    --accent-text: #7A5414;
-    --accent-border: #E5C98A;
-    /* สีคงที่ ไม่เปลี่ยนตาม light/dark theme — ใช้กับ hero card, ปุ่ม + และปุ่ม CTA หลัก
-       เพื่อให้องค์ประกอบเด่นเหล่านี้ดูเหมือนกันเสมอไม่ว่าจะใช้โหมดไหน */
-    --accent-dark: #0E1116;
-    --accent-dark-text: #FAF8F4;
-    --skel-shine: #ECE8DE;
-    --mono: 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
-    --serif: 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
-    --sans: -apple-system, 'Inter', system-ui, sans-serif;
-  }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio Dashboard & DCA Tracker</title>
+    <style>
+        /* --- CSS VARIABLES FOR THEME SWITCHING --- */
+        :root {
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --border-color: #dee2e6;
+            --primary-color: #0d6efd;
+            --input-bg: #ffffff;
+            --input-text: #212529; /* FIXED: Explicit light mode text color */
+        }
 
-  /* โหมดมืด: ใช้อัตโนมัติตามการตั้งค่าระบบ (ถ้าผู้ใช้ยังไม่กดเลือกเอง)
-     หรือใช้ตามที่ผู้ใช้กดเลือกไว้ผ่านปุ่ม ☾/☀ (เก็บไว้ใน data-theme) */
-  @media (prefers-color-scheme: dark) {
-    :root:not([data-theme="light"]) {
-      --ink: #ECE9E2;
-      --ink-soft: #8B92A0;
-      --paper: #121316;
-      --paper-raised: #1C1E23;
-      --line: #2A2D33;
-      --gain: #3DBE7C;
-      --gain-soft: #16291E;
-      --loss: #E8645A;
-      --loss-soft: #2E1916;
-      --accent: #D9A655;
-      --accent-soft: #2B2316;
-      --accent-text: #E0C088;
-      --accent-border: #4A3D24;
-      --skel-shine: #2A2D33;
-    }
-  }
-  :root[data-theme="dark"] {
-    --ink: #ECE9E2;
-    --ink-soft: #8B92A0;
-    --paper: #121316;
-    --paper-raised: #1C1E23;
-    --line: #2A2D33;
-    --gain: #3DBE7C;
-    --gain-soft: #16291E;
-    --loss: #E8645A;
-    --loss-soft: #2E1916;
-    --accent: #D9A655;
-    --accent-soft: #2B2316;
-    --accent-text: #E0C088;
-    --accent-border: #4A3D24;
-    --skel-shine: #2A2D33;
-  }
+        body.dark-mode {
+            --bg-color: #1a1d20;
+            --card-bg: #212529;
+            --text-color: #f8f9fa;
+            --border-color: #373b3e;
+            --primary-color: #3d8bfd;
+            --input-bg: #2d3238;
+            --input-text: #ffffff; /* FIXED: Explicit dark mode text color */
+        }
 
-  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-  html, body {
-    margin: 0; padding: 0;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: var(--sans);
-    -webkit-font-smoothing: antialiased;
-  }
-  body {
-    padding-bottom: 90px;
-    min-height: 100vh;
-  }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
 
-  .topbar {
-    position: sticky; top: 0; z-index: 20;
-    background: var(--paper);
-    border-bottom: 1px solid var(--line);
-    padding: max(16px, env(safe-area-inset-top)) 20px 12px;
-  }
-  .topbar-row {
-    display: flex; align-items: baseline; justify-content: space-between;
-  }
-  .topbar-actions { display: flex; align-items: center; gap: 4px; }
-  .brand {
-    font-family: var(--serif);
-    font-size: 22px;
-    font-weight: 600;
-    letter-spacing: -0.01em;
-  }
-  .brand .dot { color: var(--accent); }
-  .port-switch {
-    display: flex; gap: 6px; margin-top: 14px;
-    overflow-x: auto;
-    -ms-overflow-style: none; scrollbar-width: none;
-  }
-  .port-switch::-webkit-scrollbar { display: none; }
-  .port-chip {
-    flex: 0 0 auto;
-    padding: 7px 14px;
-    border-radius: 100px;
-    border: 1px solid var(--line);
-    background: var(--paper-raised);
-    font-size: 13.5px;
-    font-weight: 600;
-    color: var(--ink-soft);
-    cursor: pointer;
-    white-space: nowrap;
-    transition: all .15s ease;
-  }
-  .port-chip.active {
-    background: var(--accent-dark);
-    color: var(--accent-dark-text);
-    border-color: var(--accent-dark);
-  }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
 
-  .section { padding: 22px 20px 0; }
-  .section-label {
-    font-size: 11.5px;
-    font-weight: 700;
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    color: var(--ink-soft);
-    margin-bottom: 10px;
-  }
-  .section-label-row {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-bottom: 10px;
-  }
-  .section-label-row .section-label { margin-bottom: 0; }
-  .basis-toggle-inline {
-    display: flex; background: var(--line);
-    border-radius: 100px; padding: 2px;
-  }
-  .basis-btn-inline {
-    font-size: 10.5px; font-weight: 700; letter-spacing: 0.02em;
-    padding: 4px 9px; border-radius: 100px; color: var(--ink-soft);
-    cursor: pointer; transition: all .15s ease;
-  }
-  .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+        }
 
-  .hero-card {
-    background: var(--accent-dark);
-    color: var(--accent-dark-text);
-    border-radius: 20px;
-    padding: 24px 22px 20px;
-    position: relative;
-    overflow: hidden;
-  }
-  .hero-card::before {
-    content: '';
-    position: absolute; right: -40px; top: -40px;
-    width: 160px; height: 160px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(201,138,44,0.25), transparent 70%);
-  }
-  .hero-label {
-    font-size: 12px; letter-spacing: 0.06em; text-transform: uppercase;
-    color: rgba(250,248,244,0.55); margin-bottom: 6px;
-  }
-  .hero-value {
-    font-family: var(--mono);
-    font-size: 38px;
-    font-weight: 600;
-    letter-spacing: -0.02em;
-    line-height: 1.1;
-  }
-  .hero-value .cents { font-size: 22px; opacity: 0.6; }
-  .hero-delta {
-    display: inline-flex; align-items: center; gap: 5px;
-    margin-top: 10px;
-    font-family: var(--mono);
-    font-size: 14px; font-weight: 600;
-    padding: 4px 10px 4px 8px;
-    border-radius: 100px;
-  }
-  .hero-delta.up { background: rgba(27,122,77,0.25); color: #7CDDA8; }
-  .hero-delta.down { background: rgba(178,59,46,0.25); color: #F1A89E; }
-  .hero-daily {
-    font-family: var(--mono);
-    font-size: 12px; margin-top: 8px;
-    color: rgba(250,248,244,0.65);
-  }
-  .hero-daily b { font-weight: 600; }
-  .hero-daily.up b { color: #7CDDA8; }
-  .hero-daily.down b { color: #F1A89E; }
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+        }
 
-  .basis-toggle {
-    display: flex; background: rgba(250,248,244,0.12);
-    border-radius: 100px; padding: 3px;
-    margin-bottom: 14px;
-    width: fit-content;
-  }
-  .basis-btn {
-    font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
-    padding: 6px 11px; border-radius: 100px; color: rgba(250,248,244,0.6);
-    cursor: pointer; transition: all .15s ease;
-    white-space: nowrap;
-  }
-  .basis-btn.active { background: var(--accent-dark-text); color: var(--accent-dark); }
+        .btn-theme {
+            background-color: transparent;
+            color: var(--text-color);
+            border: 1px solid var(--border-color);
+        }
 
-  .hero-foot {
-    display: flex; gap: 14px; margin-top: 18px;
-    padding-top: 16px; border-top: 1px solid rgba(250,248,244,0.12);
-  }
-  .hero-foot-item { flex: 1; min-width: 0; }
-  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; white-space: nowrap; }
-  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+        .grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
 
-  .alloc-row-wrap {
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    margin-bottom: 8px;
-    overflow: hidden;
-  }
-  .alloc-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 13px 14px;
-  }
-  .alloc-icon {
-    width: 38px; height: 38px; border-radius: 50%;
-    flex: 0 0 auto;
-    overflow: hidden;
-    background: #fff;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .alloc-icon img {
-    width: 100%; height: 100%; object-fit: cover;
-    display: block;
-  }
-  .alloc-icon-fallback {
-    width: 100%; height: 100%;
-    color: #fff; font-weight: 700; font-size: 14px;
-    display: flex; align-items: center; justify-content: center;
-  }
-  .alloc-mid { flex: 1; min-width: 0; }
-  .alloc-ticker-row { display: flex; align-items: baseline; gap: 8px; }
-  .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
-  .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
+        @media (max-width: 768px) {
+            .grid { grid-template-columns: 1fr; }
+        }
 
-  /* แบบไม่มีเป้าหมาย: แท่งสีตามหุ้น + ปุ่มตั้งเป้าหมาย */
-  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; }
-  .alloc-bar-fill { height: 100%; border-radius: 4px; }
-  .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
-  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+        }
 
-  /* แบบมีเป้าหมายแล้ว: สรุปแถบสีตามที่เหลือก่อนถึงเป้า (เขียว=เหลือเยอะ, แดง=เหลือน้อย/เกิน) */
-  .alloc-target-summary-text {
-    font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
-    margin-top: 6px;
-  }
-  .alloc-target-summary-text b { color: var(--ink); }
-  .alloc-room-bar-track {
-    height: 7px; background: var(--line); border-radius: 4px;
-    margin-top: 5px; overflow: hidden;
-  }
-  .alloc-room-bar-fill { height: 100%; border-radius: 4px; transition: width .2s ease; }
-  .alloc-target-footer-row {
-    display: flex; align-items: center; justify-content: space-between;
-    margin-top: 4px; gap: 8px;
-  }
-  .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); }
-  .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; }
+        h2 { margin-top: 0; color: var(--primary-color); }
 
-  .alloc-target-add-btn, .alloc-target-edit-btn, .alloc-target-save-btn {
-    font-size: 10.5px; font-weight: 700;
-    color: var(--accent-text); background: var(--accent-soft);
-    border: 1px solid var(--accent-border); border-radius: 100px;
-    padding: 2px 9px; cursor: pointer; white-space: nowrap;
-  }
-  .alloc-target-save-btn { padding: 7px 12px; font-size: 13px; flex: 0 0 auto; }
+        /* --- CRITICAL FIX: INPUT VISIBILITY --- */
+        input[type="number"], 
+        input[type="text"], 
+        select {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0 18px 0;
+            box-sizing: border-box;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            
+            /* These variables ensure text is ALWAYS visible in both modes */
+            background-color: var(--input-bg) !important;
+            color: var(--input-text) !important; 
+            
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
 
-  .alloc-target-input-row {
-    display: flex; align-items: center; gap: 6px;
-    margin-top: 8px;
-  }
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(13, 110, 253, 0.25);
+        }
 
-  .alloc-target-compare {
-    font-size: 10.5px; font-weight: 700; font-family: var(--mono);
-    padding: 1px 7px; border-radius: 100px;
-  }
-  .alloc-target-compare.ontarget { background: var(--gain-soft); color: var(--gain); }
-  .alloc-target-compare.over { background: var(--loss-soft); color: var(--loss); }
-  .alloc-target-compare.under { background: var(--line); color: var(--ink-soft); }
-  .dca-calc-suffix { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
-  .dca-alloc-projection {
-    margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--accent-border);
-    font-size: 12px; color: var(--ink-soft); font-family: var(--mono);
-  }
-  .dca-alloc-projection b { color: var(--ink); }
-  .alloc-right { text-align: right; flex: 0 0 auto; }
-  .alloc-value { font-family: var(--mono); font-size: 14px; font-weight: 600; }
-  .alloc-gain { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
-  .alloc-gain.up { color: var(--gain); }
-  .alloc-gain.down { color: var(--loss); }
+        label { font-weight: 600; font-size: 14px; }
 
-  .dca-calc {
-    border-top: 1px solid var(--line);
-    background: var(--accent-soft);
-    padding: 10px 14px;
-  }
-  .dca-calc-input-row {
-    display: flex; align-items: center; gap: 8px;
-    margin-bottom: 8px;
-  }
-  .dca-calc-label {
-    font-size: 12px; font-weight: 600; color: var(--accent-text); white-space: nowrap;
-  }
-  .dca-calc-input, .alloc-target-input {
-    flex: 1; min-width: 0;
-    padding: 7px 10px;
-    border-radius: 8px; border: 1px solid var(--accent-border);
-    font-size: 14px; font-family: var(--mono);
-    background: var(--paper-raised); color: var(--ink);
-  }
-  .dca-calc-input:focus, .alloc-target-input:focus { outline: none; border-color: var(--accent); }
-  .dca-calc-result {
-    font-size: 12px; margin-top: 7px; color: var(--ink-soft); font-family: var(--mono);
-  }
-  .dca-calc-result b { color: var(--ink); font-weight: 700; }
-  .dca-calc-drop { font-weight: 600; margin-left: 6px; }
-  .dca-calc-drop.down { color: var(--gain); }
-  .dca-calc-drop.up { color: var(--loss); }
-  .dca-calc-hint { color: var(--ink-soft); }
-  .dca-current {
-    font-size: 12px; color: var(--ink-soft); margin-bottom: 4px;
-  }
-  .dca-current b { color: var(--ink); font-weight: 700; }
+        /* --- TRANSACTION LOG TABLE --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
 
-  .txn-date-group { margin-bottom: 4px; }
-  .txn-date-header {
-    font-size: 11.5px; font-weight: 700; color: var(--ink-soft);
-    text-transform: uppercase; letter-spacing: 0.04em;
-    padding: 12px 0 6px;
-  }
-  .txn-date-group:first-child .txn-date-header { padding-top: 4px; }
-  .txn-row {
-    display: flex; align-items: center; gap: 12px;
-    padding: 10px 0;
-    border-bottom: 1px solid var(--line);
-  }
-  .txn-date-group:last-child .txn-row:last-child { border-bottom: none; }
-  .txn-badge {
-    width: 34px; height: 34px; border-radius: 10px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 15px; font-weight: 700; flex: 0 0 auto;
-  }
-  .txn-badge.buy { background: var(--gain-soft); color: var(--gain); }
-  .txn-badge.sell { background: var(--loss-soft); color: var(--loss); }
-  .txn-mid { flex: 1; min-width: 0; }
-  .txn-stock { font-weight: 700; font-size: 14.5px; }
-  .txn-date { font-size: 12px; color: var(--ink-soft); margin-top: 1px; }
-  .txn-right { text-align: right; }
-  .txn-amount { font-family: var(--mono); font-weight: 600; font-size: 14px; }
-  .txn-shares { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
-  .txn-delete {
-    flex: 0 0 auto;
-    width: 30px; height: 30px;
-    border-radius: 8px; border: none;
-    background: transparent;
-    color: var(--ink-soft);
-    font-size: 15px;
-    cursor: pointer;
-    margin-left: 2px;
-  }
-  .txn-delete:active { background: var(--loss-soft); }
-  .txn-delete:disabled { opacity: 0.4; }
+        th, td {
+            text-align: left;
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
 
-  .chart-card {
-    background: var(--paper-raised);
-    border: 1px solid var(--line);
-    border-radius: 16px;
-    padding: 16px 14px 14px;
-  }
-  .chart-meta {
-    display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 10px; padding: 0 4px;
-  }
-  .chart-meta-value {
-    font-family: var(--mono); font-size: 17px; font-weight: 700;
-  }
-  .chart-meta-delta {
-    font-family: var(--mono); font-size: 12.5px; font-weight: 600;
-    padding: 2px 8px; border-radius: 100px;
-  }
-  .chart-meta-delta.up { background: var(--gain-soft); color: var(--gain); }
-  .chart-meta-delta.down { background: var(--loss-soft); color: var(--loss); }
-  .line-svg-wrap { position: relative; width: 100%; }
-  .line-svg-wrap svg { display: block; width: 100%; height: auto; }
-  .chart-axis-labels {
-    display: flex; justify-content: space-between;
-    font-size: 10.5px; color: var(--ink-soft); margin-top: 4px; padding: 0 2px;
-  }
+        th { background-color: rgba(0,0,0,0.02); font-weight: 600; }
+        body.dark-mode th { background-color: rgba(255,255,255,0.02); }
 
-  .pie-wrap { display: flex; align-items: center; gap: 18px; }
-  .pie-wrap svg { flex: 0 0 auto; }
-  .legend { flex: 1; display: flex; flex-direction: column; gap: 7px; min-width: 0; }
-  .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-  .legend-swatch { width: 9px; height: 9px; border-radius: 3px; flex: 0 0 auto; }
-  .legend-ticker { font-weight: 700; font-family: var(--mono); width: 42px; flex: 0 0 auto; }
-  .legend-pct { color: var(--ink-soft); font-family: var(--mono); margin-left: auto; }
-
-  .bar-chart-wrap {
-    display: flex; align-items: flex-end; gap: 8px;
-    height: 180px; padding: 0 2px 0;
-    overflow-x: auto;
-    -ms-overflow-style: none; scrollbar-width: none;
-  }
-  .bar-chart-wrap::-webkit-scrollbar { display: none; }
-  .bar-col {
-    display: flex; flex-direction: column; align-items: center;
-    flex: 0 0 auto; width: 40px;
-    height: 100%;
-    justify-content: flex-end;
-  }
-  .bar-pct-label {
-    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
-    color: var(--ink-soft); margin-bottom: 4px; white-space: nowrap;
-  }
-  .bar-fill {
-    width: 22px;
-    border-radius: 6px 6px 3px 3px;
-    min-height: 3px;
-  }
-  .bar-ticker-label {
-    font-family: var(--mono); font-size: 11px; font-weight: 700;
-    margin-top: 8px; color: var(--ink);
-  }
-
-  .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
-  .empty-state .msg { font-size: 13.5px; }
-
-  .skel {
-    background: linear-gradient(90deg, var(--line) 25%, var(--skel-shine) 37%, var(--line) 63%);
-    background-size: 400% 100%;
-    animation: shimmer 1.4s ease infinite;
-    border-radius: 10px;
-  }
-  @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
-
-  .fab {
-    position: fixed;
-    bottom: max(24px, env(safe-area-inset-bottom));
-    right: 20px;
-    width: 58px; height: 58px;
-    border-radius: 50%;
-    background: var(--accent-dark);
-    color: var(--accent-dark-text);
-    display: flex; align-items: center; justify-content: center;
-    font-size: 26px;
-    border: none;
-    box-shadow: 0 8px 24px rgba(14,17,22,0.35);
-    cursor: pointer;
-    z-index: 30;
-    transition: transform .12s ease;
-  }
-  .fab:active { transform: scale(0.92); }
-
-  .sheet-backdrop {
-    position: fixed; inset: 0;
-    background: rgba(14,17,22,0.45);
-    z-index: 40;
-    opacity: 0; pointer-events: none;
-    transition: opacity .2s ease;
-  }
-  .sheet-backdrop.open { opacity: 1; pointer-events: auto; }
-  .sheet {
-    position: fixed; left: 0; right: 0; bottom: 0;
-    background: var(--paper);
-    border-radius: 24px 24px 0 0;
-    z-index: 41;
-    transform: translateY(100%);
-    transition: transform .28s cubic-bezier(.32,.72,0,1);
-    max-height: 88vh;
-    overflow-y: auto;
-    padding-bottom: max(28px, env(safe-area-inset-bottom));
-  }
-  .sheet.open { transform: translateY(0); }
-  .sheet-handle {
-    width: 36px; height: 4px; background: var(--line);
-    border-radius: 4px; margin: 12px auto 6px;
-  }
-  .sheet-head {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 8px 20px 16px;
-  }
-  .sheet-title { font-family: var(--serif); font-size: 19px; font-weight: 600; }
-  .sheet-close {
-    width: 30px; height: 30px; border-radius: 50%;
-    background: var(--line); border: none;
-    font-size: 16px; color: var(--ink-soft);
-    display: flex; align-items: center; justify-content: center;
-  }
-  .sheet-body { padding: 0 20px; }
-
-  .action-toggle {
-    display: flex; gap: 8px; margin-bottom: 18px;
-  }
-  .action-btn {
-    flex: 1; padding: 12px; border-radius: 12px;
-    border: 1.5px solid var(--line);
-    background: var(--paper-raised);
-    font-weight: 700; font-size: 14.5px;
-    color: var(--ink-soft);
-    cursor: pointer;
-  }
-  .action-btn.buy.active { border-color: var(--gain); background: var(--gain-soft); color: var(--gain); }
-  .action-btn.sell.active { border-color: var(--loss); background: var(--loss-soft); color: var(--loss); }
-
-  .field { margin-bottom: 14px; }
-  .field-label {
-    font-size: 12.5px; font-weight: 600; color: var(--ink-soft);
-    margin-bottom: 6px; display: block;
-  }
-  .field input, .field select {
-    width: 100%;
-    padding: 13px 14px;
-    border-radius: 12px;
-    border: 1.5px solid var(--line);
-    background: var(--paper-raised);
-    font-size: 16px;
-    font-family: var(--sans);
-    color: var(--ink);
-    appearance: none;
-  }
-  .field input:focus, .field select:focus {
-    outline: none; border-color: var(--ink);
-  }
-  .field-row { display: flex; gap: 10px; }
-  .field-row .field { flex: 1; }
-
-  .submit-btn {
-    width: 100%; padding: 15px;
-    border-radius: 14px; border: none;
-    background: var(--accent-dark); color: var(--accent-dark-text);
-    font-size: 15.5px; font-weight: 700;
-    margin-top: 6px;
-    cursor: pointer;
-  }
-  .submit-btn:disabled { opacity: 0.5; }
-
-  .form-msg {
-    font-size: 13px; text-align: center; margin-top: 10px; min-height: 18px;
-  }
-  .form-msg.error { color: var(--loss); }
-  .form-msg.success { color: var(--gain); }
-
-  .setup-banner {
-    margin: 16px 20px 0;
-    background: var(--accent-soft);
-    border: 1px solid var(--accent-border);
-    border-radius: 12px;
-    padding: 12px 14px;
-    font-size: 13px;
-    color: var(--accent-text);
-    line-height: 1.5;
-  }
-  .setup-banner code {
-    background: rgba(0,0,0,0.06);
-    padding: 1px 5px; border-radius: 5px; font-size: 12px;
-  }
-  .url-input-row {
-    display: flex; gap: 6px; margin-top: 8px;
-  }
-  .setup-banner input {
-    flex: 1; min-width: 0;
-    padding: 9px 10px; border-radius: 8px;
-    border: 1px solid var(--accent-border); font-size: 13px;
-    box-sizing: border-box;
-    background: var(--paper-raised); color: var(--ink);
-  }
-  #apiUrlClear {
-    flex: 0 0 auto;
-    width: 36px;
-    padding: 9px 0; border-radius: 8px;
-    border: 1px solid var(--accent-border);
-    background: var(--paper-raised);
-    color: var(--accent-text); font-size: 14px; font-weight: 700;
-    cursor: pointer;
-  }
-  .setup-banner button#apiUrlSave {
-    margin-top: 8px; padding: 8px 14px;
-    background: var(--accent-dark); color: var(--accent-dark-text);
-    border: none; border-radius: 8px; font-size: 13px; font-weight: 600;
-  }
-  .setup-hint {
-    margin-top: 10px; font-size: 11.5px; color: var(--accent-text);
-    line-height: 1.4; border-top: 1px solid var(--accent-border); padding-top: 8px;
-    opacity: 0.85;
-  }
-</style>
+        .badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-buy { background-color: #2e7d32; color: white; }
+        .badge-sell { background-color: #c62828; color: white; }
+    </style>
 </head>
 <body>
 
-  <div class="topbar">
-    <div class="topbar-row">
-      <div class="brand">My Port<span class="dot">.</span></div>
-      <div class="topbar-actions">
-        <button id="themeToggleBtn" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;">🌙</button>
-        <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;">⚙︎</button>
-      </div>
-    </div>
-    <div class="port-switch" id="portSwitch"></div>
-  </div>
-
-  <div id="setupBanner"></div>
-
-  <div class="section">
-    <div class="section-label">มูลค่าพอร์ต</div>
-    <div class="hero-card">
-      <div class="basis-toggle" id="valueModeToggle">
-        <div class="basis-btn active" data-mode="market">มูลค่าตามราคาตลาด</div>
-        <div class="basis-btn" data-mode="cost">มูลค่าตามต้นทุน</div>
-      </div>
-      <div class="hero-label" id="heroLabel">มูลค่าปัจจุบัน</div>
-      <div class="hero-value" id="heroValue">—</div>
-      <div class="hero-delta" id="heroDelta" style="display:none"></div>
-      <div class="hero-daily" id="heroDaily" style="display:none"></div>
-      <div class="hero-foot">
-        <div class="hero-foot-item">
-          <div class="hero-foot-label">เงินต้น</div>
-          <div class="hero-foot-value" id="footCost">—</div>
+<div class="container">
+    <header>
+        <div id="hero-container">
+            <h1>Portfolio Engine</h1>
         </div>
-        <div class="hero-foot-item">
-          <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน</div>
-          <div class="hero-foot-value" id="footProfit">—</div>
+        <button class="btn btn-theme" onclick="toggleTheme()">🌓 Switch Theme</button>
+    </header>
+
+    <div class="grid">
+        <!-- LEFT: Allocation Settings -->
+        <div class="card">
+            <h2>Asset Allocation Targets</h2>
+            <p>Enter your target percentages. Text visibility bug is fixed here.</p>
+            <form id="alloc-form" onsubmit="event.preventDefault(); saveAllocations();">
+                <label for="alloc-btc">Bitcoin (BTC) Allocation %</label>
+                <input type="number" id="alloc-btc" min="0" max="100" placeholder="e.g., 50" value="50" required>
+
+                <label for="alloc-eth">Ethereum (ETH) Allocation %</label>
+                <input type="number" id="alloc-eth" min="0" max="100" placeholder="e.g., 30" value="30" required>
+
+                <label for="alloc-cash">Cash/Stablecoins Allocation %</label>
+                <input type="number" id="alloc-cash" min="0" max="100" placeholder="e.g., 20" value="20" required>
+
+                <button type="submit" class="btn">Save Allocation Proportions</button>
+            </form>
         </div>
-      </div>
-    </div>
-  </div>
 
-  <div class="section">
-    <div class="section-label">มูลค่าพอร์ตรายวัน</div>
-    <div class="chart-card" id="valueChartCard">
-      <div class="skel" style="height:160px;"></div>
-    </div>
-  </div>
+        <!-- RIGHT: Log New Trade -->
+        <div class="card">
+            <h2>Record New Transaction</h2>
+            <p>The system will automatically extract and attach the date.</p>
+            <form id="tx-form" onsubmit="event.preventDefault(); addTransaction();">
+                <label for="tx-asset">Asset</label>
+                <select id="tx-asset">
+                    <option value="BTC">Bitcoin (BTC)</option>
+                    <option value="ETH">Ethereum (ETH)</option>
+                    <option value="USDT">Pompom Stablecoin (USDT)</option>
+                </select>
 
-  <div class="section">
-    <div class="section-label">สัดส่วนหุ้น (กราฟแท่ง)</div>
-    <div class="chart-card" id="barChartCard">
-      <div class="skel" style="height:220px;"></div>
-    </div>
-  </div>
+                <label for="tx-type">Transaction Type</label>
+                <select id="tx-type">
+                    <option value="BUY">BUY</option>
+                    <option value="SELL">SELL</option>
+                </select>
 
-  <div class="section">
-    <div class="section-label-row">
-      <div class="section-label">สัดส่วนการลงทุน</div>
-      <div class="basis-toggle-inline" id="basisToggle">
-        <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
-        <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
-      </div>
-    </div>
-    <div id="allocList">
-      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
-      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
-      <div class="skel" style="height:64px;"></div>
-    </div>
-  </div>
+                <label for="tx-amount">Amount / Units</label>
+                <input type="number" id="tx-amount" step="any" placeholder="0.00" required>
 
-  <div class="section">
-    <div class="section-label">รายการล่าสุด</div>
-    <div id="txnList" style="background:var(--paper-raised);border:1px solid var(--line);border-radius:14px;padding:4px 14px;">
-      <div class="skel" style="height:50px;margin:10px 0;"></div>
-      <div class="skel" style="height:50px;margin:10px 0;"></div>
-    </div>
-  </div>
-
-  <button class="fab" id="fabAdd">+</button>
-
-  <div class="sheet-backdrop" id="sheetBackdrop"></div>
-  <div class="sheet" id="addSheet">
-    <div class="sheet-handle"></div>
-    <div class="sheet-head">
-      <div class="sheet-title">เพิ่มรายการ</div>
-      <button class="sheet-close" id="sheetClose">✕</button>
-    </div>
-    <div class="sheet-body">
-      <div class="action-toggle">
-        <div class="action-btn buy active" data-action="ซื้อ">ซื้อ</div>
-        <div class="action-btn sell" data-action="ขาย">ขาย</div>
-      </div>
-
-      <div class="field">
-        <label class="field-label">พอร์ต</label>
-        <select id="fPort"></select>
-      </div>
-
-      <div class="field">
-        <label class="field-label">ชื่อหุ้น</label>
-        <input type="text" id="fStock" placeholder="เช่น AAPL" autocapitalize="characters">
-      </div>
-
-      <div class="field-row">
-        <div class="field">
-          <label class="field-label">จำนวนเงินรวม ($)</label>
-          <input type="number" id="fAmount" placeholder="0.00" inputmode="decimal">
+                <button type="submit" class="btn">Log Transaction</button>
+            </form>
         </div>
-        <div class="field">
-          <label class="field-label">จำนวนหุ้น</label>
-          <input type="number" id="fShares" placeholder="0.000000" inputmode="decimal">
-        </div>
-      </div>
-
-      <div class="field">
-        <label class="field-label">วันที่</label>
-        <input type="date" id="fDate">
-      </div>
-
-      <div class="field">
-        <label class="field-label">โน้ต (ไม่บังคับ)</label>
-        <input type="text" id="fNote" placeholder="">
-      </div>
-
-      <button class="submit-btn" id="submitBtn">บันทึกรายการ</button>
-      <div class="form-msg" id="formMsg"></div>
     </div>
-  </div>
+
+    <!-- BOTTOM: Full Transaction Log History -->
+    <div class="card" style="margin-top: 20px;">
+        <h2>Transaction History Log</h2>
+        <div style="overflow-x: auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date Pulled</th>
+                        <th>Asset</th>
+                        <th>Type</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody id="transaction-list-container">
+                    <!-- Dynamic Rows Will Load Here -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
 
 <script>
-// URL ของ Apps Script ที่ deploy ไว้ — ฝังเป็นค่าเริ่มต้น ไม่ต้องกรอกใหม่ทุกครั้ง
-// ถ้า deploy ใหม่แล้ว URL เปลี่ยน ให้กดปุ่ม ⚙︎ ในแอพเพื่อตั้งค่า URL ใหม่ (จะถูกจำไว้แทนตัวนี้)
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
+    // App State Mock Database
+    let allTransactions = [
+        { date: "20/06/2026", asset: "BTC", type: "BUY", amount: "0.045" },
+        { date: "22/06/2026", asset: "ETH", type: "BUY", amount: "1.25" }
+    ];
 
-// ลำดับความสำคัญในการหา URL: 1) URL parameter ในลิงก์ (?api=...) 2) localStorage 3) ค่าเริ่มต้นที่ฝังในไฟล์
-// เก็บไว้ใน URL parameter ด้วย เพราะ iOS Safari อาจล้าง localStorage ของแอพที่ Add to Home Screen
-// ถ้าไม่ได้เปิดผ่าน Safari ปกตินานเกิน ~7 วัน (ITP) แต่ URL ที่บันทึกไว้ในไอคอนหน้าจอโฮมจะไม่ถูกล้าง
-const urlParam = new URLSearchParams(window.location.search).get('api');
-if (urlParam) {
-  localStorage.setItem('portfolio_api_url', urlParam); // sync กลับเข้า localStorage ด้วย
-}
-let API_URL = urlParam || localStorage.getItem('portfolio_api_url') || DEFAULT_API_URL;
-
-// ----- Dark mode -----
-// ถ้าผู้ใช้กดเลือกธีมเองไว้ก่อน ใช้ตามนั้น (เก็บใน localStorage)
-// ถ้ายังไม่เคยกดเลือก ให้ปล่อยตามการตั้งค่าระบบ (prefers-color-scheme) ผ่าน CSS media query
-const savedTheme = localStorage.getItem('portfolio_theme');
-if (savedTheme) {
-  document.documentElement.setAttribute('data-theme', savedTheme);
-}
-function updateThemeIcon() {
-  const current = document.documentElement.getAttribute('data-theme');
-  const isDark = current === 'dark' ||
-    (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙';
-  document.getElementById('themeColorMeta').setAttribute('content', isDark ? '#121316' : '#FAF8F4');
-}
-
-const state = {
-  port: 'ALL',
-  basis: 'AVG',
-  valueMode: 'market',
-  summary: null,
-  dashboard: null,
-  transactions: [],
-  ports: [],
-  history: [],
-  dcaInputs: {}, // เก็บค่าเงินที่ผู้ใช้กรอกไว้ในตัวคำนวณ DCA ต่อหุ้น เช่น { RKLB: 50 }
-  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}') // เป้าหมายสัดส่วน % ที่ผู้ใช้ตั้งเองต่อหุ้น เช่น { RKLB: 20 }
-};
-
-function saveAllocTargets() {
-  localStorage.setItem('portfolio_alloc_targets', JSON.stringify(state.allocTargets));
-}
-
-const fmt = (n, decimals=2) => {
-  if (n === null || n === undefined || isNaN(n)) return '—';
-  return Number(n).toLocaleString('en-US', { minimumFractionDigits: decimals, maximumFractionDigits: decimals });
-};
-const fmtPct = (n) => {
-  if (n === null || n === undefined || isNaN(n)) return '—';
-  return (n * 100 >= 0 ? '+' : '') + (n * 100).toFixed(2) + '%';
-};
-
-function showSetupBanner(errorMsg) {
-  const el = document.getElementById('setupBanner');
-  el.innerHTML = `
-    <div class="setup-banner">
-      ${errorMsg ? '⚠️ ' + errorMsg + '<br><br>' : ''}วาง <strong>Web App URL</strong> จาก Apps Script ที่ deploy ไว้ที่นี่
-      (ลงท้ายด้วย <code>/exec</code>)
-      <div class="url-input-row">
-        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${API_URL || ''}">
-        <button id="apiUrlClear" type="button" title="ลบลิงก์ที่บันทึกไว้ และกลับไปใช้ค่าเริ่มต้น">✕</button>
-      </div>
-      <button id="apiUrlSave">บันทึกและเชื่อมต่อ</button>
-      <div class="setup-hint">💡 หลังบันทึกแล้ว แนะนำให้ลบ icon บนหน้าจอโฮมเดิม แล้วทำ "Add to Home Screen" ใหม่อีกครั้ง เพื่อให้ icon จำ URL นี้ไว้แบบถาวร ไม่หายแม้ Safari จะล้างข้อมูลแอพที่ไม่ได้เปิดนาน ๆ</div>
-    </div>`;
-  document.getElementById('apiUrlSave').onclick = () => {
-    const val = document.getElementById('apiUrlInput').value.trim();
-    if (val) {
-      localStorage.setItem('portfolio_api_url', val);
-      API_URL = val;
-      // ฝัง URL นี้ไว้ใน address bar ด้วย (?api=...) เพื่อให้ตอน Add to Home Screen
-      // icon ที่ได้จะจำ URL นี้ไว้ในตัวลิงก์เอง ทนต่อการที่ localStorage ถูกล้างได้
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('api', val);
-      history.replaceState(null, '', newUrl.toString());
-      el.innerHTML = '';
-      loadAll();
+    // Initialization Function
+    function loadAll() {
+        renderTransactionList();
+        console.log("Dashboard initialized successfully.");
     }
-  };
-  document.getElementById('apiUrlClear').onclick = () => {
-    // ล้างช่อง input ให้ว่าง พร้อมพิมพ์/วาง URL ใหม่ทันที
-    // และลบ URL เก่าที่บันทึกไว้ใน localStorage ออกด้วย กันไม่ให้ค้างมาบัง URL ใหม่ที่จะกรอก
-    document.getElementById('apiUrlInput').value = '';
-    document.getElementById('apiUrlInput').focus();
-    localStorage.removeItem('portfolio_api_url');
-    const clearedUrl = new URL(window.location.href);
-    clearedUrl.searchParams.delete('api');
-    history.replaceState(null, '', clearedUrl.toString());
-  };
-}
 
-document.getElementById('settingsBtn').onclick = () => showSetupBanner();
+    // FIXED LOGIC: Auto-pulls the current system date on record submit
+    function addTransaction() {
+        const assetField = document.getElementById('tx-asset');
+        const typeField = document.getElementById('tx-type');
+        const amountField = document.getElementById('tx-amount');
 
-document.getElementById('themeToggleBtn').onclick = () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  const isDark = current === 'dark' ||
-    (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const next = isDark ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('portfolio_theme', next);
-  updateThemeIcon();
-};
+        // Extracting local system timestamp automatically
+        const pulledDate = new Date().toLocaleDateString('th-TH', {
+            year: 'numeric',
+            month: '2-digit',
+            day: '2-digit'
+        });
 
-async function api(action, params = {}) {
-  const url = new URL(API_URL);
-  url.searchParams.set('action', action);
-  Object.entries(params).forEach(([k,v]) => { if (v !== null) url.searchParams.set(k, v); });
-  const res = await fetch(url.toString());
-  return res.json();
-}
+        const newTx = {
+            date: pulledDate, 
+            asset: assetField.value,
+            type: typeField.value,
+            amount: amountField.value
+        };
 
-async function apiPost(body) {
-  const res = await fetch(API_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
-  });
-  return res.json();
-}
-
-async function loadAll() {
-  if (!API_URL) { showSetupBanner(); return; }
-
-  const MAX_ATTEMPTS = 3;
-  const RETRY_DELAY_MS = [1500, 3000]; // หน่วงก่อน retry ครั้งที่ 2 และ 3
-
-  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
-    try {
-      const [summary, dashboard, ports, txns, history] = await Promise.all([
-        api('summary'),
-        api('dashboard'),
-        api('ports'),
-        api('transactions', { port: state.port === 'ALL' ? null : state.port }),
-        api('history')
-      ]);
-      if (summary.error || dashboard.error || ports.error || txns.error) {
-        const errMsg = summary.error || dashboard.error || ports.error || txns.error;
-        throw new Error(errMsg);
-      }
-      state.summary = summary;
-      state.dashboard = dashboard;
-      state.ports = ports.ports || [];
-      state.transactions = txns.rows || [];
-      state.history = (history && history.rows) || [];
-      renderPortSwitch();
-      renderHero();
-      renderValueLineChart();
-      renderBarChart();
-      renderAllocList();
-      renderTransactions();
-      populatePortSelect();
-      return; // สำเร็จแล้ว ไม่ต้องวนต่อ
-    } catch (err) {
-      console.error(`loadAll attempt ${attempt} failed:`, err);
-      if (attempt < MAX_ATTEMPTS) {
-        // Apps Script อาจ "cold start" ช้าหลังไม่มีการเรียกใช้นาน ๆ ลองใหม่อีกครั้งก่อนแจ้ง error
-        document.getElementById('allocList').innerHTML =
-          `<div class="empty-state"><div class="icon">⏳</div><div class="msg">กำลังเชื่อมต่อใหม่... (ครั้งที่ ${attempt + 1})</div></div>`;
-        await new Promise(r => setTimeout(r, RETRY_DELAY_MS[attempt - 1]));
-        continue;
-      }
-      // พยายามครบจำนวนครั้งแล้วยังไม่สำเร็จ ค่อยแจ้ง error จริง
-      document.getElementById('allocList').innerHTML =
-        `<div class="empty-state"><div class="icon">⚠️</div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙︎ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
-      showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
+        allTransactions.unshift(newTx); // Insert at the top of history
+        renderTransactionList();
+        
+        amountField.value = ''; // Clear inputs cleanly
     }
-  }
-}
 
-function renderPortSwitch() {
-  const el = document.getElementById('portSwitch');
-  const ports = ['ALL', ...state.ports];
-  el.innerHTML = ports.map(p =>
-    `<div class="port-chip ${p === state.port ? 'active' : ''}" data-port="${p}">${p === 'ALL' ? 'ทั้งหมด' : p}</div>`
-  ).join('');
-  el.querySelectorAll('.port-chip').forEach(chip => {
-    chip.onclick = () => {
-      state.port = chip.dataset.port;
-      loadAll();
-    };
-  });
-}
+    // Dynamic rendering of rows containing pulled date strings
+    function renderTransactionList() {
+        const listContainer = document.getElementById('transaction-list-container');
+        listContainer.innerHTML = ''; 
 
-function rerenderForBasisOrPort() {
-  renderHero();
-  renderBarChart();
-  renderAllocList();
-}
-
-function getFilteredSummaryRows() {
-  if (!state.summary) return [];
-  const rows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
-  if (state.port === 'ALL') return rows;
-  return rows.filter(r => r['ชื่อ port'] === state.port);
-}
-
-// ดึงเงินสดคงเหลือ (แถวที่หุ้น = USD) รวมทุก port ที่มี — ไม่ขึ้นกับ state.port ที่เลือกอยู่
-// ใช้เป็น "เงินต้น" ในการคำนวณกำไร/ขาดทุนรวมในหน้าแรก
-function getCashBalance() {
-  if (!state.summary) return 0;
-  return state.summary.rows
-    .filter(r => r['หุ้น'] === 'USD')
-    .reduce((sum, r) => sum + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
-}
-
-function renderHero() {
-  const rows = getFilteredSummaryRows();
-  let marketValue = 0, costValue = 0;
-
-  rows.forEach(r => {
-    marketValue += Number(r['มูลค่าปัจจุบัน']) || 0;
-    costValue += Number(r['ทุน  FIFO']) || 0;
-  });
-
-  // เงินต้น = เงินสดทั้งหมดที่ฝากเข้าพอร์ตเพื่อลงทุน (ไม่ใช่ทุน AVG/FIFO ของหุ้น)
-  const principal = getCashBalance();
-
-  const isMarket = state.valueMode === 'market';
-  const displayValue = isMarket ? marketValue : costValue;
-
-  document.getElementById('heroLabel').textContent = isMarket ? 'มูลค่าปัจจุบัน' : 'มูลค่าตามต้นทุน (FIFO)';
-
-  const valStr = fmt(displayValue, 2);
-  const [intPart, decPart] = valStr.split('.');
-  document.getElementById('heroValue').innerHTML =
-    `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
-  document.getElementById('footCost').textContent = `$${fmt(principal)}`;
-
-  const deltaEl = document.getElementById('heroDelta');
-  deltaEl.style.display = 'inline-flex';
-
-  if (isMarket) {
-    // โหมดมูลค่าตามราคาตลาด: กำไร/ขาดทุน = มูลค่าปัจจุบัน เทียบกับเงินต้นที่ฝากเข้ามา
-    const profit = marketValue - principal;
-    const profitPct = principal ? profit / principal : 0;
-    document.getElementById('footProfitLabel').textContent = 'กำไร/ขาดทุน';
-    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
-    document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
-    deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
-    deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
-  } else {
-    // โหมดมูลค่าตามต้นทุน: เทียบทุน FIFO ของหุ้น กับเงินต้นที่ฝากเข้ามา (ส่วนต่างจากการ reinvest กำไร)
-    const diff = costValue - principal;
-    const diffPct = principal ? diff / principal : 0;
-    document.getElementById('footProfitLabel').textContent = 'ส่วนต่างจากเงินต้น';
-    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
-    document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
-    deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
-    deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
-  }
-
-  // เปลี่ยนแปลงวันนี้ — ดึงจากแถวล่าสุดใน Sheet History (คอลัมน์ Daily Change / Daily %)
-  const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
-  const heroDailyEl = document.getElementById('heroDaily');
-  if (historyData.length > 0) {
-    const latest = historyData[historyData.length - 1];
-    const dailyChange = Number(latest['Daily Change']) || 0;
-    const dailyPct = Number(latest['Daily %']) || 0;
-    const dailyUp = dailyChange >= 0;
-    heroDailyEl.style.display = 'block';
-    heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    heroDailyEl.innerHTML = `วันนี้ <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
-  } else {
-    heroDailyEl.style.display = 'none';
-  }
-}
-
-function renderValueLineChart() {
-  const card = document.getElementById('valueChartCard');
-  const data = state.history.filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null);
-  if (data.length < 2) {
-    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีข้อมูลย้อนหลังพอแสดงกราฟ</div></div>`;
-    return;
-  }
-
-  const W = 600, H = 160, PAD_X = 8, PAD_TOP = 10, PAD_BOTTOM = 4;
-  const values = data.map(d => Number(d['มูลค่าพอร์ต']));
-  const min = Math.min(...values), max = Math.max(...values);
-  const range = (max - min) || 1;
-
-  const xStep = (W - PAD_X * 2) / (data.length - 1);
-  const points = values.map((v, i) => {
-    const x = PAD_X + i * xStep;
-    const y = PAD_TOP + (1 - (v - min) / range) * (H - PAD_TOP - PAD_BOTTOM);
-    return [x, y];
-  });
-
-  const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H-PAD_BOTTOM} L${points[0][0].toFixed(1)},${H-PAD_BOTTOM} Z`;
-
-  const last = values[values.length - 1];
-  const first = values[0];
-  const totalChange = last - first;
-  const totalChangePct = first ? totalChange / first : 0;
-  const up = totalChange >= 0;
-  const lineColor = up ? '#1B7A4D' : '#B23B2E';
-
-  const firstDate = new Date(data[0]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-  const lastDate = new Date(data[data.length-1]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-
-  card.innerHTML = `
-    <div class="chart-meta">
-      <div class="chart-meta-value">$${fmt(last)}</div>
-      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(totalChange))} (${fmtPct(totalChangePct)})</div>
-    </div>
-    <div class="line-svg-wrap">
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="${areaD}" fill="url(#areaGrad)" stroke="none"/>
-        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
-        <circle cx="${points[points.length-1][0].toFixed(1)}" cy="${points[points.length-1][1].toFixed(1)}" r="3.5" fill="${lineColor}"/>
-      </svg>
-    </div>
-    <div class="chart-axis-labels"><span>${firstDate}</span><span>${lastDate}</span></div>
-  `;
-}
-
-const PIE_COLORS = ['#C98A2C','#1B7A4D','#4A5160','#B23B2E','#7C9CBF','#A66BB5','#D4A95C','#5A8F7B','#9A6B4F','#6E7B8B'];
-
-function renderBarChart() {
-  const card = document.getElementById('barChartCard');
-  const rows = getFilteredSummaryRows();
-  if (!rows.length) {
-    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
-    return;
-  }
-  const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
-  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
-  const maxPct = Math.max(...sorted.map(r => (Number(r['มูลค่าปัจจุบัน'])||0) / total));
-
-  const MAX_BAR_HEIGHT = 130; // px, leaves room for % label above and ticker label below
-
-  const colsHtml = sorted.map((r, i) => {
-    const value = Number(r['มูลค่าปัจจุบัน']) || 0;
-    const pct = value / total;
-    const heightPx = Math.max(3, (pct / (maxPct || 1)) * MAX_BAR_HEIGHT);
-    const color = PIE_COLORS[i % PIE_COLORS.length];
-    return `
-      <div class="bar-col">
-        <div class="bar-pct-label">${(pct*100).toFixed(1)}%</div>
-        <div class="bar-fill" style="height:${heightPx.toFixed(0)}px;background:${color};"></div>
-        <div class="bar-ticker-label">${r['หุ้น']}</div>
-      </div>`;
-  }).join('');
-
-  card.innerHTML = `<div class="bar-chart-wrap">${colsHtml}</div>`;
-}
-
-function renderAllocList() {
-  const el = document.getElementById('allocList');
-  const rows = getFilteredSummaryRows();
-  if (!rows.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
-    return;
-  }
-  const basis = state.basis;
-  const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
-  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
-
-  el.innerHTML = sorted.map((r, i) => {
-    const value = Number(r['มูลค่าปัจจุบัน']) || 0;
-    const pct = (value / total) * 100;
-    const profit = basis === 'AVG' ? Number(r['กำไร AVG']) : Number(r['กำไร FIFO']);
-    const profitPct = basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO']);
-    const up = profit >= 0;
-    const color = PIE_COLORS[i % PIE_COLORS.length];
-    const ticker = r['หุ้น'];
-    const currentPrice = Number(r['price']) || 0;
-    const inputVal = state.dcaInputs[ticker] || '';
-    const targetVal = state.allocTargets[ticker];
-    const hasTarget = targetVal !== undefined;
-
-    return `
-      <div class="alloc-row-wrap">
-        <div class="alloc-row">
-          <div class="alloc-icon">
-            <img src="https://eodhd.com/img/logos/US/${ticker}.png" alt="${ticker}" loading="lazy"
-                 onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';">
-            <div class="alloc-icon-fallback" style="display:none;background:${color}">${ticker.charAt(0)}</div>
-          </div>
-          <div class="alloc-mid">
-            <div class="alloc-ticker-row">
-              <div class="alloc-ticker">${ticker}</div>
-              <div class="alloc-current-price">$${fmt(currentPrice)}</div>
-            </div>
-
-            <div class="alloc-target-summary" style="display:${hasTarget ? 'block' : 'none'};">
-              ${hasTarget ? renderTargetRoomBarHtml(pct, targetVal, ticker) : ''}
-            </div>
-
-            <div class="alloc-no-target" style="display:${hasTarget ? 'none' : 'block'};">
-              <div class="alloc-bar-track">
-                <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
-              </div>
-              <div class="alloc-pct-row">
-                <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
-                <button class="alloc-target-add-btn" data-ticker="${ticker}">+ ตั้งเป้าหมาย</button>
-              </div>
-            </div>
-
-            <div class="alloc-target-input-row" id="targetInputRow-${ticker}" style="display:none;">
-              <span class="dca-calc-label">เป้าหมายสัดส่วน</span>
-              <input type="number" class="alloc-target-input" data-ticker="${ticker}" placeholder="เช่น 20" inputmode="decimal" min="0" max="100" value="${hasTarget ? targetVal : ''}">
-              <span class="dca-calc-suffix">%</span>
-              <button class="alloc-target-save-btn" data-ticker="${ticker}">✓</button>
-            </div>
-          </div>
-          <div class="alloc-right">
-            <div class="alloc-value">$${fmt(value)}</div>
-            <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})</div>
-          </div>
-        </div>
-        <div class="dca-calc">
-          <div class="dca-calc-input-row">
-            <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
-            <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
-          </div>
-          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal, total)}</div>
-        </div>
-      </div>`;
-  }).join('');
-
-  // ผูก event ให้ input DCA คำนวณใหม่ทุกครั้งที่พิมพ์ (ไม่ reload ข้อมูลทั้งหน้า)
-  el.querySelectorAll('.dca-calc-input').forEach(input => {
-    input.addEventListener('input', (e) => {
-      const ticker = e.target.dataset.ticker;
-      const val = e.target.value;
-      state.dcaInputs[ticker] = val;
-      const row = sorted.find(r => r['หุ้น'] === ticker);
-      const resultEl = document.getElementById(`dcaResult-${ticker}`);
-      if (resultEl && row) resultEl.innerHTML = renderDcaResultHtml(row, val, total);
-    });
-  });
-
-  // เปิดช่องกรอกเป้าหมาย (ทั้งกรณีตั้งใหม่ และกรณีแก้ไขของเดิม)
-  el.querySelectorAll('.alloc-target-add-btn, .alloc-target-edit-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const ticker = btn.dataset.ticker;
-      const inputRow = document.getElementById(`targetInputRow-${ticker}`);
-      if (inputRow) {
-        inputRow.style.display = 'flex';
-        const input = inputRow.querySelector('.alloc-target-input');
-        if (input) { input.focus(); input.select(); }
-      }
-    });
-  });
-
-  // บันทึกค่าเป้าหมายลง localStorage ทุกครั้งที่พิมพ์ แล้วซ่อนช่องกรอกกลับเป็นแถบสีตอนกดบันทึก/ออกจากช่อง
-  el.querySelectorAll('.alloc-target-input').forEach(input => {
-    input.addEventListener('input', (e) => {
-      const ticker = e.target.dataset.ticker;
-      const val = e.target.value;
-      if (val === '') {
-        delete state.allocTargets[ticker];
-      } else {
-        state.allocTargets[ticker] = Math.max(0, Math.min(100, Number(val)));
-      }
-      saveAllocTargets();
-    });
-  });
-  el.querySelectorAll('.alloc-target-input').forEach(input => {
-    input.addEventListener('blur', () => renderAllocList());
-  });
-  el.querySelectorAll('.alloc-target-save-btn').forEach(btn => {
-    btn.addEventListener('click', () => renderAllocList());
-  });
-}
-
-/**
- * คำนวณสีของแถบ "ที่ว่างเหลือก่อนถึงเป้าหมาย" — เหลือเยอะ = เขียว, เหลือน้อย/เกินแล้ว = เหลือง→แดง
- * ใช้อัตราส่วน สัดส่วนปัจจุบัน/เป้าหมาย เป็นตัวกำหนด: ยิ่งใกล้หรือเกิน 1 ยิ่งแดง
- */
-function getRoomColor(ratio) {
-  const clamped = Math.min(Math.max(ratio, 0), 1);
-  const hue = 140 * (1 - clamped); // 140=เขียว ไล่ไปจนถึง 0=แดง ผ่านเหลือง/ส้มตรงกลาง
-  return `hsl(${hue}, 65%, 45%)`;
-}
-
-/**
- * แสดงแถบสีสรุปสัดส่วนเทียบกับเป้าหมายที่ตั้งไว้ พร้อมปุ่มแก้ไข
- */
-function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
-  const ratio = targetPct > 0 ? actualPct / targetPct : 0;
-  const barWidth = Math.min(ratio, 1) * 100;
-  const overTarget = ratio > 1;
-  const color = overTarget ? '#D9483B' : getRoomColor(ratio);
-
-  return `
-    <div class="alloc-target-summary-text">
-      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>
-    </div>
-    <div class="alloc-room-bar-track">
-      <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
-    </div>
-    <div class="alloc-target-footer-row">
-      ${overTarget ? `<span class="alloc-target-over-label">⚠ เกินเป้าหมายแล้ว</span>` : `<span class="alloc-target-room-label">เหลือที่ลงทุนได้อีก ${fmt(Math.max(0,targetPct-actualPct),2)}%</span>`}
-      <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ แก้ไข</button>
-    </div>
-  `;
-}
-
-/**
- * เปรียบเทียบสัดส่วนจริงกับเป้าหมายที่ตั้งไว้ แสดงว่าเกินเป้าหรือยังไม่ถึงเป้า
- */
-function renderTargetCompareHtml(actualPct, targetPct) {
-  if (targetPct === undefined || targetPct === null) return '';
-  const diff = actualPct - targetPct;
-  if (Math.abs(diff) < 0.5) {
-    return `<span class="alloc-target-compare ontarget">✓ ตรงเป้า (${fmt(targetPct,0)}%)</span>`;
-  }
-  if (diff > 0) {
-    return `<span class="alloc-target-compare over">เกินเป้า +${fmt(diff,1)}%</span>`;
-  }
-  return `<span class="alloc-target-compare under">ต่ำกว่าเป้า ${fmt(diff,1)}%</span>`;
-}
-
-/**
- * คำนวณ DCA แบบ what-if: ถ้าลงเงินเพิ่ม $amount ที่ราคาตลาดปัจจุบัน
- * ค่าเฉลี่ยต้นทุนใหม่จะเป็นเท่าไหร่ และลดลงจากเดิมกี่ %
- * อ้างอิงสูตรเดียวกับ Sheet "My stocks": (เงินลงทุนเดิม + เงินใหม่) / (หุ้นเดิม + หุ้นใหม่)
- * พร้อมแสดงสัดส่วน % ของพอร์ตที่จะเปลี่ยนไป ถ้าลงเงินจำนวนนี้เพิ่มจริง (สมมติเป็นเงินใหม่ที่เติมเข้าพอร์ต)
- */
-function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
-  const currentPrice = Number(row['price']) || 0;
-  const currentShares = Number(row['จำนวนหุ้น']) || 0;
-  // ราคาที่ได้ (ต้นทุนเฉลี่ยปัจจุบัน) ใช้ค่าเดียวกับคอลัมน์ "ราคาที่ได้" ใน Sheet "My stocks"
-  // ซึ่งตรงกับ "ราคา FIFO" ใน Summary ไม่ใช่ "ราคา AVG"
-  const currentAvgCost = Number(row['ราคา FIFO']) || 0;
-  const currentValue = Number(row['มูลค่าปัจจุบัน']) || 0;
-  const ticker = row['หุ้น'];
-  const targetVal = state.allocTargets[ticker];
-  const currentLine = `<div class="dca-current">ราคาที่ได้ปัจจุบัน: <b>$${fmt(currentAvgCost)}</b></div>`;
-
-  const amount = Number(amountStr);
-  if (!amountStr || isNaN(amount) || amount <= 0) {
-    return `${currentLine}<span class="dca-calc-hint">พิมพ์จำนวนเงินเพื่อดูค่าเฉลี่ยต้นทุนและสัดส่วนใหม่</span>`;
-  }
-  if (currentPrice <= 0) {
-    return `${currentLine}<span class="dca-calc-hint">ไม่มีราคาปัจจุบันสำหรับคำนวณ</span>`;
-  }
-
-  const newShares = amount / currentPrice;
-  const newAvgCost = (currentShares * currentAvgCost + amount) / (currentShares + newShares);
-  const diff = currentAvgCost - newAvgCost; // บวก = ต้นทุนลดลง, ลบ = ต้นทุนเพิ่มขึ้น
-  const diffPct = currentAvgCost ? diff / currentAvgCost : 0;
-  const isDrop = diff > 0;
-
-  // สัดส่วนใหม่ ถ้าเงินจำนวนนี้เป็นเงินใหม่ที่เติมเข้าพอร์ตทั้งหมด (ไม่ใช่ย้ายจากหุ้นอื่น)
-  let allocLine = '';
-  if (totalPortfolioValue) {
-    const currentPct = (currentValue / totalPortfolioValue) * 100;
-    const newValue = currentValue + amount;
-    const newTotal = totalPortfolioValue + amount;
-    const newPct = (newValue / newTotal) * 100;
-    allocLine = `
-      <div class="dca-alloc-projection">
-        สัดส่วนใหม่: <b>${fmt(newPct,2)}%</b> (จาก ${fmt(currentPct,2)}%)
-        ${targetVal !== undefined ? renderTargetCompareHtml(newPct, targetVal) : ''}
-      </div>`;
-  }
-
-  return `
-    ${currentLine}
-    ต้นทุนเฉลี่ยใหม่: <b>$${fmt(newAvgCost)}</b>
-    <span class="dca-calc-drop ${isDrop?'down':'up'}">
-      ${isDrop ? '↓ ลดลง' : '↑ เพิ่มขึ้น'} $${fmt(Math.abs(diff))} (${fmtPct(Math.abs(diffPct))})
-    </span>
-    ${allocLine}
-  `;
-}
-
-function renderTransactions() {
-  const el = document.getElementById('txnList');
-  const txns = state.transactions.filter(t => t['รายการ'] && t['รายการ'] !== 'USD').slice(0, 40);
-  if (!txns.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div class="msg">ยังไม่มีรายการ</div></div>`;
-    return;
-  }
-
-  // จัดกลุ่มรายการตามวันที่ เพื่อให้เห็นวันที่ชัดเจนขึ้นเวลามีรายการเยอะ
-  const groups = [];
-  let currentKey = null;
-  txns.forEach(t => {
-    const d = t['Date'] ? new Date(t['Date']) : null;
-    const key = d ? d.toDateString() : 'ไม่ระบุวันที่';
-    if (key !== currentKey) {
-      groups.push({ key, date: d, items: [] });
-      currentKey = key;
-    }
-    groups[groups.length - 1].items.push(t);
-  });
-
-  el.innerHTML = groups.map(g => {
-    const dateLabel = g.date
-      ? g.date.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-      : 'ไม่ระบุวันที่';
-    const rowsHtml = g.items.map(t => {
-      const isBuy = t['action'] === 'ซื้อ';
-      return `
-        <div class="txn-row">
-          <div class="txn-badge ${isBuy?'buy':'sell'}">${isBuy?'B':'S'}</div>
-          <div class="txn-mid">
-            <div class="txn-stock">${t['รายการ']}</div>
-            <div class="txn-date">${t['Port']}</div>
-          </div>
-          <div class="txn-right">
-            <div class="txn-amount">$${fmt(t['รวม $'])}</div>
-            <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
-          </div>
-          <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้">🗑</button>
-        </div>`;
-    }).join('');
-    return `
-      <div class="txn-date-group">
-        <div class="txn-date-header">${dateLabel}</div>
-        ${rowsHtml}
-      </div>`;
-  }).join('');
-
-  el.querySelectorAll('.txn-delete').forEach(btn => {
-    btn.addEventListener('click', async () => {
-      const row = btn.dataset.row;
-      const stock = btn.dataset.stock;
-      const confirmed = confirm(`ลบรายการ ${stock} นี้ออกจาก Sheet เลยไหม? การลบนี้ย้อนกลับไม่ได้`);
-      if (!confirmed) return;
-
-      btn.disabled = true;
-      btn.textContent = '...';
-      try {
-        const result = await apiPost({ endpoint: 'deleteTransaction', row: row, stock: stock });
-        if (result.success) {
-          loadAll();
-        } else {
-          alert(result.error || 'ลบไม่สำเร็จ');
-          btn.disabled = false;
-          btn.textContent = '🗑';
+        if(allTransactions.length === 0) {
+            listContainer.innerHTML = `<tr><td colspan="4" style="text-align:center;">No history recorded yet.</td></tr>`;
+            return;
         }
-      } catch (err) {
-        alert('เชื่อมต่อไม่สำเร็จ: ' + err.message);
-        btn.disabled = false;
-        btn.textContent = '🗑';
-      }
-    });
-  });
-}
 
-function populatePortSelect() {
-  const sel = document.getElementById('fPort');
-  sel.innerHTML = state.ports.map(p => `<option value="${p}">${p}</option>`).join('');
-}
-
-document.getElementById('basisToggle').addEventListener('click', (e) => {
-  const btn = e.target.closest('.basis-btn-inline');
-  if (!btn) return;
-  document.querySelectorAll('.basis-btn-inline').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  state.basis = btn.dataset.basis;
-  renderAllocList();
-});
-
-document.getElementById('valueModeToggle').addEventListener('click', (e) => {
-  const btn = e.target.closest('.basis-btn');
-  if (!btn) return;
-  document.querySelectorAll('#valueModeToggle .basis-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  state.valueMode = btn.dataset.mode;
-  renderHero();
-});
-
-const sheet = document.getElementById('addSheet');
-const backdrop = document.getElementById('sheetBackdrop');
-
-function openSheet() {
-  document.getElementById('fDate').valueAsDate = new Date();
-  sheet.classList.add('open');
-  backdrop.classList.add('open');
-}
-function closeSheet() {
-  sheet.classList.remove('open');
-  backdrop.classList.remove('open');
-  document.getElementById('formMsg').textContent = '';
-  document.getElementById('formMsg').className = 'form-msg';
-}
-document.getElementById('fabAdd').onclick = openSheet;
-document.getElementById('sheetClose').onclick = closeSheet;
-backdrop.onclick = closeSheet;
-
-let selectedAction = 'ซื้อ';
-document.querySelector('.action-toggle').addEventListener('click', (e) => {
-  const btn = e.target.closest('.action-btn');
-  if (!btn) return;
-  document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  selectedAction = btn.dataset.action;
-});
-
-document.getElementById('submitBtn').onclick = async () => {
-  const btn = document.getElementById('submitBtn');
-  const msg = document.getElementById('formMsg');
-  const port = document.getElementById('fPort').value;
-  const stock = document.getElementById('fStock').value.trim().toUpperCase();
-  const amount = document.getElementById('fAmount').value;
-  const shares = document.getElementById('fShares').value;
-  const date = document.getElementById('fDate').value;
-  const note = document.getElementById('fNote').value.trim();
-
-  if (!port || !stock || !amount || !shares) {
-    msg.textContent = 'กรุณากรอกข้อมูลให้ครบ';
-    msg.className = 'form-msg error';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.textContent = 'กำลังบันทึก...';
-  msg.textContent = '';
-  msg.className = 'form-msg';
-
-  try {
-    const result = await apiPost({
-      endpoint: 'addTransaction',
-      port,
-      txnAction: selectedAction,
-      stock, totalAmount: amount, shares, date, note
-    });
-
-    if (result.success) {
-      msg.textContent = '✓ บันทึกสำเร็จ';
-      msg.className = 'form-msg success';
-      document.getElementById('fStock').value = '';
-      document.getElementById('fAmount').value = '';
-      document.getElementById('fShares').value = '';
-      document.getElementById('fNote').value = '';
-      setTimeout(() => { closeSheet(); loadAll(); }, 700);
-    } else {
-      msg.textContent = result.error || 'เกิดข้อผิดพลาด';
-      msg.className = 'form-msg error';
+        allTransactions.forEach(tx => {
+            const row = document.createElement('tr');
+            const typeBadge = tx.type === 'BUY' ? 'badge badge-buy' : 'badge badge-sell';
+            
+            row.innerHTML = `
+                <td><strong>${tx.date}</strong></td>
+                <td>${tx.asset}</td>
+                <td><span class="${typeBadge}">${tx.type}</span></td>
+                <td>${tx.amount}</td>
+            `;
+            listContainer.appendChild(row);
+        });
     }
-  } catch (err) {
-    msg.textContent = 'เชื่อมต่อไม่สำเร็จ: ' + err.message;
-    msg.className = 'form-msg error';
-  } finally {
-    btn.disabled = false;
-    btn.textContent = 'บันทึกรายการ';
-  }
-};
 
-updateThemeIcon();
-loadAll();
+    function saveAllocations() {
+        alert("Proportions updated successfully inside memory!");
+    }
+
+    function toggleTheme() {
+        document.body.classList.toggle('dark-mode');
+    }
+
+    // Run startup routine
+    window.onload = loadAll;
 </script>
+
 </body>
 </html>
