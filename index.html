@@ -246,9 +246,23 @@
   .alloc-ticker-row { display: flex; align-items: baseline; gap: 8px; }
   .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
   .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
-  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; }
-  .alloc-bar-fill { height: 100%; border-radius: 4px; }
-  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); margin-top: 4px; font-family: var(--mono); }
+  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: visible; position: relative; }
+  .alloc-bar-fill { height: 100%; border-radius: 4px; overflow: hidden; }
+  .alloc-bar-target-marker {
+    position: absolute; top: -3px; bottom: -3px;
+    width: 2px; background: var(--ink);
+    border-radius: 1px;
+  }
+  .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .alloc-target-compare {
+    font-size: 10.5px; font-weight: 700; font-family: var(--mono);
+    padding: 1px 7px; border-radius: 100px;
+  }
+  .alloc-target-compare.ontarget { background: var(--gain-soft); color: var(--gain); }
+  .alloc-target-compare.over { background: var(--loss-soft); color: var(--loss); }
+  .alloc-target-compare.under { background: var(--line); color: var(--ink-soft); }
+  .dca-calc-suffix { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
   .alloc-right { text-align: right; flex: 0 0 auto; }
   .alloc-value { font-family: var(--mono); font-size: 14px; font-weight: 600; }
   .alloc-gain { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
@@ -262,6 +276,7 @@
   }
   .dca-calc-input-row {
     display: flex; align-items: center; gap: 8px;
+    margin-bottom: 8px;
   }
   .dca-calc-label {
     font-size: 12px; font-weight: 600; color: var(--accent-text); white-space: nowrap;
@@ -287,12 +302,19 @@
   }
   .dca-current b { color: var(--ink); font-weight: 700; }
 
+  .txn-date-group { margin-bottom: 4px; }
+  .txn-date-header {
+    font-size: 11.5px; font-weight: 700; color: var(--ink-soft);
+    text-transform: uppercase; letter-spacing: 0.04em;
+    padding: 12px 0 6px;
+  }
+  .txn-date-group:first-child .txn-date-header { padding-top: 4px; }
   .txn-row {
     display: flex; align-items: center; gap: 12px;
-    padding: 12px 0;
+    padding: 10px 0;
     border-bottom: 1px solid var(--line);
   }
-  .txn-row:last-child { border-bottom: none; }
+  .txn-date-group:last-child .txn-row:last-child { border-bottom: none; }
   .txn-badge {
     width: 34px; height: 34px; border-radius: 10px;
     display: flex; align-items: center; justify-content: center;
@@ -708,8 +730,13 @@ const state = {
   transactions: [],
   ports: [],
   history: [],
-  dcaInputs: {} // เก็บค่าเงินที่ผู้ใช้กรอกไว้ในตัวคำนวณ DCA ต่อหุ้น เช่น { RKLB: 50 }
+  dcaInputs: {}, // เก็บค่าเงินที่ผู้ใช้กรอกไว้ในตัวคำนวณ DCA ต่อหุ้น เช่น { RKLB: 50 }
+  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}') // เป้าหมายสัดส่วน % ที่ผู้ใช้ตั้งเองต่อหุ้น เช่น { RKLB: 20 }
 };
+
+function saveAllocTargets() {
+  localStorage.setItem('portfolio_alloc_targets', JSON.stringify(state.allocTargets));
+}
 
 const fmt = (n, decimals=2) => {
   if (n === null || n === undefined || isNaN(n)) return '—';
@@ -1042,6 +1069,7 @@ function renderAllocList() {
     const ticker = r['หุ้น'];
     const currentPrice = Number(r['price']) || 0;
     const inputVal = state.dcaInputs[ticker] || '';
+    const targetVal = state.allocTargets[ticker];
 
     return `
       <div class="alloc-row-wrap">
@@ -1056,8 +1084,14 @@ function renderAllocList() {
               <div class="alloc-ticker">${ticker}</div>
               <div class="alloc-current-price">$${fmt(currentPrice)}</div>
             </div>
-            <div class="alloc-bar-track"><div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div></div>
-            <div class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</div>
+            <div class="alloc-bar-track">
+              <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
+              ${targetVal !== undefined ? `<div class="alloc-bar-target-marker" style="left:${Math.min(100,targetVal).toFixed(1)}%"></div>` : ''}
+            </div>
+            <div class="alloc-pct-row">
+              <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
+              ${renderTargetCompareHtml(pct, targetVal)}
+            </div>
           </div>
           <div class="alloc-right">
             <div class="alloc-value">$${fmt(value)}</div>
@@ -1065,6 +1099,11 @@ function renderAllocList() {
           </div>
         </div>
         <div class="dca-calc">
+          <div class="dca-calc-input-row">
+            <span class="dca-calc-label">เป้าหมายสัดส่วน</span>
+            <input type="number" class="dca-calc-input alloc-target-input" data-ticker="${ticker}" placeholder="ไม่จำกัด" inputmode="decimal" min="0" max="100" value="${targetVal !== undefined ? targetVal : ''}">
+            <span class="dca-calc-suffix">%</span>
+          </div>
           <div class="dca-calc-input-row">
             <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
             <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
@@ -1075,7 +1114,7 @@ function renderAllocList() {
   }).join('');
 
   // ผูก event ให้ input คำนวณใหม่ทุกครั้งที่พิมพ์ (ไม่ reload ข้อมูลทั้งหน้า)
-  el.querySelectorAll('.dca-calc-input').forEach(input => {
+  el.querySelectorAll('.dca-calc-input:not(.alloc-target-input)').forEach(input => {
     input.addEventListener('input', (e) => {
       const ticker = e.target.dataset.ticker;
       const val = e.target.value;
@@ -1085,6 +1124,36 @@ function renderAllocList() {
       if (resultEl && row) resultEl.innerHTML = renderDcaResultHtml(row, val);
     });
   });
+
+  // ผูก event สำหรับช่องเป้าหมายสัดส่วน — บันทึกลง localStorage แล้ว re-render ทันทีเพื่ออัปเดต marker/เปรียบเทียบ
+  el.querySelectorAll('.alloc-target-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const ticker = e.target.dataset.ticker;
+      const val = e.target.value;
+      if (val === '') {
+        delete state.allocTargets[ticker];
+      } else {
+        state.allocTargets[ticker] = Math.max(0, Math.min(100, Number(val)));
+      }
+      saveAllocTargets();
+    });
+    input.addEventListener('blur', () => renderAllocList());
+  });
+}
+
+/**
+ * เปรียบเทียบสัดส่วนจริงกับเป้าหมายที่ตั้งไว้ แสดงว่าเกินเป้าหรือยังไม่ถึงเป้า
+ */
+function renderTargetCompareHtml(actualPct, targetPct) {
+  if (targetPct === undefined || targetPct === null) return '';
+  const diff = actualPct - targetPct;
+  if (Math.abs(diff) < 0.5) {
+    return `<span class="alloc-target-compare ontarget">✓ ตรงเป้า (${fmt(targetPct,0)}%)</span>`;
+  }
+  if (diff > 0) {
+    return `<span class="alloc-target-compare over">เกินเป้า +${fmt(diff,1)}%</span>`;
+  }
+  return `<span class="alloc-target-compare under">ต่ำกว่าเป้า ${fmt(diff,1)}%</span>`;
 }
 
 /**
@@ -1125,26 +1194,49 @@ function renderDcaResultHtml(row, amountStr) {
 
 function renderTransactions() {
   const el = document.getElementById('txnList');
-  const txns = state.transactions.filter(t => t['รายการ'] && t['รายการ'] !== 'USD').slice(0, 15);
+  const txns = state.transactions.filter(t => t['รายการ'] && t['รายการ'] !== 'USD').slice(0, 40);
   if (!txns.length) {
     el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div class="msg">ยังไม่มีรายการ</div></div>`;
     return;
   }
-  el.innerHTML = txns.map(t => {
-    const isBuy = t['action'] === 'ซื้อ';
-    const dateStr = t['Date'] ? new Date(t['Date']).toLocaleDateString('th-TH', {day:'numeric', month:'short', year:'2-digit'}) : '';
+
+  // จัดกลุ่มรายการตามวันที่ เพื่อให้เห็นวันที่ชัดเจนขึ้นเวลามีรายการเยอะ
+  const groups = [];
+  let currentKey = null;
+  txns.forEach(t => {
+    const d = t['Date'] ? new Date(t['Date']) : null;
+    const key = d ? d.toDateString() : 'ไม่ระบุวันที่';
+    if (key !== currentKey) {
+      groups.push({ key, date: d, items: [] });
+      currentKey = key;
+    }
+    groups[groups.length - 1].items.push(t);
+  });
+
+  el.innerHTML = groups.map(g => {
+    const dateLabel = g.date
+      ? g.date.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
+      : 'ไม่ระบุวันที่';
+    const rowsHtml = g.items.map(t => {
+      const isBuy = t['action'] === 'ซื้อ';
+      return `
+        <div class="txn-row">
+          <div class="txn-badge ${isBuy?'buy':'sell'}">${isBuy?'B':'S'}</div>
+          <div class="txn-mid">
+            <div class="txn-stock">${t['รายการ']}</div>
+            <div class="txn-date">${t['Port']}</div>
+          </div>
+          <div class="txn-right">
+            <div class="txn-amount">$${fmt(t['รวม $'])}</div>
+            <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
+          </div>
+          <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้">🗑</button>
+        </div>`;
+    }).join('');
     return `
-      <div class="txn-row">
-        <div class="txn-badge ${isBuy?'buy':'sell'}">${isBuy?'B':'S'}</div>
-        <div class="txn-mid">
-          <div class="txn-stock">${t['รายการ']}</div>
-          <div class="txn-date">${dateStr} · ${t['Port']}</div>
-        </div>
-        <div class="txn-right">
-          <div class="txn-amount">$${fmt(t['รวม $'])}</div>
-          <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
-        </div>
-        <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้">🗑</button>
+      <div class="txn-date-group">
+        <div class="txn-date-header">${dateLabel}</div>
+        ${rowsHtml}
       </div>`;
   }).join('');
 
