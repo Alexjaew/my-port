@@ -874,12 +874,13 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      const [summary, dashboard, ports, txns, history] = await Promise.all([
+      const [summary, dashboard, ports, txns, history, allocTargetsRes] = await Promise.all([
         api('summary'),
         api('dashboard'),
         api('ports'),
         api('transactions', { port: state.port === 'ALL' ? null : state.port }),
-        api('history')
+        api('history'),
+        api('allocTargets')
       ]);
       if (summary.error || dashboard.error || ports.error || txns.error) {
         const errMsg = summary.error || dashboard.error || ports.error || txns.error;
@@ -890,6 +891,12 @@ async function loadAll() {
       state.ports = ports.ports || [];
       state.transactions = txns.rows || [];
       state.history = (history && history.rows) || [];
+      // เป้าหมายสัดส่วน: ใช้ค่าจาก Sheet เป็นหลัก (ถาวร ไม่หายแม้ Safari ล้างข้อมูลเบราว์เซอร์)
+      // ถ้าดึงจาก Sheet ไม่สำเร็จ (error) ให้ใช้ค่าที่ cache ไว้ใน localStorage แทนชั่วคราว
+      if (allocTargetsRes && !allocTargetsRes.error) {
+        state.allocTargets = allocTargetsRes.targets || {};
+        saveAllocTargets(); // sync กลับเข้า localStorage เป็น cache สำรอง
+      }
       renderPortSwitch();
       renderHero();
       renderValueLineChart();
@@ -1245,11 +1252,34 @@ function renderAllocList() {
     });
   });
   el.querySelectorAll('.alloc-target-input').forEach(input => {
-    input.addEventListener('blur', () => renderAllocList());
+    input.addEventListener('blur', () => {
+      renderAllocList();
+      saveAllocTargetsToServer();
+    });
   });
   el.querySelectorAll('.alloc-target-save-btn').forEach(btn => {
-    btn.addEventListener('click', () => renderAllocList());
+    btn.addEventListener('click', () => {
+      renderAllocList();
+      saveAllocTargetsToServer();
+    });
   });
+}
+
+/**
+ * ส่งเป้าหมายสัดส่วนทั้งหมดไปบันทึกไว้ใน Google Sheet (ชีต "ตั้งค่า")
+ * เพื่อให้ค่าคงอยู่ถาวร ไม่หายแม้ Safari ล้างข้อมูลเบราว์เซอร์ และใช้ค่าเดียวกันได้ทุกอุปกรณ์
+ * (ถ้า Apps Script ยังไม่ได้ redeploy เวอร์ชันที่รองรับ endpoint นี้ จะแค่ไม่บันทึก ไม่กระทบส่วนอื่นของแอพ)
+ */
+let allocTargetsSaveTimer = null;
+function saveAllocTargetsToServer() {
+  clearTimeout(allocTargetsSaveTimer);
+  allocTargetsSaveTimer = setTimeout(async () => {
+    try {
+      await apiPost({ endpoint: 'saveAllocTargets', targets: state.allocTargets });
+    } catch (err) {
+      console.error('saveAllocTargetsToServer failed:', err);
+    }
+  }, 400);
 }
 
 /**
