@@ -1394,13 +1394,17 @@ function renderTransactions() {
   }
 
   // จัดกลุ่มรายการตามวันที่ เพื่อให้เห็นวันที่ชัดเจนขึ้นเวลามีรายการเยอะ
+  // ใช้ _date (อ่านจากคอลัมน์ A ตรงๆ) เป็นหลัก ถ้าไม่มีค่อย fallback ไปที่ Date (ชื่อหัวคอลัมน์)
+  const getTxnDateRaw = (t) => t['_date'] || t['Date'] || null;
   const groups = [];
   let currentKey = null;
   txns.forEach(t => {
-    const d = t['Date'] ? new Date(t['Date']) : null;
-    const key = d ? d.toDateString() : 'ไม่ระบุวันที่';
+    const raw = getTxnDateRaw(t);
+    const d = raw ? new Date(raw) : null;
+    const validDate = d && !isNaN(d.getTime()) ? d : null;
+    const key = validDate ? validDate.toDateString() : 'ไม่ระบุวันที่';
     if (key !== currentKey) {
-      groups.push({ key, date: d, items: [] });
+      groups.push({ key, date: validDate, items: [] });
       currentKey = key;
     }
     groups[groups.length - 1].items.push(t);
@@ -1412,9 +1416,11 @@ function renderTransactions() {
       : 'ไม่ระบุวันที่';
     const rowsHtml = g.items.map(t => {
       const isBuy = t['action'] === 'ซื้อ';
-      const shortDate = t['Date']
-        ? new Date(t['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
-        : '';
+      const rawDate = getTxnDateRaw(t);
+      const parsedDate = rawDate ? new Date(rawDate) : null;
+      const shortDate = (parsedDate && !isNaN(parsedDate.getTime()))
+        ? parsedDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+        : 'ไม่ระบุวันที่';
       return `
         <div class="txn-row">
           <div class="txn-badge ${isBuy?'buy':'sell'}">${isBuy?'B':'S'}</div>
