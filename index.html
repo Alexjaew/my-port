@@ -1005,16 +1005,29 @@ function renderHero() {
   }
 
   // เปลี่ยนแปลงวันนี้ — ดึงจากแถวล่าสุดใน Sheet History (คอลัมน์ Daily Change / Daily %)
+  // ตรวจสอบช่องว่างวันที่จริงระหว่าง 2 แถวล่าสุดด้วย เพราะถ้า trigger saveDailyPnL ไม่ได้รันทุกวัน
+  // ตัวเลขนี้อาจเป็นผลรวมหลายวันซ้อนกัน ไม่ใช่การเปลี่ยนแปลงของวันนี้วันเดียวจริงๆ
   const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
   const heroDailyEl = document.getElementById('heroDaily');
   if (historyData.length > 0) {
     const latest = historyData[historyData.length - 1];
+    const prev = historyData.length > 1 ? historyData[historyData.length - 2] : null;
     const dailyChange = Number(latest['Daily Change']) || 0;
     const dailyPct = Number(latest['Daily %']) || 0;
     const dailyUp = dailyChange >= 0;
+
+    let label = 'วันนี้';
+    if (prev && prev['Date']) {
+      const gapDays = Math.round((new Date(latest['Date']) - new Date(prev['Date'])) / 86400000);
+      if (gapDays > 1) {
+        const sinceDate = new Date(prev['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+        label = `เปลี่ยนแปลงตั้งแต่ ${sinceDate} (${gapDays} วัน)`;
+      }
+    }
+
     heroDailyEl.style.display = 'block';
     heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    heroDailyEl.innerHTML = `วันนี้ <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
+    heroDailyEl.innerHTML = `${label} <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
   } else {
     heroDailyEl.style.display = 'none';
   }
