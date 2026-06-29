@@ -1057,11 +1057,23 @@ function renderValueLineChart() {
   const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H-PAD_BOTTOM} L${points[0][0].toFixed(1)},${H-PAD_BOTTOM} Z`;
 
   const last = values[values.length - 1];
-  const first = values[0];
-  const totalChange = last - first;
-  const totalChangePct = first ? totalChange / first : 0;
-  const up = totalChange >= 0;
+  // ใช้ Daily Change/Daily % ของแถวล่าสุดจริง (เหมือนกับที่ใช้ในกล่อง "วันนี้" หน้าแรก)
+  // ไม่ใช่ผลต่างระหว่างมูลค่าล่าสุดกับมูลค่าแรกสุดที่เคยบันทึกไว้ (ซึ่งจะกลายเป็นผลตอบแทนรวมตั้งแต่ต้น ไม่ใช่การเปลี่ยนแปลงล่าสุด)
+  const latestRow = data[data.length - 1];
+  const prevRow = data.length > 1 ? data[data.length - 2] : null;
+  const dailyChange = Number(latestRow['Daily Change']) || 0;
+  const dailyPct = Number(latestRow['Daily %']) || 0;
+  const up = dailyChange >= 0;
   const lineColor = up ? '#1B7A4D' : '#B23B2E';
+
+  let deltaLabel = '';
+  if (prevRow && prevRow['Date']) {
+    const gapDays = Math.round((new Date(latestRow['Date']) - new Date(prevRow['Date'])) / 86400000);
+    if (gapDays > 1) {
+      const sinceDate = new Date(prevRow['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+      deltaLabel = ` (ตั้งแต่ ${sinceDate})`;
+    }
+  }
 
   const firstDate = new Date(data[0]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
   const lastDate = new Date(data[data.length-1]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
@@ -1069,7 +1081,7 @@ function renderValueLineChart() {
   card.innerHTML = `
     <div class="chart-meta">
       <div class="chart-meta-value">$${fmt(last)}</div>
-      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(totalChange))} (${fmtPct(totalChangePct)})</div>
+      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(dailyChange))} (${fmtPct(dailyPct)})${deltaLabel}</div>
     </div>
     <div class="line-svg-wrap">
       <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
