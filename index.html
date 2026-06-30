@@ -350,6 +350,14 @@
   .alloc-sum-status.ontarget { background: var(--gain-soft); color: var(--gain); }
   .alloc-sum-status.over { background: var(--loss-soft); color: var(--loss); }
   .alloc-sum-status.under { background: var(--accent-soft); color: var(--accent-text); }
+  .alloc-normalize-btn {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11.5px; font-weight: 700; color: var(--accent-dark-text);
+    background: var(--accent-dark); border: none; border-radius: 100px;
+    padding: 5px 10px; cursor: pointer; white-space: nowrap;
+    transition: transform .12s ease;
+  }
+  .alloc-normalize-btn:active { transform: scale(0.94); }
   .dca-calc-suffix { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
   .dca-alloc-projection {
     margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--accent-border);
@@ -1198,18 +1206,40 @@ function updateAllocTargetSumBar() {
   const sum = targets.reduce((s, v) => s + (Number(v) || 0), 0);
   const diff = sum - 100;
   let statusHtml;
+  let normalizeBtnHtml = '';
   if (Math.abs(diff) < 0.05) {
     statusHtml = `<span class="alloc-sum-status ontarget">✓ ครบ 100% พอดี</span>`;
   } else if (diff > 0) {
     statusHtml = `<span class="alloc-sum-status over">เกิน 100% ไป ${fmt(diff,1)}%</span>`;
+    normalizeBtnHtml = `<button class="alloc-normalize-btn" id="normalizeTargetsBtn"><i class="ti ti-adjustments-horizontal"></i> ปรับให้รวม 100%</button>`;
   } else {
     statusHtml = `<span class="alloc-sum-status under">ขาดอีก ${fmt(Math.abs(diff),1)}% ถึง 100%</span>`;
   }
   bar.innerHTML = `
     <div class="alloc-sum-bar">
       <span class="alloc-sum-label">เป้าหมายรวมทั้งหมด: <b>${fmt(sum,1)}%</b></span>
-      ${statusHtml}
+      <div style="display:flex;align-items:center;gap:8px;">
+        ${statusHtml}
+        ${normalizeBtnHtml}
+      </div>
     </div>`;
+
+  // ปุ่ม "ปรับให้รวม 100%" — ลดทุกเป้าหมายตามสัดส่วนเดิม (proportional scale-down)
+  // เพื่อให้ผลรวมกลับมาเท่ากับ 100% พอดี โดยไม่เปลี่ยนสัดส่วนเทียบกันระหว่างหุ้นแต่ละตัว
+  const normalizeBtn = document.getElementById('normalizeTargetsBtn');
+  if (normalizeBtn) {
+    normalizeBtn.onclick = () => {
+      const ok = confirm(`ปรับเป้าหมายทุกตัวให้รวมกันเป็น 100% พอดี (ลดตามสัดส่วนเดิม) ใช่ไหม?`);
+      if (!ok) return;
+      const scale = 100 / sum;
+      Object.keys(state.allocTargets).forEach(ticker => {
+        state.allocTargets[ticker] = Math.round(state.allocTargets[ticker] * scale * 100) / 100;
+      });
+      saveAllocTargets();
+      saveAllocTargetsToServer();
+      renderAllocList();
+    };
+  }
 }
 
 function renderAllocList() {
