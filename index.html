@@ -5,6 +5,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="theme-color" id="themeColorMeta" content="#FAF8F4">
 <title>My Port — Portfolio Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <style>
   :root {
     --ink: #0E1116;
@@ -25,9 +29,9 @@
     --accent-dark: #0E1116;
     --accent-dark-text: #FAF8F4;
     --skel-shine: #ECE8DE;
-    --mono: 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
-    --serif: 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
-    --sans: -apple-system, 'Inter', system-ui, sans-serif;
+    --mono: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
+    --serif: 'Fraunces', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
+    --sans: 'Inter', -apple-system, system-ui, sans-serif;
     /* ความลึก/เงา ใช้ร่วมกันทั้งแอป ให้การ์ดดูยกขึ้นมาแบบมีมิติแทนที่จะแบนเรียบ */
     --shadow-sm: 0 1px 2px rgba(14,17,22,0.04), 0 1px 1px rgba(14,17,22,0.03);
     --shadow-md: 0 8px 24px -8px rgba(14,17,22,0.12), 0 2px 6px -2px rgba(14,17,22,0.06);
@@ -461,30 +465,29 @@
   .legend-pct { color: var(--ink-soft); font-family: var(--mono); margin-left: auto; }
 
   .bar-chart-wrap {
-    display: flex; align-items: flex-end; gap: 8px;
+    display: flex; align-items: flex-end; gap: 6px;
     height: 180px; padding: 0 2px 0;
-    overflow-x: auto;
-    -ms-overflow-style: none; scrollbar-width: none;
   }
-  .bar-chart-wrap::-webkit-scrollbar { display: none; }
   .bar-col {
     display: flex; flex-direction: column; align-items: center;
-    flex: 0 0 auto; width: 40px;
+    flex: 1 1 0; min-width: 0; max-width: 56px;
     height: 100%;
     justify-content: flex-end;
   }
   .bar-pct-label {
-    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
+    font-family: var(--mono); font-size: 10px; font-weight: 700;
     color: var(--ink-soft); margin-bottom: 4px; white-space: nowrap;
   }
   .bar-fill {
-    width: 22px;
-    border-radius: 6px 6px 3px 3px;
+    width: 70%;
+    max-width: 22px;
+    border-radius: 7px 7px 3px 3px;
     min-height: 3px;
   }
   .bar-ticker-label {
-    font-family: var(--mono); font-size: 11px; font-weight: 700;
+    font-family: var(--mono); font-size: 10.5px; font-weight: 700;
     margin-top: 8px; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   }
 
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
@@ -665,8 +668,8 @@
     <div class="topbar-row">
       <div class="brand">My Port<span class="dot">.</span></div>
       <div class="topbar-actions">
-        <button id="themeToggleBtn" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;">🌙</button>
-        <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;">⚙︎</button>
+        <button id="themeToggleBtn" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-moon"></i></button>
+        <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-settings"></i></button>
       </div>
     </div>
     <div class="port-switch" id="portSwitch"></div>
@@ -675,7 +678,7 @@
   <div id="setupBanner"></div>
 
   <div class="section">
-    <div class="section-label">มูลค่าพอร์ต</div>
+    <div class="section-label">Portfolio Value · มูลค่าพอร์ต</div>
     <div class="hero-card">
       <div class="basis-toggle" id="valueModeToggle">
         <div class="basis-btn active" data-mode="market">มูลค่าตามราคาตลาด</div>
@@ -687,7 +690,7 @@
       <div class="hero-daily" id="heroDaily" style="display:none"></div>
       <div class="hero-foot">
         <div class="hero-foot-item">
-          <div class="hero-foot-label">เงินต้น</div>
+          <div class="hero-foot-label">Cost Basis · เงินต้น</div>
           <div class="hero-foot-value" id="footCost">—</div>
         </div>
         <div class="hero-foot-item">
@@ -699,14 +702,14 @@
   </div>
 
   <div class="section">
-    <div class="section-label">มูลค่าพอร์ตรายวัน</div>
+    <div class="section-label">Daily Value · มูลค่าพอร์ตรายวัน</div>
     <div class="chart-card" id="valueChartCard">
       <div class="skel" style="height:160px;"></div>
     </div>
   </div>
 
   <div class="section">
-    <div class="section-label">สัดส่วนหุ้น (กราฟแท่ง)</div>
+    <div class="section-label">Allocation · สัดส่วนหุ้น</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:220px;"></div>
     </div>
@@ -714,7 +717,7 @@
 
   <div class="section">
     <div class="section-label-row">
-      <div class="section-label">สัดส่วนการลงทุน</div>
+      <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
       <div class="basis-toggle-inline" id="basisToggle">
         <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
         <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
@@ -729,14 +732,14 @@
   </div>
 
   <div class="section">
-    <div class="section-label">รายการล่าสุด</div>
+    <div class="section-label">Recent Activity · รายการล่าสุด</div>
     <div id="txnList" style="background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-md);padding:4px 14px;box-shadow:var(--shadow-sm);">
       <div class="skel" style="height:50px;margin:10px 0;"></div>
       <div class="skel" style="height:50px;margin:10px 0;"></div>
     </div>
   </div>
 
-  <button class="fab" id="fabAdd">+</button>
+  <button class="fab" id="fabAdd"><i class="ti ti-plus"></i></button>
 
   <div class="sheet-backdrop" id="sheetBackdrop"></div>
   <div class="sheet" id="addSheet">
@@ -812,7 +815,7 @@ function updateThemeIcon() {
   const current = document.documentElement.getAttribute('data-theme');
   const isDark = current === 'dark' ||
     (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  document.getElementById('themeToggleBtn').textContent = isDark ? '☀️' : '🌙';
+  document.getElementById('themeToggleBtn').innerHTML = isDark ? '<i class="ti ti-sun"></i>' : '<i class="ti ti-moon"></i>';
   document.getElementById('themeColorMeta').setAttribute('content', isDark ? '#121316' : '#FAF8F4');
 }
 
@@ -960,7 +963,7 @@ async function loadAll() {
       }
       // พยายามครบจำนวนครั้งแล้วยังไม่สำเร็จ ค่อยแจ้ง error จริง
       document.getElementById('allocList').innerHTML =
-        `<div class="empty-state"><div class="icon">⚠️</div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙︎ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
+        `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
       showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
     }
   }
@@ -1017,7 +1020,7 @@ function renderHero() {
   const isMarket = state.valueMode === 'market';
   const displayValue = isMarket ? marketValue : costValue;
 
-  document.getElementById('heroLabel').textContent = isMarket ? 'มูลค่าปัจจุบัน' : 'มูลค่าตามต้นทุน (FIFO)';
+  document.getElementById('heroLabel').textContent = isMarket ? 'Current Value · มูลค่าปัจจุบัน' : 'Cost Basis (FIFO) · มูลค่าตามต้นทุน';
 
   const valStr = fmt(displayValue, 2);
   const [intPart, decPart] = valStr.split('.');
@@ -1032,7 +1035,7 @@ function renderHero() {
     // โหมดมูลค่าตามราคาตลาด: กำไร/ขาดทุน = มูลค่าปัจจุบัน เทียบกับเงินต้นที่ฝากเข้ามา
     const profit = marketValue - principal;
     const profitPct = principal ? profit / principal : 0;
-    document.getElementById('footProfitLabel').textContent = 'กำไร/ขาดทุน';
+    document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
     document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
     document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
@@ -1041,7 +1044,7 @@ function renderHero() {
     // โหมดมูลค่าตามต้นทุน: เทียบทุน FIFO ของหุ้น กับเงินต้นที่ฝากเข้ามา (ส่วนต่างจากการ reinvest กำไร)
     const diff = costValue - principal;
     const diffPct = principal ? diff / principal : 0;
-    document.getElementById('footProfitLabel').textContent = 'ส่วนต่างจากเงินต้น';
+    document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
     document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
     document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
@@ -1458,7 +1461,7 @@ function renderTransactions() {
   const el = document.getElementById('txnList');
   const txns = state.transactions.filter(t => t['รายการ'] && t['รายการ'] !== 'USD').slice(0, 40);
   if (!txns.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📋</div><div class="msg">ยังไม่มีรายการ</div></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon"><i class="ti ti-clipboard-list"></i></div><div class="msg">ยังไม่มีรายการ</div></div>`;
     return;
   }
 
@@ -1501,7 +1504,7 @@ function renderTransactions() {
             <div class="txn-amount">$${fmt(t['รวม $'])}</div>
             <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
           </div>
-          <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้">🗑</button>
+          <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้"><i class="ti ti-trash"></i></button>
         </div>`;
     }).join('');
     return `
@@ -1519,7 +1522,7 @@ function renderTransactions() {
       if (!confirmed) return;
 
       btn.disabled = true;
-      btn.textContent = '...';
+      btn.innerHTML = '<i class="ti ti-loader-2"></i>';
       try {
         const result = await apiPost({ endpoint: 'deleteTransaction', row: row, stock: stock });
         if (result.success) {
@@ -1527,12 +1530,12 @@ function renderTransactions() {
         } else {
           alert(result.error || 'ลบไม่สำเร็จ');
           btn.disabled = false;
-          btn.textContent = '🗑';
+          btn.innerHTML = '<i class="ti ti-trash"></i>';
         }
       } catch (err) {
         alert('เชื่อมต่อไม่สำเร็จ: ' + err.message);
         btn.disabled = false;
-        btn.textContent = '🗑';
+        btn.innerHTML = '<i class="ti ti-trash"></i>';
       }
     });
   });
