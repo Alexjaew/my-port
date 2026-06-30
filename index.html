@@ -285,7 +285,12 @@
   .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
 
   /* แบบไม่มีเป้าหมาย: แท่งสีตามหุ้น + ปุ่มตั้งเป้าหมาย */
-  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; }
+  .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; position: relative; }
+  .alloc-eq-marker {
+    position: absolute; top: -2px; bottom: -2px; width: 2px;
+    background: var(--ink-soft); opacity: 0.5;
+  }
+  .alloc-eq-note { color: var(--ink-soft); opacity: 0.7; font-weight: 500; }
   .alloc-bar-fill { height: 100%; border-radius: 4px; }
   .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
   .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
@@ -1218,6 +1223,7 @@ function renderAllocList() {
   const basis = state.basis;
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
+  const equalPct = 100 / sorted.length; // Equal-Weight (1/N) — น้ำหนักอ้างอิงเทียบกับสไตล์มืออาชีพ
 
   el.innerHTML = sorted.map((r, i) => {
     const value = Number(r['มูลค่าปัจจุบัน']) || 0;
@@ -1247,15 +1253,16 @@ function renderAllocList() {
             </div>
 
             <div class="alloc-target-summary" style="display:${hasTarget ? 'block' : 'none'};">
-              ${hasTarget ? renderTargetRoomBarHtml(pct, targetVal, ticker) : ''}
+              ${hasTarget ? renderTargetRoomBarHtml(pct, targetVal, ticker, equalPct) : ''}
             </div>
 
             <div class="alloc-no-target" style="display:${hasTarget ? 'none' : 'block'};">
               <div class="alloc-bar-track">
                 <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
+                <div class="alloc-eq-marker" style="left:${Math.min(equalPct,100).toFixed(1)}%;" title="Equal-Weight 1/N: ${equalPct.toFixed(1)}%"></div>
               </div>
               <div class="alloc-pct-row">
-                <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
+                <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต <span class="alloc-eq-note">· Equal-Weight ${equalPct.toFixed(1)}%</span></span>
                 <button class="alloc-target-add-btn" data-ticker="${ticker}">+ ตั้งเป้าหมาย</button>
               </div>
             </div>
@@ -1367,15 +1374,16 @@ function getRoomColor(ratio) {
 /**
  * แสดงแถบสีสรุปสัดส่วนเทียบกับเป้าหมายที่ตั้งไว้ พร้อมปุ่มแก้ไข
  */
-function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
+function renderTargetRoomBarHtml(actualPct, targetPct, ticker, equalPct) {
   const ratio = targetPct > 0 ? actualPct / targetPct : 0;
   const barWidth = Math.min(ratio, 1) * 100;
   const overTarget = ratio > 1;
   const color = overTarget ? '#D9483B' : getRoomColor(ratio);
+  const eqNote = equalPct !== undefined ? `&nbsp;|&nbsp;Equal-Weight: <b>${fmt(equalPct,1)}%</b>` : '';
 
   return `
     <div class="alloc-target-summary-text">
-      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>
+      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>${eqNote}
     </div>
     <div class="alloc-room-bar-track">
       <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
