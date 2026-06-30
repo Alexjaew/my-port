@@ -321,6 +321,22 @@
   }
   .alloc-target-save-btn { padding: 7px 12px; font-size: 13px; flex: 0 0 auto; }
 
+  .alloc-target-lock-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 22px; height: 22px; border-radius: 50%;
+    border: 1px solid var(--line); background: var(--paper);
+    color: var(--ink-soft); font-size: 11.5px; cursor: pointer;
+    transition: all .15s ease; flex: 0 0 auto;
+  }
+  .alloc-target-lock-btn.locked {
+    background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-text);
+  }
+  .alloc-locked-tag {
+    display: inline-flex; align-items: center; gap: 3px;
+    font-size: 10px; font-weight: 700; color: var(--accent-text);
+    background: var(--accent-soft); border-radius: 100px; padding: 1px 7px;
+  }
+
   .alloc-target-input-row {
     display: flex; align-items: center; gap: 6px;
     margin-top: 8px;
@@ -842,8 +858,13 @@ const state = {
   ports: [],
   history: [],
   dcaInputs: {}, // เก็บค่าเงินที่ผู้ใช้กรอกไว้ในตัวคำนวณ DCA ต่อหุ้น เช่น { RKLB: 50 }
-  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}') // เป้าหมายสัดส่วน % ที่ผู้ใช้ตั้งเองต่อหุ้น เช่น { RKLB: 20 }
+  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}'), // เป้าหมายสัดส่วน % ที่ผู้ใช้ตั้งเองต่อหุ้น เช่น { RKLB: 20 }
+  allocLocked: JSON.parse(localStorage.getItem('portfolio_alloc_locked') || '{}') // หุ้นที่ล็อกไว้ไม่ให้โดนปรับตอนกด "ปรับให้รวม 100%" เช่น { MSFT: true }
 };
+
+function saveAllocLocked() {
+  localStorage.setItem('portfolio_alloc_locked', JSON.stringify(state.allocLocked));
+}
 
 function saveAllocTargets() {
   localStorage.setItem('portfolio_alloc_targets', JSON.stringify(state.allocTargets));
@@ -1224,15 +1245,35 @@ function updateAllocTargetSumBar() {
       </div>
     </div>`;
 
-  // ปุ่ม "ปรับให้รวม 100%" — ลดทุกเป้าหมายตามสัดส่วนเดิม (proportional scale-down)
-  // เพื่อให้ผลรวมกลับมาเท่ากับ 100% พอดี โดยไม่เปลี่ยนสัดส่วนเทียบกันระหว่างหุ้นแต่ละตัว
+  // ปุ่ม "ปรับให้รวม 100%" — ถ้ามีหุ้นที่ล็อกไว้ จะคงค่าหุ้นที่ล็อกไม่เปลี่ยน แล้วลด/ปรับเฉพาะ
+  // หุ้นที่ไม่ได้ล็อกตามสัดส่วนเดิมของมันเอง ให้ผลรวมทั้งหมดกลับมาเท่ากับ 100% พอดี
   const normalizeBtn = document.getElementById('normalizeTargetsBtn');
   if (normalizeBtn) {
     normalizeBtn.onclick = () => {
-      const ok = confirm(`ปรับเป้าหมายทุกตัวให้รวมกันเป็น 100% พอดี (ลดตามสัดส่วนเดิม) ใช่ไหม?`);
+      const allTickers = Object.keys(state.allocTargets);
+      const lockedTickers = allTickers.filter(t => state.allocLocked[t]);
+      const unlockedTickers = allTickers.filter(t => !state.allocLocked[t]);
+      const lockedSum = lockedTickers.reduce((s, t) => s + (Number(state.allocTargets[t]) || 0), 0);
+      const unlockedSum = unlockedTickers.reduce((s, t) => s + (Number(state.allocTargets[t]) || 0), 0);
+      const remaining = 100 - lockedSum;
+
+      if (!unlockedTickers.length) {
+        alert('ทุกตัวถูกล็อกไว้หมดแล้ว ไม่มีตัวให้ปรับ');
+        return;
+      }
+      if (remaining <= 0) {
+        alert(`หุ้นที่ล็อกไว้รวมกันแล้ว ${fmt(lockedSum,1)}% เกิน 100% ไปแล้ว กรุณาปลดล็อกบางตัวก่อน`);
+        return;
+      }
+
+      const lockMsg = lockedTickers.length
+        ? `(คงค่า ${lockedTickers.join(', ')} ที่ล็อกไว้ไม่เปลี่ยน รวม ${fmt(lockedSum,1)}% แล้วปรับตัวที่เหลือให้รวมเป็น ${fmt(remaining,1)}%)`
+        : '(ลดทุกตัวตามสัดส่วนเดิม)';
+      const ok = confirm(`ปรับเป้าหมายให้รวมกันเป็น 100% พอดี ${lockMsg} ใช่ไหม?`);
       if (!ok) return;
-      const scale = 100 / sum;
-      Object.keys(state.allocTargets).forEach(ticker => {
+
+      const scale = remaining / unlockedSum;
+      unlockedTickers.forEach(ticker => {
         state.allocTargets[ticker] = Math.round(state.allocTargets[ticker] * scale * 100) / 100;
       });
       saveAllocTargets();
@@ -1346,6 +1387,16 @@ function renderAllocList() {
     });
   });
 
+  // สลับสถานะล็อก/ปลดล็อก — หุ้นที่ล็อกไว้จะไม่ถูกแตะตอนกด "ปรับให้รวม 100%"
+  el.querySelectorAll('.alloc-target-lock-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ticker = btn.dataset.ticker;
+      state.allocLocked[ticker] = !state.allocLocked[ticker];
+      saveAllocLocked();
+      renderAllocList();
+    });
+  });
+
   // บันทึกค่าเป้าหมายลง localStorage ทุกครั้งที่พิมพ์ แล้วซ่อนช่องกรอกกลับเป็นแถบสีตอนกดบันทึก/ออกจากช่อง
   el.querySelectorAll('.alloc-target-input').forEach(input => {
     input.addEventListener('input', (e) => {
@@ -1410,17 +1461,21 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker, equalPct) {
   const overTarget = ratio > 1;
   const color = overTarget ? '#D9483B' : getRoomColor(ratio);
   const eqNote = equalPct !== undefined ? `&nbsp;|&nbsp;Equal-Weight: <b>${fmt(equalPct,1)}%</b>` : '';
+  const isLocked = !!state.allocLocked[ticker];
 
   return `
     <div class="alloc-target-summary-text">
-      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>${eqNote}
+      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>${eqNote}${isLocked ? ' <span class="alloc-locked-tag"><i class="ti ti-lock"></i> ล็อก</span>' : ''}
     </div>
     <div class="alloc-room-bar-track">
       <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
     </div>
     <div class="alloc-target-footer-row">
       ${overTarget ? `<span class="alloc-target-over-label">⚠ เกินเป้าหมายแล้ว</span>` : `<span class="alloc-target-room-label">เหลือที่ลงทุนได้อีก ${fmt(Math.max(0,targetPct-actualPct),2)}%</span>`}
-      <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ แก้ไข</button>
+      <div style="display:flex;align-items:center;gap:10px;">
+        <button class="alloc-target-lock-btn ${isLocked ? 'locked' : ''}" data-ticker="${ticker}" title="${isLocked ? 'ล็อกอยู่ — จะไม่ถูกปรับตอนกด \u0022ปรับให้รวม 100%\u0022' : 'กดเพื่อล็อกเป้าหมายนี้ไว้'}"><i class="ti ti-${isLocked ? 'lock' : 'lock-open'}"></i></button>
+        <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ แก้ไข</button>
+      </div>
     </div>
   `;
 }
