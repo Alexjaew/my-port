@@ -732,28 +732,35 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
-    <div class="chart-card" id="barChartCard">
-      <div class="skel" style="height:200px;"></div>
+<!-- กราฟแท่ง อยู่บน -->
+<div class="section">
+  <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
+
+  <div class="chart-card" id="barChartCard">
+    <div class="skel" style="height:200px;"></div>
+  </div>
+</div>
+
+
+<!-- กราฟกลม อยู่ล่าง -->
+<div class="section">
+  <div class="section-label-row">
+    <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
+
+    <div class="basis-toggle-inline" id="basisToggle">
+      <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
+      <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-label-row">
-      <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
-      <div class="basis-toggle-inline" id="basisToggle">
-        <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
-        <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
-      </div>
-    </div>
-    <div id="allocTargetSumBar"></div>
-    <div id="allocList">
-      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
-      <div class="skel" style="height:64px;margin-bottom:8px;"></div>
-      <div class="skel" style="height:64px;"></div>
-    </div>
+  <div id="allocTargetSumBar"></div>
+
+  <div id="allocList">
+    <div class="skel" style="height:64px;margin-bottom:8px"></div>
+    <div class="skel" style="height:64px;margin-bottom:8px"></div>
+    <div class="skel" style="height:64px"></div>
   </div>
+</div>
 
   <div class="section">
     <div class="section-label">Recent Activity · รายการล่าสุด</div>
