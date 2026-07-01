@@ -725,6 +725,15 @@
     </div>
   </div>
 
+  <!-- กราฟแท่ง สลับขึ้นมาอยู่บนแล้ว -->
+  <div class="section">
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
+    <div class="chart-card" id="barChartCard">
+      <div class="skel" style="height:200px;"></div>
+    </div>
+  </div>
+
+  <!-- กราฟกลม สลับลงมาอยู่ล่างแล้ว -->
   <div class="section">
     <div class="section-label">Allocation · สัดส่วนหุ้น</div>
     <div class="chart-card" id="donutChartCard">
@@ -732,35 +741,21 @@
     </div>
   </div>
 
-<!-- กราฟแท่ง อยู่บน -->
-<div class="section">
-  <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
-
-  <div class="chart-card" id="barChartCard">
-    <div class="skel" style="height:200px;"></div>
-  </div>
-</div>
-
-
-<!-- กราฟกลม อยู่ล่าง -->
-<div class="section">
-  <div class="section-label-row">
-    <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
-
-    <div class="basis-toggle-inline" id="basisToggle">
-      <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
-      <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
+  <div class="section">
+    <div class="section-label-row">
+      <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
+      <div class="basis-toggle-inline" id="basisToggle">
+        <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
+        <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
+      </div>
+    </div>
+    <div id="allocTargetSumBar"></div>
+    <div id="allocList">
+      <div class="skel" style="height:64px;margin-bottom:8px"></div>
+      <div class="skel" style="height:64px;margin-bottom:8px"></div>
+      <div class="skel" style="height:64px"></div>
     </div>
   </div>
-
-  <div id="allocTargetSumBar"></div>
-
-  <div id="allocList">
-    <div class="skel" style="height:64px;margin-bottom:8px"></div>
-    <div class="skel" style="height:64px;margin-bottom:8px"></div>
-    <div class="skel" style="height:64px"></div>
-  </div>
-</div>
 
   <div class="section">
     <div class="section-label">Recent Activity · รายการล่าสุด</div>
@@ -1005,8 +1000,8 @@ function renderPortSwitch() {
 
 function rerenderForBasisOrPort() {
   renderHero();
-renderAllocList();
-renderBarChart();
+  renderAllocList();
+  renderBarChart();
 }
 
 function getFilteredSummaryRows() {
@@ -1250,14 +1245,12 @@ function renderPLChart() {
   }
   const basis = state.basis;
 
-  // 1. หาแผนผังสีดั้งเดิมของ Donut เพื่อเอามาแมปสีให้ตรงกันร้อยเปอร์เซ็นต์
   const donutSorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   const tickerColorMap = {};
   donutSorted.forEach((r, i) => {
     tickerColorMap[r['หุ้น']] = CHART_COLORS[i % CHART_COLORS.length];
   });
 
-  // 2. เรียงลำดับจาก "มากไปหาน้อย" (กำไรมากที่สุดอยู่ซ้าย -> ขาดทุนมากที่สุดอยู่ขวา)
   const withData = rows.map(r => ({
     ticker: r['หุ้น'],
     value:  Number(r['มูลค่าปัจจุบัน']) || 0,
@@ -1267,7 +1260,6 @@ function renderPLChart() {
   const tickers   = withData.map(r => r.ticker);
   const values    = withData.map(r => r.value);
   const plPcts    = withData.map(r => r.plPct);
-  // ดึงสีที่คู่กับหุ้นตัวนั้น ๆ มาใช้งาน
   const barColors = tickers.map(t => tickerColorMap[t] || '#2a78d6');
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
@@ -1294,7 +1286,7 @@ function renderPLChart() {
         backgroundColor: barColors,
         borderRadius: 4,
         borderSkipped: false,
-        barThickness: 20 // ปรับแท่งให้เล็กลงเรียวสวย (จากเดิม 36)
+        barThickness: 20
       }]
     },
     options: {
@@ -1333,47 +1325,30 @@ function renderPLChart() {
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
           const pct = plPcts[i];
           const label = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-          const color = pct >= 0 ? '#1B7A4D' : '#B23B2E';
           
           c.save();
-          c.fillStyle = color;
           c.font = 'bold 11px -apple-system, monospace, sans-serif';
           c.textAlign = 'center';
 
-          // หากค่าติดลบ ให้สลับตำแหน่งไปแสดงอยู่ใต้ฐานกราฟแท่งนั้น ๆ
- if (pct >= 0) {
-
-    // % บวก อยู่ด้านบนแท่ง
-    c.save();
-
-    c.translate(bar.x, bar.y + 24);
-    c.rotate(Math.PI / 2);
-
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-
-     c.fillStyle = "#ffffff"; // สีขาว
-    c.fillText(label, 0, 0);
-
-    c.restore();
-
-} else {
-
-    // % ลบ เริ่มจากฐานกราฟ
-    c.save();
-
-    c.translate(bar.x, bar.base - 22);
-    c.rotate(-Math.PI / 2);
-
-    c.textAlign = "center";
-    c.textBaseline = "middle";
-
-     c.fillStyle = "#ffffff"; // สีขาว
-    c.fillText(label, 0, 0);
-
-    c.restore();
-
-}
+          if (pct >= 0) {
+            c.save();
+            c.translate(bar.x, bar.y + 24);
+            c.rotate(Math.PI / 2);
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            c.fillStyle = "#ffffff";
+            c.fillText(label, 0, 0);
+            c.restore();
+          } else {
+            c.save();
+            c.translate(bar.x, bar.base - 22);
+            c.rotate(-Math.PI / 2);
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            c.fillStyle = "#ffffff";
+            c.fillText(label, 0, 0);
+            c.restore();
+          }
         });
       }
     }]
