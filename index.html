@@ -1,61 +1,102 @@
-import pandas as pd
-import matplotlib.pyplot as plt
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Stock Percentage Change</title>
+    <!-- โหลดไลบรารี Chart.js จากอินเทอร์เน็ต -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f9f9f9;
+        }
+        .chart-container {
+            width: 80%;
+            max-width: 800px;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
 
-# 1. สร้างข้อมูลจำลอง (นำไปแทนที่ด้วยข้อมูลจริงของคุณได้เลย)
-data = {
-    'Stock': ['PTT', 'AOT', 'CPALL', 'ADVANC', 'DELTA', 'SCC'],
-    'Percent': [-2.5, 5.2, -4.1, 1.8, 10.5, -1.0]
-}
-df = pd.DataFrame(data)
+    <div class="chart-container">
+        <!-- พื้นที่สำหรับแสดงกราฟ -->
+        <canvas id="myChart"></canvas>
+    </div>
 
-# ==========================================
-# ส่วนที่ 1: การแก้ปัญหาเรียงกราฟจากยาวไปหาน้อย
-# ==========================================
-# เรียงลำดับจากเปอร์เซ็นต์มากไปน้อย
-df = df.sort_values(by='Percent', ascending=False)
+    <script>
+        // 1. ข้อมูลตั้งต้น
+        let stockData = [
+            { name: 'PTT', percent: -2.5 },
+            { name: 'AOT', percent: 5.2 },
+            { name: 'CPALL', percent: -4.1 },
+            { name: 'ADVANC', percent: 1.8 },
+            { name: 'DELTA', percent: 10.5 },
+            { name: 'SCC', percent: -1.0 }
+        ];
 
-# ==========================================
-# ส่วนที่ 2: การตั้งค่ากราฟและการพล็อต
-# ==========================================
-fig, ax = plt.subplots(figsize=(10, 6))
+        // 2. การแก้ปัญหา: เรียงลำดับข้อมูลจากมากไปน้อย (ยาวไปหาน้อย)
+        stockData.sort((a, b) => b.percent - a.percent);
 
-# สร้างกราฟแท่ง (กำหนดให้ค่าบวกเป็นสีเขียว ค่าลบเป็นสีแดง)
-colors = ['#2ca02c' if val > 0 else '#d62728' for val in df['Percent']]
-bars = ax.bar(df['Stock'], df['Percent'], color=colors)
+        // แยกข้อมูลชื่อหุ้นและตัวเลขออกจากกันเพื่อเตรียมพล็อต
+        const labels = stockData.map(item => item.name);
+        const data = stockData.map(item => item.percent);
+        
+        // กำหนดสี: ถ้าค่าบวกเป็นสีเขียว ค่าลบเป็นสีแดง
+        const backgroundColors = data.map(value => value > 0 ? 'rgba(44, 160, 44, 0.8)' : 'rgba(214, 39, 40, 0.8)');
 
-# สร้างเส้นฐานที่ 0 (ช่วยให้เห็นชัดเจนว่าจุดไหนคือเส้นแบ่งบวกลบ)
-ax.axhline(0, color='black', linewidth=1)
+        // 3. สร้างกราฟ
+        const ctx = document.getElementById('myChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Percentage Change (%)',
+                    data: data,
+                    backgroundColor: backgroundColors,
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'กราฟแสดงการเปลี่ยนแปลงของหุ้น',
+                        font: { size: 18 }
+                    }
+                },
+                scales: {
+                    x: {
+                        // Chart.js จะวางชื่อหุ้นไว้ด้านล่างสุดของขอบกราฟโดยอัตโนมัติ ทำให้ไม่ทับแท่งที่ติดลบ
+                        ticks: {
+                            padding: 10, // เพิ่มระยะห่างให้ชื่อขยับลงมาอีก
+                            font: { size: 12, weight: 'bold' }
+                        },
+                        grid: {
+                            display: false // ซ่อนเส้นกริดแนวตั้งให้ดูสะอาดตา
+                        }
+                    },
+                    y: {
+                        title: {
+                            display: true,
+                            text: 'Percent (%)'
+                        }
+                    }
+                }
+            }
+        });
+    </script>
 
-# ==========================================
-# ส่วนที่ 3: การขยับชื่อหุ้นลงไม่ให้ทับเปอร์เซ็นต์ที่ติดลบ
-# ==========================================
-# เพิ่มระยะห่าง (pad) ของชื่อหุ้นในแกน X ให้ถอยลงมาด้านล่าง
-ax.tick_params(axis='x', pad=15) 
-
-# ==========================================
-# ส่วนเสริม: การใส่ตัวเลขเปอร์เซ็นต์ไม่ให้ทับกราฟ
-# ==========================================
-for bar in bars:
-    yval = bar.get_height()
-    # ถ้าค่าบวกให้ตัวเลขอยู่เหนือแท่งกราฟ, ถ้าค่าลบให้อยู่ใต้แท่งกราฟ
-    offset = 5 if yval >= 0 else -15 
-    
-    ax.annotate(f'{yval}%',
-                xy=(bar.get_x() + bar.get_width() / 2, yval),
-                xytext=(0, offset),
-                textcoords="offset points",
-                ha='center', 
-                va='bottom' if yval >= 0 else 'top',
-                fontsize=10)
-
-# ตกแต่งความสวยงามของกราฟ
-plt.title('Stock Percentage Change', fontsize=14, pad=20)
-plt.xlabel('Stock Name', fontsize=12, labelpad=10)
-plt.ylabel('Percentage (%)', fontsize=12)
-plt.grid(axis='y', linestyle='--', alpha=0.4)
-
-# จัดระเบียบเลย์เอาต์ไม่ให้ขอบกราฟโดนตัด
-plt.tight_layout()
-
-# แสดงผลกราฟ
-plt.show()
+</body>
+</html>
