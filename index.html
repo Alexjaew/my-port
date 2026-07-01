@@ -1334,14 +1334,34 @@ function renderPLChart() {
           c.textAlign = 'center';
 
           // หากค่าติดลบ ให้สลับตำแหน่งไปแสดงอยู่ใต้ฐานกราฟแท่งนั้น ๆ
-          if (pct >= 0) {
-    c.textBaseline = 'bottom';
-    c.fillText(label, bar.x, bar.y - 8);
+ if (pct >= 0) {
+
+    c.save();
+
+    c.translate(bar.x, bar.y - 8);
+    c.rotate(Math.PI / 2);
+
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+
+    c.fillText(label, 0, 0);
+
+    c.restore();
+
 } else {
-    c.textBaseline = 'bottom';
-    c.fillText(label, bar.x, bar.base - 8);
+
+    c.save();
+
+    c.translate(bar.x, bar.base - 8);
+    c.rotate(Math.PI / 2);
+
+    c.textAlign = "center";
+    c.textBaseline = "middle";
+
+    c.fillText(label, 0, 0);
+
+    c.restore();
 }
-          c.restore();
         });
       }
     }]
