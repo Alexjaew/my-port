@@ -1336,6 +1336,7 @@ function renderPLChart() {
           // หากค่าติดลบ ให้สลับตำแหน่งไปแสดงอยู่ใต้ฐานกราฟแท่งนั้น ๆ
  if (pct >= 0) {
 
+    // % บวก อยู่ด้านบนแท่ง
     c.save();
 
     c.translate(bar.x, bar.y - 8);
@@ -1350,9 +1351,10 @@ function renderPLChart() {
 
 } else {
 
+    // % ลบ เริ่มจากฐานกราฟ
     c.save();
 
-    c.translate(bar.x, bar.base - 8);
+    c.translate(bar.x, bar.base + 8);
     c.rotate(Math.PI / 2);
 
     c.textAlign = "center";
@@ -1361,6 +1363,7 @@ function renderPLChart() {
     c.fillText(label, 0, 0);
 
     c.restore();
+
 }
         });
       }
