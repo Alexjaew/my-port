@@ -1216,17 +1216,21 @@ function renderDonutChart() {
           const r = arc.outerRadius * 0.68;
           const x = arc.x + Math.cos(angle) * r;
           const y = arc.y + Math.sin(angle) * r;
-          ctx.save();
-          ctx.fillStyle = '#fff';
-          ctx.font = 'bold 11px -apple-system, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.shadowColor = 'rgba(0,0,0,0.3)';
-          ctx.shadowBlur = 3;
-          ctx.fillText(`${tickers[i]}`, x, y - 6);
-          ctx.font = '10px -apple-system, sans-serif';
-          ctx.fillText(`(${pct}%)`, x, y + 8);
-          ctx.restore();
+         ctx.save();
+
+ctx.textAlign = 'center';
+ctx.textBaseline = 'middle';
+
+ctx.fillStyle = '#fff';
+ctx.font = 'bold 12px Inter';
+
+ctx.fillText(
+    label,
+    bar.x,
+    (bar.y + bar.base) / 2
+);
+
+ctx.restore();
         });
       }
     }]
