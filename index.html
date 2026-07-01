@@ -718,14 +718,15 @@
     </div>
   </div>
 
+  <!-- [ส่วนที่ 1] กราฟวงกลมแสดงสัดส่วน สลับขึ้นมาไว้ด้านบนเรียบร้อยแล้ว -->
   <div class="section">
-    <div class="section-label">Daily Value · มูลค่าพอร์ตรายวัน</div>
-    <div class="chart-card" id="valueChartCard">
-      <div class="skel" style="height:160px;"></div>
+    <div class="section-label">Allocation · สัดส่วนหุ้น</div>
+    <div class="chart-card" id="donutChartCard">
+      <div class="skel" style="height:180px;"></div>
     </div>
   </div>
 
-  <!-- กราฟแท่ง สลับขึ้นมาอยู่บนแล้ว -->
+  <!-- กราฟแท่งแสดงมูลค่าปัจจุบันและ P/L% -->
   <div class="section">
     <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
@@ -733,11 +734,11 @@
     </div>
   </div>
 
-  <!-- กราฟกลม สลับลงมาอยู่ล่างแล้ว -->
+  <!-- [ส่วนที่ 2] กราฟเส้นแนวโน้มมูลค่าพอร์ตรายวัน สลับลงมาอยู่ด้านล่างกราฟสัดส่วนทรงกลมเรียบร้อยแล้ว -->
   <div class="section">
-    <div class="section-label">Allocation · สัดส่วนหุ้น</div>
-    <div class="chart-card" id="donutChartCard">
-      <div class="skel" style="height:180px;"></div>
+    <div class="section-label">Daily Value · มูลค่าพอร์ตรายวัน</div>
+    <div class="chart-card" id="valueChartCard">
+      <div class="skel" style="height:160px;"></div>
     </div>
   </div>
 
@@ -1468,7 +1469,7 @@ function renderAllocList() {
                 <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
               </div>
               <div class="alloc-pct-row">
-                <span class="alloc-pct">${pct.toFixed(1)}% ของพॉर्ट</span>
+                <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
                 <button class="alloc-target-add-btn" data-ticker="${ticker}">+ ตั้งเป้าหมาย</button>
               </div>
             </div>
