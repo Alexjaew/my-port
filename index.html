@@ -740,7 +740,7 @@
   </div>
 
   <div class="section">
-    <div class="section-label">Unrealized P/L · กำไร/ขาดทุน ณ ตอนนี้</div>
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
     </div>
@@ -1277,14 +1277,16 @@ function renderPLChart() {
   }
   const basis = state.basis;
 
-  // เรียงจากน้อยไปมาก (ขาดทุนมากสุดอยู่ซ้าย กำไรมากสุดอยู่ขวา)
-  const withPL = rows.map(r => ({
+  // Sort by P&L% ascending (biggest loss left → biggest gain right)
+  const withData = rows.map(r => ({
     ticker: r['หุ้น'],
-    plPct: parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
+    value:  Number(r['มูลค่าปัจจุบัน']) || 0,
+    plPct:  parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
   })).sort((a,b) => a.plPct - b.plPct);
 
-  const tickers  = withPL.map(r => r.ticker);
-  const plData   = withPL.map(r => r.plPct);
+  const tickers  = withData.map(r => r.ticker);
+  const values   = withData.map(r => r.value);
+  const plPcts   = withData.map(r => r.plPct);
   const BAR_COLOR = '#2a78d6';
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
@@ -1293,9 +1295,9 @@ function renderPLChart() {
   const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const axisColor = isDark ? '#8B92A0' : '#6B7280';
 
-  card.innerHTML = `<div style="position:relative;height:${Math.max(200, tickers.length * 36 + 60)}px;">
+  card.innerHTML = `<div style="position:relative;height:260px;">
     <canvas id="plCanvas" role="img"
-      aria-label="Vertical bar chart of P&L: ${tickers.map((t,i)=>`${t} ${plData[i]>=0?'+':''}${plData[i]}%`).join(', ')}"></canvas>
+      aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
   </div>`;
 
   if (_plInstance) { _plInstance.destroy(); _plInstance = null; }
@@ -1307,7 +1309,7 @@ function renderPLChart() {
     data: {
       labels: tickers,
       datasets: [{
-        data: plData,
+        data: values,
         backgroundColor: BAR_COLOR,
         borderRadius: 4,
         borderSkipped: false,
@@ -1319,9 +1321,13 @@ function renderPLChart() {
       maintainAspectRatio: false,
       plugins: {
         legend: { display: false },
-        tooltip: { enabled: false }
+        tooltip: {
+          callbacks: {
+            label: ctx => ` $${fmt(ctx.raw)} · ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}%`
+          }
+        }
       },
-      layout: { padding: { top: 28 } },
+      layout: { padding: { top: 32 } },
       scales: {
         x: {
           grid: { display: false },
@@ -1332,28 +1338,28 @@ function renderPLChart() {
           grid: { color: gridColor },
           border: { display: false },
           ticks: {
-            color: axisColor, font: { size: 10 },
-            callback: v => v + '%'
+            color: axisColor,
+            font: { size: 10 },
+            callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
           }
         }
       }
     },
     plugins: [{
-      id: 'barValueLabels',
+      id: 'plValueLabels',
       afterDatasetDraw(chart) {
-        const { ctx } = chart;
-        const meta = chart.getDatasetMeta(0);
-        meta.data.forEach((bar, i) => {
-          const val = plData[i];
-          const label = (val >= 0 ? '+' : '') + val.toFixed(2) + '%';
-          const isPositive = val >= 0;
-          ctx.save();
-          ctx.fillStyle = tickColor;
-          ctx.font = 'bold 11px -apple-system, monospace, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = isPositive ? 'bottom' : 'top';
-          ctx.fillText(label, bar.x, isPositive ? bar.y - 4 : bar.y + 4);
-          ctx.restore();
+        const { ctx: c } = chart;
+        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+          const pct = plPcts[i];
+          const label = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+          const color = pct >= 0 ? '#1B7A4D' : '#B23B2E';
+          c.save();
+          c.fillStyle = color;
+          c.font = 'bold 11px -apple-system, monospace, sans-serif';
+          c.textAlign = 'center';
+          c.textBaseline = 'bottom';
+          c.fillText(label, bar.x, bar.y - 4);
+          c.restore();
         });
       }
     }]
