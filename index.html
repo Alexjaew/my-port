@@ -481,80 +481,30 @@
   .legend-ticker { font-weight: 700; font-family: var(--mono); width: 42px; flex: 0 0 auto; }
   .legend-pct { color: var(--ink-soft); font-family: var(--mono); margin-left: auto; }
 
- /* =========================================
-     ส่วนที่แก้ไข: กราฟแท่ง (Bar Chart)
-     ========================================= */
   .bar-chart-wrap {
-    display: flex;
-    align-items: center; /* จัดกึ่งกลางเพื่อสร้างเส้นฐาน 0 (Zero Line) */
-    gap: 6px;
-    height: 220px; 
-    padding: 20px 2px 35px; /* เผื่อพื้นที่ด้านล่าง (35px) ให้ชื่อหุ้น */
-    position: relative;
-  }
-  /* สร้างเส้นแกน 0 กลางกราฟ */
-  .bar-chart-wrap::before {
-    content: '';
-    position: absolute;
-    left: 0; right: 0; top: 50%;
-    height: 1px;
-    background: var(--line);
-    z-index: 0;
+    display: flex; align-items: flex-end; gap: 6px;
+    height: 180px; padding: 0 2px 0;
   }
   .bar-col {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    display: flex; flex-direction: column; align-items: center;
     flex: 1 1 0; min-width: 0; max-width: 56px;
-    position: relative;
     height: 100%;
-    z-index: 1;
-  }
-  .bar-fill-container {
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-  }
-  /* แบ่งครึ่งพื้นที่: บนสำหรับค่าบวก, ล่างสำหรับค่าลบ */
-  .bar-top, .bar-bottom {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    position: relative;
-  }
-  .bar-top { justify-content: flex-end; } /* แท่งบวกงอกขึ้นจากเส้น 0 */
-  .bar-bottom { justify-content: flex-start; } /* แท่งลบงอกลงจากเส้น 0 */
-  
-  .bar-fill {
-    width: 70%;
-    max-width: 22px;
-    min-height: 2px;
-    transition: height 0.3s ease;
-  }
-  .bar-fill.positive {
-    background: var(--gain);
-    border-radius: 4px 4px 0 0;
-  }
-  .bar-fill.negative {
-    background: var(--loss);
-    border-radius: 0 0 4px 4px;
+    justify-content: flex-end;
   }
   .bar-pct-label {
     font-family: var(--mono); font-size: 10px; font-weight: 700;
-    color: var(--ink-soft);
-    position: absolute;
-    white-space: nowrap;
+    color: var(--ink-soft); margin-bottom: 4px; white-space: nowrap;
   }
-  /* ขยับชื่อหุ้นลงไปอยู่ใต้กราฟเสมอ เพื่อไม่ให้ทับกับเปอร์เซ็นต์ */
+  .bar-fill {
+    width: 70%;
+    max-width: 22px;
+    border-radius: 7px 7px 3px 3px;
+    min-height: 3px;
+  }
   .bar-ticker-label {
     font-family: var(--mono); font-size: 10.5px; font-weight: 700;
-    color: var(--ink);
-    position: absolute;
-    bottom: -28px; /* ล็อกตำแหน่งให้อยู่ด้านล่างสุดของกรอบเสมอ */
-    white-space: nowrap;
-    overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    margin-top: 8px; color: var(--ink);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
   }
 
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
@@ -1885,82 +1835,5 @@ updateThemeIcon();
 loadAll();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
-</body>
-</html>
-
-<div class="url-input-row">
-        <input type="url" id="apiUrlInput" value="${API_URL !== DEFAULT_API_URL ? API_URL : ''}" placeholder="https://script.google.com/macros/s/.../exec">
-        <button id="apiUrlClear" title="Clear URL">✕</button>
-      </div>
-      <button id="apiUrlSave">บันทึก URL</button>
-      <div class="setup-hint">หากไม่มี Web App URL ให้คลิกกากบาทเพื่อใช้ค่าเริ่มต้น (Default API)</div>
-    </div>
-  `;
-
-  // จัดการ Event สำหรับการบันทึก URL ใหม่
-  document.getElementById('apiUrlSave').addEventListener('click', () => {
-    const val = document.getElementById('apiUrlInput').value.trim();
-    if (val) {
-      localStorage.setItem('portfolio_api_url', val);
-      API_URL = val;
-    } else {
-      localStorage.removeItem('portfolio_api_url');
-      API_URL = DEFAULT_API_URL;
-    }
-    window.location.reload();
-  });
-
-  // จัดการ Event สำหรับการล้างค่า URL
-  document.getElementById('apiUrlClear').addEventListener('click', () => {
-    document.getElementById('apiUrlInput').value = '';
-    localStorage.removeItem('portfolio_api_url');
-    API_URL = DEFAULT_API_URL;
-    window.location.reload();
-  });
-}
-
-// ----------------------------------------------------
-// Theme Initialization & Toggle
-// ----------------------------------------------------
-updateThemeIcon();
-document.getElementById('themeToggleBtn').addEventListener('click', () => {
-  const current = document.documentElement.getAttribute('data-theme');
-  const isDark = current === 'dark' || (!current && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const newTheme = isDark ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', newTheme);
-  localStorage.setItem('portfolio_theme', newTheme);
-  updateThemeIcon();
-});
-
-// ----------------------------------------------------
-// Sheet / Modal Logic (สำหรับการกดปุ่ม + เพิ่มรายการ)
-// ----------------------------------------------------
-const sheet = document.getElementById('addSheet');
-const backdrop = document.getElementById('sheetBackdrop');
-const fabAdd = document.getElementById('fabAdd');
-const sheetClose = document.getElementById('sheetClose');
-
-function openSheet() {
-  sheet.classList.add('open');
-  backdrop.classList.add('open');
-}
-
-function closeSheet() {
-  sheet.classList.remove('open');
-  backdrop.classList.remove('open');
-}
-
-fabAdd.addEventListener('click', openSheet);
-sheetClose.addEventListener('click', closeSheet);
-backdrop.addEventListener('click', closeSheet);
-
-// ----------------------------------------------------
-// Initialize App (ถ้ายังไม่มีการเรียกใช้ API เริ่มต้น)
-// ----------------------------------------------------
-if (!localStorage.getItem('portfolio_api_url') && !urlParam) {
-  showSetupBanner();
-}
-
-</script>
 </body>
 </html>
