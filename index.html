@@ -694,6 +694,7 @@
 
   <div id="setupBanner"></div>
 
+  <!-- 1. Portfolio Value -->
   <div class="section">
     <div class="section-label">Portfolio Value · มูลค่าพอร์ต</div>
     <div class="hero-card">
@@ -718,14 +719,7 @@
     </div>
   </div>
 
-  <div class="section">
-    <div class="section-label">Daily Value · มูลค่าพอร์ตรายวัน</div>
-    <div class="chart-card" id="valueChartCard">
-      <div class="skel" style="height:160px;"></div>
-    </div>
-  </div>
-
-  <!-- กราฟแท่ง สลับขึ้นมาอยู่ด้านบนตามคำขอ -->
+  <!-- 2. กราฟแท่งมูลค่าปัจจุบัน (สลับขึ้นมาอยู่บนตามที่ขอ) -->
   <div class="section">
     <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
@@ -733,7 +727,7 @@
     </div>
   </div>
 
-  <!-- กราฟกลม สลับลงมาอยู่ข้างล่างตามคำขอ -->
+  <!-- 3. กราฟวงกลมสัดส่วนหุ้น (สลับลงมาอยู่ใต้กราฟแท่ง) -->
   <div class="section">
     <div class="section-label">Allocation · สัดส่วนหุ้น</div>
     <div class="chart-card" id="donutChartCard">
@@ -741,6 +735,15 @@
     </div>
   </div>
 
+  <!-- 4. กราฟเส้นมูลค่าพอร์ตรายวัน (อยู่ด้านล่างของกราฟวงกลม) -->
+  <div class="section">
+    <div class="section-label">Daily Value · มูลค่าพอร์ตรายวัน</div>
+    <div class="chart-card" id="valueChartCard">
+      <div class="skel" style="height:160px;"></div>
+    </div>
+  </div>
+
+  <!-- 5. สัดส่วนการลงทุนรายตัว -->
   <div class="section">
     <div class="section-label-row">
       <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
