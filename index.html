@@ -24,15 +24,12 @@
     --accent-soft: #F6ECD9;
     --accent-text: #7A5414;
     --accent-border: #E5C98A;
-    /* สีคงที่ ไม่เปลี่ยนตาม light/dark theme — ใช้กับ hero card, ปุ่ม + และปุ่ม CTA หลัก
-       เพื่อให้องค์ประกอบเด่นเหล่านี้ดูเหมือนกันเสมอไม่ว่าจะใช้โหมดไหน */
     --accent-dark: #0E1116;
     --accent-dark-text: #FAF8F4;
     --skel-shine: #ECE8DE;
     --mono: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
     --serif: 'Fraunces', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
     --sans: 'Inter', -apple-system, system-ui, sans-serif;
-    /* ความลึก/เงา ใช้ร่วมกันทั้งแอป ให้การ์ดดูยกขึ้นมาแบบมีมิติแทนที่จะแบนเรียบ */
     --shadow-sm: 0 1px 2px rgba(14,17,22,0.04), 0 1px 1px rgba(14,17,22,0.03);
     --shadow-md: 0 8px 24px -8px rgba(14,17,22,0.12), 0 2px 6px -2px rgba(14,17,22,0.06);
     --shadow-lg: 0 20px 48px -12px rgba(14,17,22,0.22), 0 6px 16px -6px rgba(14,17,22,0.1);
@@ -41,8 +38,6 @@
     --radius-lg: 22px;
   }
 
-  /* โหมดมืด: ใช้อัตโนมัติตามการตั้งค่าระบบ (ถ้าผู้ใช้ยังไม่กดเลือกเอง)
-     หรือใช้ตามที่ผู้ใช้กดเลือกไว้ผ่านปุ่ม ☾/☀ (เก็บไว้ใน data-theme) */
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
       --ink: #ECE9E2;
@@ -284,13 +279,11 @@
   .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
   .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
 
-  /* แบบไม่มีเป้าหมาย: แท่งสีตามหุ้น + ปุ่มตั้งเป้าหมาย */
   .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; position: relative; }
   .alloc-bar-fill { height: 100%; border-radius: 4px; }
   .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
   .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
 
-  /* แบบมีเป้าหมายแล้ว: สรุปแถบสีตามที่เหลือก่อนถึงเป้า (เขียว=เหลือเยอะ, แดง=เหลือน้อย/เกิน) */
   .alloc-target-summary-text {
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
     margin-top: 6px;
@@ -822,22 +815,14 @@
   </div>
 
 <script>
-// URL ของ Apps Script ที่ deploy ไว้ — ฝังเป็นค่าเริ่มต้น ไม่ต้องกรอกใหม่ทุกครั้ง
-// ถ้า deploy ใหม่แล้ว URL เปลี่ยน ให้กดปุ่ม ⚙︎ ในแอพเพื่อตั้งค่า URL ใหม่ (จะถูกจำไว้แทนตัวนี้)
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
 
-// ลำดับความสำคัญในการหา URL: 1) URL parameter ในลิงก์ (?api=...) 2) localStorage 3) ค่าเริ่มต้นที่ฝังในไฟล์
-// เก็บไว้ใน URL parameter ด้วย เพราะ iOS Safari อาจล้าง localStorage ของแอพที่ Add to Home Screen
-// ถ้าไม่ได้เปิดผ่าน Safari ปกตินานเกิน ~7 วัน (ITP) แต่ URL ที่บันทึกไว้ในไอคอนหน้าจอโฮมจะไม่ถูกล้าง
 const urlParam = new URLSearchParams(window.location.search).get('api');
 if (urlParam) {
-  localStorage.setItem('portfolio_api_url', urlParam); // sync กลับเข้า localStorage ด้วย
+  localStorage.setItem('portfolio_api_url', urlParam);
 }
 let API_URL = urlParam || localStorage.getItem('portfolio_api_url') || DEFAULT_API_URL;
 
-// ----- Dark mode -----
-// ถ้าผู้ใช้กดเลือกธีมเองไว้ก่อน ใช้ตามนั้น (เก็บใน localStorage)
-// ถ้ายังไม่เคยกดเลือก ให้ปล่อยตามการตั้งค่าระบบ (prefers-color-scheme) ผ่าน CSS media query
 const savedTheme = localStorage.getItem('portfolio_theme');
 if (savedTheme) {
   document.documentElement.setAttribute('data-theme', savedTheme);
@@ -859,9 +844,9 @@ const state = {
   transactions: [],
   ports: [],
   history: [],
-  dcaInputs: {}, // เก็บค่าเงินที่ผู้ใช้กรอกไว้ในตัวคำนวณ DCA ต่อหุ้น เช่น { RKLB: 50 }
-  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}'), // เป้าหมายสัดส่วน % ที่ผู้ใช้ตั้งเองต่อหุ้น เช่น { RKLB: 20 }
-  allocLocked: JSON.parse(localStorage.getItem('portfolio_alloc_locked') || '{}') // หุ้นที่ล็อกไว้ไม่ให้โดนปรับตอนกด "ปรับให้รวม 100%" เช่น { MSFT: true }
+  dcaInputs: {},
+  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}'),
+  allocLocked: JSON.parse(localStorage.getItem('portfolio_alloc_locked') || '{}')
 };
 
 function saveAllocLocked() {
@@ -899,8 +884,6 @@ function showSetupBanner(errorMsg) {
     if (val) {
       localStorage.setItem('portfolio_api_url', val);
       API_URL = val;
-      // ฝัง URL นี้ไว้ใน address bar ด้วย (?api=...) เพื่อให้ตอน Add to Home Screen
-      // icon ที่ได้จะจำ URL นี้ไว้ในตัวลิงก์เอง ทนต่อการที่ localStorage ถูกล้างได้
       const newUrl = new URL(window.location.href);
       newUrl.searchParams.set('api', val);
       history.replaceState(null, '', newUrl.toString());
@@ -909,8 +892,6 @@ function showSetupBanner(errorMsg) {
     }
   };
   document.getElementById('apiUrlClear').onclick = () => {
-    // ล้างช่อง input ให้ว่าง พร้อมพิมพ์/วาง URL ใหม่ทันที
-    // และลบ URL เก่าที่บันทึกไว้ใน localStorage ออกด้วย กันไม่ให้ค้างมาบัง URL ใหม่ที่จะกรอก
     document.getElementById('apiUrlInput').value = '';
     document.getElementById('apiUrlInput').focus();
     localStorage.removeItem('portfolio_api_url');
@@ -953,7 +934,7 @@ async function loadAll() {
   if (!API_URL) { showSetupBanner(); return; }
 
   const MAX_ATTEMPTS = 3;
-  const RETRY_DELAY_MS = [1500, 3000]; // หน่วงก่อน retry ครั้งที่ 2 และ 3
+  const RETRY_DELAY_MS = [1500, 3000];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
@@ -974,11 +955,9 @@ async function loadAll() {
       state.ports = ports.ports || [];
       state.transactions = txns.rows || [];
       state.history = (history && history.rows) || [];
-      // เป้าหมายสัดส่วน: ใช้ค่าจาก Sheet เป็นหลัก (ถาวร ไม่หายแม้ Safari ล้างข้อมูลเบราว์เซอร์)
-      // ถ้าดึงจาก Sheet ไม่สำเร็จ (error) ให้ใช้ค่าที่ cache ไว้ใน localStorage แทนชั่วคราว
       if (allocTargetsRes && !allocTargetsRes.error) {
         state.allocTargets = allocTargetsRes.targets || {};
-        saveAllocTargets(); // sync กลับเข้า localStorage เป็น cache สำรอง
+        saveAllocTargets();
       }
       renderPortSwitch();
       renderHero();
@@ -987,17 +966,15 @@ async function loadAll() {
       renderAllocList();
       renderTransactions();
       populatePortSelect();
-      return; // สำเร็จแล้ว ไม่ต้องวนต่อ
+      return;
     } catch (err) {
       console.error(`loadAll attempt ${attempt} failed:`, err);
       if (attempt < MAX_ATTEMPTS) {
-        // Apps Script อาจ "cold start" ช้าหลังไม่มีการเรียกใช้นาน ๆ ลองใหม่อีกครั้งก่อนแจ้ง error
         document.getElementById('allocList').innerHTML =
           `<div class="empty-state"><div class="icon">⏳</div><div class="msg">กำลังเชื่อมต่อใหม่... (ครั้งที่ ${attempt + 1})</div></div>`;
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS[attempt - 1]));
         continue;
       }
-      // พยายามครบจำนวนครั้งแล้วยังไม่สำเร็จ ค่อยแจ้ง error จริง
       document.getElementById('allocList').innerHTML =
         `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
       showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
@@ -1032,8 +1009,6 @@ function getFilteredSummaryRows() {
   return rows.filter(r => r['ชื่อ port'] === state.port);
 }
 
-// ดึงเงินสดคงเหลือ (แถวที่หุ้น = USD) รวมทุก port ที่มี — ไม่ขึ้นกับ state.port ที่เลือกอยู่
-// ใช้เป็น "เงินต้น" ในการคำนวณกำไร/ขาดทุนรวมในหน้าแรก
 function getCashBalance() {
   if (!state.summary) return 0;
   return state.summary.rows
@@ -1050,9 +1025,7 @@ function renderHero() {
     costValue += Number(r['ทุน  FIFO']) || 0;
   });
 
-  // เงินต้น = เงินสดทั้งหมดที่ฝากเข้าพอร์ตเพื่อลงทุน (ไม่ใช่ทุน AVG/FIFO ของหุ้น)
   const principal = getCashBalance();
-
   const isMarket = state.valueMode === 'market';
   const displayValue = isMarket ? marketValue : costValue;
 
@@ -1068,7 +1041,6 @@ function renderHero() {
   deltaEl.style.display = 'inline-flex';
 
   if (isMarket) {
-    // โหมดมูลค่าตามราคาตลาด: กำไร/ขาดทุน = มูลค่าปัจจุบัน เทียบกับเงินต้นที่ฝากเข้ามา
     const profit = marketValue - principal;
     const profitPct = principal ? profit / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
@@ -1077,7 +1049,6 @@ function renderHero() {
     deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
   } else {
-    // โหมดมูลค่าตามต้นทุน: เทียบทุน FIFO ของหุ้น กับเงินต้นที่ฝากเข้ามา (ส่วนต่างจากการ reinvest กำไร)
     const diff = costValue - principal;
     const diffPct = principal ? diff / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
@@ -1087,9 +1058,6 @@ function renderHero() {
     deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
   }
 
-  // เปลี่ยนแปลงวันนี้ — ดึงจากแถวล่าสุดใน Sheet History (คอลัมน์ Daily Change / Daily %)
-  // ตรวจสอบช่องว่างวันที่จริงระหว่าง 2 แถวล่าสุดด้วย เพราะถ้า trigger saveDailyPnL ไม่ได้รันทุกวัน
-  // ตัวเลขนี้อาจเป็นผลรวมหลายวันซ้อนกัน ไม่ใช่การเปลี่ยนแปลงของวันนี้วันเดียวจริงๆ
   const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
   const heroDailyEl = document.getElementById('heroDaily');
   if (historyData.length > 0) {
@@ -1140,8 +1108,6 @@ function renderValueLineChart() {
   const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H-PAD_BOTTOM} L${points[0][0].toFixed(1)},${H-PAD_BOTTOM} Z`;
 
   const last = values[values.length - 1];
-  // ใช้ Daily Change/Daily % ของแถวล่าสุดจริง (เหมือนกับที่ใช้ในกล่อง "วันนี้" หน้าแรก)
-  // ไม่ใช่ผลต่างระหว่างมูลค่าล่าสุดกับมูลค่าแรกสุดที่เคยบันทึกไว้ (ซึ่งจะกลายเป็นผลตอบแทนรวมตั้งแต่ต้น ไม่ใช่การเปลี่ยนแปลงล่าสุด)
   const latestRow = data[data.length - 1];
   const prevRow = data.length > 1 ? data[data.length - 2] : null;
   const dailyChange = Number(latestRow['Daily Change']) || 0;
@@ -1245,7 +1211,7 @@ function renderDonutChart() {
         const meta = chart.getDatasetMeta(0);
         meta.data.forEach((arc, i) => {
           const pct = pcts[i];
-          if (pct < 4) return; // ชิ้นเล็กเกินไป ไม่แสดง label
+          if (pct < 4) return;
           const angle = (arc.startAngle + arc.endAngle) / 2;
           const r = arc.outerRadius * 0.68;
           const x = arc.x + Math.cos(angle) * r;
@@ -1277,17 +1243,25 @@ function renderPLChart() {
   }
   const basis = state.basis;
 
-  // Sort by P&L% ascending (biggest loss left → biggest gain right)
+  // 1. หาแผนผังสีดั้งเดิมของ Donut เพื่อเอามาแมปสีให้ตรงกันร้อยเปอร์เซ็นต์
+  const donutSorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
+  const tickerColorMap = {};
+  donutSorted.forEach((r, i) => {
+    tickerColorMap[r['หุ้น']] = CHART_COLORS[i % CHART_COLORS.length];
+  });
+
+  // 2. เรียงลำดับจาก "มากไปหาน้อย" (กำไรมากที่สุดอยู่ซ้าย -> ขาดทุนมากที่สุดอยู่ขวา)
   const withData = rows.map(r => ({
     ticker: r['หุ้น'],
     value:  Number(r['มูลค่าปัจจุบัน']) || 0,
     plPct:  parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
-  })).sort((a,b) => a.plPct - b.plPct);
+  })).sort((a,b) => b.plPct - a.plPct);
 
-  const tickers  = withData.map(r => r.ticker);
-  const values   = withData.map(r => r.value);
-  const plPcts   = withData.map(r => r.plPct);
-  const BAR_COLOR = '#2a78d6';
+  const tickers   = withData.map(r => r.ticker);
+  const values    = withData.map(r => r.value);
+  const plPcts    = withData.map(r => r.plPct);
+  // ดึงสีที่คู่กับหุ้นตัวนั้น ๆ มาใช้งาน
+  const barColors = tickers.map(t => tickerColorMap[t] || '#2a78d6');
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
@@ -1295,7 +1269,7 @@ function renderPLChart() {
   const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const axisColor = isDark ? '#8B92A0' : '#6B7280';
 
-  card.innerHTML = `<div style="position:relative;height:260px;">
+  card.innerHTML = `<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
       aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
   </div>`;
@@ -1310,10 +1284,10 @@ function renderPLChart() {
       labels: tickers,
       datasets: [{
         data: values,
-        backgroundColor: BAR_COLOR,
+        backgroundColor: barColors,
         borderRadius: 4,
         borderSkipped: false,
-        barThickness: 36
+        barThickness: 20 // ปรับแท่งให้เล็กลงเรียวสวย (จากเดิม 36)
       }]
     },
     options: {
@@ -1327,7 +1301,7 @@ function renderPLChart() {
           }
         }
       },
-      layout: { padding: { top: 32 } },
+      layout: { padding: { top: 25, bottom: 25 } },
       scales: {
         x: {
           grid: { display: false },
@@ -1353,12 +1327,20 @@ function renderPLChart() {
           const pct = plPcts[i];
           const label = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
           const color = pct >= 0 ? '#1B7A4D' : '#B23B2E';
+          
           c.save();
           c.fillStyle = color;
           c.font = 'bold 11px -apple-system, monospace, sans-serif';
           c.textAlign = 'center';
-          c.textBaseline = 'bottom';
-          c.fillText(label, bar.x, bar.y - 4);
+
+          // หากค่าติดลบ ให้สลับตำแหน่งไปแสดงอยู่ใต้ฐานกราฟแท่งนั้น ๆ
+          if (pct >= 0) {
+            c.textBaseline = 'bottom';
+            c.fillText(label, bar.x, bar.y - 4);
+          } else {
+            c.textBaseline = 'top';
+            c.fillText(label, bar.x, bar.base + 6);
+          }
           c.restore();
         });
       }
@@ -1366,10 +1348,6 @@ function renderPLChart() {
   });
 }
 
-/**
- * รวม % เป้าหมายที่ผู้ใช้ตั้งไว้ทุกตัว แล้วเทียบกับ 100% ของพอร์ตทั้งหมด
- * แจ้งว่าเกินหรือขาดไปเท่าไหร่ ช่วยให้ตั้งเป้าหมายแต่ละตัวให้ครบพอดี 100% ได้
- */
 function updateAllocTargetSumBar() {
   const bar = document.getElementById('allocTargetSumBar');
   if (!bar) return;
@@ -1399,8 +1377,6 @@ function updateAllocTargetSumBar() {
       </div>
     </div>`;
 
-  // ปุ่ม "ปรับให้รวม 100%" — ถ้ามีหุ้นที่ล็อกไว้ จะคงค่าหุ้นที่ล็อกไม่เปลี่ยน แล้วลด/ปรับเฉพาะ
-  // หุ้นที่ไม่ได้ล็อกตามสัดส่วนเดิมของมันเอง ให้ผลรวมทั้งหมดกลับมาเท่ากับ 100% พอดี
   const normalizeBtn = document.getElementById('normalizeTargetsBtn');
   if (normalizeBtn) {
     normalizeBtn.onclick = () => {
@@ -1485,7 +1461,7 @@ function renderAllocList() {
                 <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
               </div>
               <div class="alloc-pct-row">
-                <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
+                <span class="alloc-pct">${pct.toFixed(1)}% ของพॉर्ट</span>
                 <button class="alloc-target-add-btn" data-ticker="${ticker}">+ ตั้งเป้าหมาย</button>
               </div>
             </div>
@@ -1514,7 +1490,6 @@ function renderAllocList() {
 
   updateAllocTargetSumBar();
 
-  // ผูก event ให้ input DCA คำนวณใหม่ทุกครั้งที่พิมพ์ (ไม่ reload ข้อมูลทั้งหน้า)
   el.querySelectorAll('.dca-calc-input').forEach(input => {
     input.addEventListener('input', (e) => {
       const ticker = e.target.dataset.ticker;
@@ -1526,7 +1501,6 @@ function renderAllocList() {
     });
   });
 
-  // เปิดช่องกรอกเป้าหมาย (ทั้งกรณีตั้งใหม่ และกรณีแก้ไขของเดิม)
   el.querySelectorAll('.alloc-target-add-btn, .alloc-target-edit-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const ticker = btn.dataset.ticker;
@@ -1539,7 +1513,6 @@ function renderAllocList() {
     });
   });
 
-  // สลับสถานะล็อก/ปลดล็อก — หุ้นที่ล็อกไว้จะไม่ถูกแตะตอนกด "ปรับให้รวม 100%"
   el.querySelectorAll('.alloc-target-lock-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const ticker = btn.dataset.ticker;
@@ -1549,7 +1522,6 @@ function renderAllocList() {
     });
   });
 
-  // บันทึกค่าเป้าหมายลง localStorage ทุกครั้งที่พิมพ์ แล้วซ่อนช่องกรอกกลับเป็นแถบสีตอนกดบันทึก/ออกจากช่อง
   el.querySelectorAll('.alloc-target-input').forEach(input => {
     input.addEventListener('input', (e) => {
       const ticker = e.target.dataset.ticker;
@@ -1560,7 +1532,7 @@ function renderAllocList() {
         state.allocTargets[ticker] = Math.max(0, Math.min(100, Number(val)));
       }
       saveAllocTargets();
-      updateAllocTargetSumBar(); // อัปเดตยอดรวมทันทีที่พิมพ์ ไม่ต้องรอ re-render ทั้งหน้า
+      updateAllocTargetSumBar();
     });
   });
   el.querySelectorAll('.alloc-target-input').forEach(input => {
@@ -1577,11 +1549,6 @@ function renderAllocList() {
   });
 }
 
-/**
- * ส่งเป้าหมายสัดส่วนทั้งหมดไปบันทึกไว้ใน Google Sheet (ชีต "ตั้งค่า")
- * เพื่อให้ค่าคงอยู่ถาวร ไม่หายแม้ Safari ล้างข้อมูลเบราว์เซอร์ และใช้ค่าเดียวกันได้ทุกอุปกรณ์
- * (ถ้า Apps Script ยังไม่ได้ redeploy เวอร์ชันที่รองรับ endpoint นี้ จะแค่ไม่บันทึก ไม่กระทบส่วนอื่นของแอพ)
- */
 let allocTargetsSaveTimer = null;
 function saveAllocTargetsToServer() {
   clearTimeout(allocTargetsSaveTimer);
@@ -1594,19 +1561,12 @@ function saveAllocTargetsToServer() {
   }, 400);
 }
 
-/**
- * คำนวณสีของแถบ "ที่ว่างเหลือก่อนถึงเป้าหมาย" — เหลือเยอะ = เขียว, เหลือน้อย/เกินแล้ว = เหลือง→แดง
- * ใช้อัตราส่วน สัดส่วนปัจจุบัน/เป้าหมาย เป็นตัวกำหนด: ยิ่งใกล้หรือเกิน 1 ยิ่งแดง
- */
 function getRoomColor(ratio) {
   const clamped = Math.min(Math.max(ratio, 0), 1);
-  const hue = 140 * (1 - clamped); // 140=เขียว ไล่ไปจนถึง 0=แดง ผ่านเหลือง/ส้มตรงกลาง
+  const hue = 140 * (1 - clamped);
   return `hsl(${hue}, 65%, 45%)`;
 }
 
-/**
- * แสดงแถบสีสรุปสัดส่วนเทียบกับเป้าหมายที่ตั้งไว้ พร้อมปุ่มแก้ไข
- */
 function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
   const ratio = targetPct > 0 ? actualPct / targetPct : 0;
   const barWidth = Math.min(ratio, 1) * 100;
@@ -1631,9 +1591,6 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
   `;
 }
 
-/**
- * เปรียบเทียบสัดส่วนจริงกับเป้าหมายที่ตั้งไว้ แสดงว่าเกินเป้าหรือยังไม่ถึงเป้า
- */
 function renderTargetCompareHtml(actualPct, targetPct) {
   if (targetPct === undefined || targetPct === null) return '';
   const diff = actualPct - targetPct;
@@ -1646,17 +1603,9 @@ function renderTargetCompareHtml(actualPct, targetPct) {
   return `<span class="alloc-target-compare under">ต่ำกว่าเป้า ${fmt(diff,1)}%</span>`;
 }
 
-/**
- * คำนวณ DCA แบบ what-if: ถ้าลงเงินเพิ่ม $amount ที่ราคาตลาดปัจจุบัน
- * ค่าเฉลี่ยต้นทุนใหม่จะเป็นเท่าไหร่ และลดลงจากเดิมกี่ %
- * อ้างอิงสูตรเดียวกับ Sheet "My stocks": (เงินลงทุนเดิม + เงินใหม่) / (หุ้นเดิม + หุ้นใหม่)
- * พร้อมแสดงสัดส่วน % ของพอร์ตที่จะเปลี่ยนไป ถ้าลงเงินจำนวนนี้เพิ่มจริง (สมมติเป็นเงินใหม่ที่เติมเข้าพอร์ต)
- */
 function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
   const currentPrice = Number(row['price']) || 0;
   const currentShares = Number(row['จำนวนหุ้น']) || 0;
-  // ราคาที่ได้ (ต้นทุนเฉลี่ยปัจจุบัน) ใช้ค่าเดียวกับคอลัมน์ "ราคาที่ได้" ใน Sheet "My stocks"
-  // ซึ่งตรงกับ "ราคา FIFO" ใน Summary ไม่ใช่ "ราคา AVG"
   const currentAvgCost = Number(row['ราคา FIFO']) || 0;
   const currentValue = Number(row['มูลค่าปัจจุบัน']) || 0;
   const ticker = row['หุ้น'];
@@ -1673,11 +1622,10 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
 
   const newShares = amount / currentPrice;
   const newAvgCost = (currentShares * currentAvgCost + amount) / (currentShares + newShares);
-  const diff = currentAvgCost - newAvgCost; // บวก = ต้นทุนลดลง, ลบ = ต้นทุนเพิ่มขึ้น
+  const diff = currentAvgCost - newAvgCost;
   const diffPct = currentAvgCost ? diff / currentAvgCost : 0;
   const isDrop = diff > 0;
 
-  // สัดส่วนใหม่ ถ้าเงินจำนวนนี้เป็นเงินใหม่ที่เติมเข้าพอร์ตทั้งหมด (ไม่ใช่ย้ายจากหุ้นอื่น)
   let allocLine = '';
   if (totalPortfolioValue) {
     const currentPct = (currentValue / totalPortfolioValue) * 100;
@@ -1709,8 +1657,6 @@ function renderTransactions() {
     return;
   }
 
-  // จัดกลุ่มรายการตามวันที่ เพื่อให้เห็นวันที่ชัดเจนขึ้นเวลามีรายการเยอะ
-  // ใช้ _date (อ่านจากคอลัมน์ A ตรงๆ) เป็นหลัก ถ้าไม่มีค่อย fallback ไปที่ Date (ชื่อหัวคอลัมน์)
   const getTxnDateRaw = (t) => t['_date'] || t['Date'] || null;
   const groups = [];
   let currentKey = null;
