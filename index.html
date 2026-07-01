@@ -1335,12 +1335,12 @@ function renderPLChart() {
 
           // หากค่าติดลบ ให้สลับตำแหน่งไปแสดงอยู่ใต้ฐานกราฟแท่งนั้น ๆ
           if (pct >= 0) {
-            c.textBaseline = 'bottom';
-            c.fillText(label, bar.x, bar.y - 4);
-          } else {
-            c.textBaseline = 'top';
-            c.fillText(label, bar.x, bar.base + 6);
-          }
+    c.textBaseline = 'bottom';
+    c.fillText(label, bar.x, bar.y - 8);
+} else {
+    c.textBaseline = 'bottom';
+    c.fillText(label, bar.x, bar.base - 8);
+}
           c.restore();
         });
       }
