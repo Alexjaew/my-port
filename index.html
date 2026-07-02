@@ -202,17 +202,10 @@
     line-height: 1.08;
   }
   .hero-value .cents { font-size: 22px; opacity: 0.55; }
-  .hero-delta {
-    display: inline-flex; align-items: center; gap: 5px;
-    margin-top: 11px;
-    font-family: var(--mono);
-    font-size: 14px; font-weight: 600;
-    padding: 4px 10px 4px 8px;
-    border-radius: 100px;
-    backdrop-filter: blur(4px);
-  }
-  .hero-delta.up { background: rgba(60,190,120,0.2); color: #7CDDA8; }
-  .hero-delta.down { background: rgba(232,100,90,0.2); color: #F1A89E; }
+  
+  /* ลบส่วน delta เดิมออกเพื่อไม่ให้แสดงซ้ำซ้อน */
+  .hero-delta { display: none !important; }
+
   .hero-daily {
     font-family: var(--mono);
     font-size: 12px; margin-top: 9px;
@@ -247,6 +240,14 @@
   .hero-foot-item { flex: 1; min-width: 0; }
   .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
   .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
+  
+  /* จัดกลุ่มให้เปอร์เซ็นต์แสดงคู่กับจำนวนเงิน */
+  .pnl-container {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
 
   .alloc-row-wrap {
     background: var(--paper-raised);
@@ -709,8 +710,11 @@
       </div>
       <div class="hero-label" id="heroLabel">มูลค่าปัจจุบัน</div>
       <div class="hero-value" id="heroValue">—</div>
-      <div class="hero-delta" id="heroDelta" style="display:none"></div>
-      <div class="hero-daily" id="heroDaily" style="display:none"></div>
+      
+      <!-- ซ่อนส่วน delta และ daily เดิมออกไป -->
+      <div class="hero-delta" id="heroDelta" style="display:none !important"></div>
+      <div class="hero-daily" id="heroDaily" style="display:none !important"></div>
+      
       <div class="hero-foot">
         <div class="hero-foot-item">
           <div class="hero-foot-label">Cost Basis · เงินต้น</div>
@@ -718,7 +722,12 @@
         </div>
         <div class="hero-foot-item">
           <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน</div>
-          <div class="hero-foot-value" id="footProfit">—</div>
+          
+          <!-- ปรับโครงสร้างใหม่ให้แสดงผลจำนวนเงินและเปอร์เซ็นต์คู่กัน -->
+          <div class="hero-foot-value pnl-container">
+            <span id="footProfitAmount">—</span>
+            <span id="footProfitPercent" style="font-size: 0.85em; font-weight: 500;">(—)</span>
+          </div>
         </div>
       </div>
     </div>
@@ -726,7 +735,8 @@
 
   <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
   <div class="section">
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
+    <!-- ลบข้อความ *(พร้อม P/L%)* ออก -->
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
     </div>
@@ -948,7 +958,6 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      // 💡 ทริคเพิ่มความเร็ว: หากคุณแก้ไข Google Apps Script ให้รองรับ action="all_data" ที่ส่งกลับมารวดเดียวใน Object เดียว จะช่วยลดจำนวน HTTP Request บนมือถือ และช่วยเพิ่มความเร็วในการโหลดขึ้นได้มหาศาลครับ
       const [summary, dashboard, ports, txns, history, allocTargetsRes] = await Promise.all([
         api('summary'),
         api('dashboard'),
@@ -1048,50 +1057,41 @@ function renderHero() {
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
   document.getElementById('footCost').textContent = `$${fmt(principal)}`;
 
-  const deltaEl = document.getElementById('heroDelta');
-  deltaEl.style.display = 'inline-flex';
+  // ดึง Element ใหม่ที่จัดกลุ่มไว้
+  const profitAmountEl = document.getElementById('footProfitAmount');
+  const profitPercentEl = document.getElementById('footProfitPercent');
 
   if (isMarket) {
     const profit = marketValue - principal;
     const profitPct = principal ? profit / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
-    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
-    document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
-    deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
-    deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
+    
+    // ใส่เฉพาะตัวเลขจำนวนเงิน
+    profitAmountEl.textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
+    
+    // ใส่เปอร์เซ็นต์ในวงเล็บ
+    profitPercentEl.textContent = `(${fmtPct(profitPct)})`;
+    
+    // ปรับสีตามสถานะ กำไร/ขาดทุน
+    const pnlColor = profit >= 0 ? '#7CDDA8' : '#F1A89E';
+    profitAmountEl.style.color = pnlColor;
+    profitPercentEl.style.color = pnlColor;
+    
   } else {
     const diff = costValue - principal;
     const diffPct = principal ? diff / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
-    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)} (${fmtPct(diffPct)})`;
-    document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
-    deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
-    deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
-  }
-
-  const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
-  const heroDailyEl = document.getElementById('heroDaily');
-  if (historyData.length > 0) {
-    const latest = historyData[historyData.length - 1];
-    const prev = historyData.length > 1 ? historyData[historyData.length - 2] : null;
-    const dailyChange = Number(latest['Daily Change']) || 0;
-    const dailyPct = Number(latest['Daily %']) || 0;
-    const dailyUp = dailyChange >= 0;
-
-    let label = 'วันนี้';
-    if (prev && prev['Date']) {
-      const gapDays = Math.round((new Date(latest['Date']) - new Date(prev['Date'])) / 86400000);
-      if (gapDays > 1) {
-        const sinceDate = new Date(prev['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-        label = `เปลี่ยนแปลงตั้งแต่ ${sinceDate} (${gapDays} วัน)`;
-      }
-    }
-
-    heroDailyEl.style.display = 'block';
-    heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    heroDailyEl.innerHTML = `${label} <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
-  } else {
-    heroDailyEl.style.display = 'none';
+    
+    // ใส่เฉพาะตัวเลขจำนวนเงินส่วนต่าง
+    profitAmountEl.textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
+    
+    // ใส่เปอร์เซ็นต์ส่วนต่างในวงเล็บ
+    profitPercentEl.textContent = `(${fmtPct(diffPct)})`;
+    
+    // ปรับสีตามสถานะ
+    const pnlColor = diff >= 0 ? '#7CDDA8' : '#F1A89E';
+    profitAmountEl.style.color = pnlColor;
+    profitPercentEl.style.color = pnlColor;
   }
 }
 
@@ -1166,7 +1166,6 @@ let _donutInstance = null;
 let _plInstance = null;
 
 function renderBarChart() {
-  // ตรวจสอบความพร้อมของ Chart.js ก่อนเรียกใช้งาน เพื่อป้องกัน Error บล็อกส่วนอื่นกรณีเน็ตช้ามากๆ
   if (typeof Chart === 'undefined') {
     setTimeout(renderBarChart, 200);
     return;
@@ -1857,5 +1856,3 @@ loadAll();
 </script>
 </body>
 </html>
-
-```
