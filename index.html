@@ -283,8 +283,9 @@
 
   .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; position: relative; }
   .alloc-bar-fill { height: 100%; border-radius: 4px; }
-  .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
-  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .alloc-pct-row::-webkit-scrollbar { display: none; }
+  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); white-space: nowrap; }
 
   .alloc-target-summary-text {
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
@@ -299,15 +300,18 @@
   .alloc-target-footer-row {
     display: flex; align-items: center; justify-content: space-between;
     margin-top: 4px; gap: 8px;
+    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
   }
-  .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); }
-  .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; }
+  .alloc-target-footer-row::-webkit-scrollbar { display: none; }
+  
+  .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); white-space: nowrap; }
+  .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; white-space: nowrap; }
 
   .alloc-target-add-btn, .alloc-target-edit-btn, .alloc-target-save-btn {
     font-size: 10.5px; font-weight: 700;
     color: var(--accent-text); background: var(--accent-soft);
     border: 1px solid var(--accent-border); border-radius: 100px;
-    padding: 2px 9px; cursor: pointer; white-space: nowrap;
+    padding: 2px 9px; cursor: pointer; white-space: nowrap; flex: 0 0 auto;
   }
   .alloc-target-save-btn { padding: 7px 12px; font-size: 13px; flex: 0 0 auto; }
 
@@ -334,7 +338,7 @@
 
   .alloc-target-compare {
     font-size: 10.5px; font-weight: 700; font-family: var(--mono);
-    padding: 1px 7px; border-radius: 100px;
+    padding: 1px 7px; border-radius: 100px; white-space: nowrap;
   }
   .alloc-target-compare.ontarget { background: var(--gain-soft); color: var(--gain); }
   .alloc-target-compare.over { background: var(--loss-soft); color: var(--loss); }
@@ -342,16 +346,18 @@
 
   .alloc-sum-bar {
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: wrap; gap: 8px;
+    flex-wrap: nowrap; gap: 8px;
     background: var(--paper-raised); border: 1px solid var(--line);
     border-radius: var(--radius-sm); padding: 11px 14px; margin-bottom: 11px;
     box-shadow: var(--shadow-sm);
+    overflow-x: auto; scrollbar-width: none;
   }
-  .alloc-sum-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .alloc-sum-bar::-webkit-scrollbar { display: none; }
+  .alloc-sum-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); white-space: nowrap; }
   .alloc-sum-label b { color: var(--ink); }
   .alloc-sum-status {
     font-size: 11.5px; font-weight: 700; font-family: var(--mono);
-    padding: 3px 10px; border-radius: 100px;
+    padding: 3px 10px; border-radius: 100px; flex: 0 0 auto; white-space: nowrap;
   }
   .alloc-sum-status.ontarget { background: var(--gain-soft); color: var(--gain); }
   .alloc-sum-status.over { background: var(--loss-soft); color: var(--loss); }
@@ -361,14 +367,16 @@
     font-size: 11.5px; font-weight: 700; color: var(--accent-dark-text);
     background: var(--accent-dark); border: none; border-radius: 100px;
     padding: 5px 10px; cursor: pointer; white-space: nowrap;
-    transition: transform .12s ease;
+    transition: transform .12s ease; flex: 0 0 auto;
   }
   .alloc-normalize-btn:active { transform: scale(0.94); }
   .dca-calc-suffix { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
   .dca-alloc-projection {
     margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--accent-border);
     font-size: 12px; color: var(--ink-soft); font-family: var(--mono);
+    white-space: nowrap; overflow-x: auto; scrollbar-width: none;
   }
+  .dca-alloc-projection::-webkit-scrollbar { display: none; }
   .dca-alloc-projection b { color: var(--ink); }
   .alloc-right { text-align: right; flex: 0 0 auto; }
   .alloc-value { font-family: var(--mono); font-size: 14px; font-weight: 600; }
@@ -406,7 +414,9 @@
   .dca-calc-hint { color: var(--ink-soft); }
   .dca-current {
     font-size: 12px; color: var(--ink-soft); margin-bottom: 4px;
+    white-space: nowrap; overflow-x: auto; scrollbar-width: none;
   }
+  .dca-current::-webkit-scrollbar { display: none; }
   .dca-current b { color: var(--ink); font-weight: 700; }
 
   .txn-date-group { margin-bottom: 4px; }
@@ -679,6 +689,35 @@
     line-height: 1.4; border-top: 1px solid var(--accent-border); padding-top: 8px;
     opacity: 0.85;
   }
+
+  /* =========================================
+     Mobile Optimization: ป้องกันข้อความตกบรรทัด
+     ========================================= */
+  .section-label,
+  .hero-label,
+  .alloc-target-summary-text,
+  .dca-alloc-projection,
+  .alloc-sum-label,
+  .alloc-target-room-label,
+  .alloc-target-over-label,
+  .dca-current {
+    white-space: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none; /* สำหรับ Firefox */
+  }
+  
+  .section-label::-webkit-scrollbar,
+  .hero-label::-webkit-scrollbar,
+  .alloc-target-summary-text::-webkit-scrollbar,
+  .dca-alloc-projection::-webkit-scrollbar,
+  .alloc-sum-label::-webkit-scrollbar,
+  .alloc-target-room-label::-webkit-scrollbar,
+  .alloc-target-over-label::-webkit-scrollbar,
+  .dca-current::-webkit-scrollbar {
+    display: none; /* ซ่อนแถบเลื่อนบน Chrome/Safari */
+  }
+
 </style>
 </head>
 <body>
@@ -945,7 +984,6 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      // 💡 ทริคเพิ่มความเร็ว: หากคุณแก้ไข Google Apps Script ให้รองรับ action="all_data" ที่ส่งกลับมารวดเดียวใน Object เดียว จะช่วยลดจำนวน HTTP Request บนมือถือ และช่วยเพิ่มความเร็วในการโหลดขึ้นได้มหาศาลครับ
       const [summary, dashboard, ports, txns, history, allocTargetsRes] = await Promise.all([
         api('summary'),
         api('dashboard'),
@@ -1163,7 +1201,6 @@ let _donutInstance = null;
 let _plInstance = null;
 
 function renderBarChart() {
-  // ตรวจสอบความพร้อมของ Chart.js ก่อนเรียกใช้งาน เพื่อป้องกัน Error บล็อกส่วนอื่นกรณีเน็ตช้ามากๆ
   if (typeof Chart === 'undefined') {
     setTimeout(renderBarChart, 200);
     return;
@@ -1479,7 +1516,7 @@ function renderAllocList() {
                 <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
               </div>
               <div class="alloc-pct-row">
-                <span class="alloc-pct">${pct.toFixed(1)}% ของพॉर्ट</span>
+                <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
                 <button class="alloc-target-add-btn" data-ticker="${ticker}">+ ตั้งเป้าหมาย</button>
               </div>
             </div>
