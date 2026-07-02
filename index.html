@@ -228,6 +228,8 @@
     border-radius: 100px; padding: 3px;
     margin-bottom: 16px;
     width: fit-content;
+    max-width: 100%;
+    overflow-x: auto;
   }
   .basis-btn {
     font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
@@ -240,10 +242,11 @@
   .hero-foot {
     display: flex; gap: 14px; margin-top: 19px;
     padding-top: 17px; border-top: 1px solid rgba(250,248,244,0.1);
+    flex-wrap: wrap; /* ป้องกันเนื้อหาถูกบีบ */
   }
   .hero-foot-item { flex: 1; min-width: 0; }
-  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; white-space: nowrap; }
-  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
+  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
 
   .alloc-row-wrap {
     background: var(--paper-raised);
@@ -283,9 +286,8 @@
 
   .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; position: relative; }
   .alloc-bar-fill { height: 100%; border-radius: 4px; }
-  .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
-  .alloc-pct-row::-webkit-scrollbar { display: none; }
-  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); white-space: nowrap; }
+  .alloc-pct-row { display: flex; align-items: center; gap: 8px; margin-top: 4px; flex-wrap: wrap; }
+  .alloc-pct { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
 
   .alloc-target-summary-text {
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
@@ -299,19 +301,16 @@
   .alloc-room-bar-fill { height: 100%; border-radius: 4px; transition: width .2s ease; }
   .alloc-target-footer-row {
     display: flex; align-items: center; justify-content: space-between;
-    margin-top: 4px; gap: 8px;
-    flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none;
+    margin-top: 4px; gap: 8px; flex-wrap: wrap; /* ป้องกันการบีบข้อความเมื่อแคบ */
   }
-  .alloc-target-footer-row::-webkit-scrollbar { display: none; }
-  
-  .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); white-space: nowrap; }
-  .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; white-space: nowrap; }
+  .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); }
+  .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; }
 
   .alloc-target-add-btn, .alloc-target-edit-btn, .alloc-target-save-btn {
     font-size: 10.5px; font-weight: 700;
     color: var(--accent-text); background: var(--accent-soft);
     border: 1px solid var(--accent-border); border-radius: 100px;
-    padding: 2px 9px; cursor: pointer; white-space: nowrap; flex: 0 0 auto;
+    padding: 2px 9px; cursor: pointer; white-space: nowrap;
   }
   .alloc-target-save-btn { padding: 7px 12px; font-size: 13px; flex: 0 0 auto; }
 
@@ -338,7 +337,7 @@
 
   .alloc-target-compare {
     font-size: 10.5px; font-weight: 700; font-family: var(--mono);
-    padding: 1px 7px; border-radius: 100px; white-space: nowrap;
+    padding: 1px 7px; border-radius: 100px;
   }
   .alloc-target-compare.ontarget { background: var(--gain-soft); color: var(--gain); }
   .alloc-target-compare.over { background: var(--loss-soft); color: var(--loss); }
@@ -346,18 +345,16 @@
 
   .alloc-sum-bar {
     display: flex; align-items: center; justify-content: space-between;
-    flex-wrap: nowrap; gap: 8px;
+    flex-wrap: wrap; gap: 8px;
     background: var(--paper-raised); border: 1px solid var(--line);
     border-radius: var(--radius-sm); padding: 11px 14px; margin-bottom: 11px;
     box-shadow: var(--shadow-sm);
-    overflow-x: auto; scrollbar-width: none;
   }
-  .alloc-sum-bar::-webkit-scrollbar { display: none; }
-  .alloc-sum-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); white-space: nowrap; }
+  .alloc-sum-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
   .alloc-sum-label b { color: var(--ink); }
   .alloc-sum-status {
     font-size: 11.5px; font-weight: 700; font-family: var(--mono);
-    padding: 3px 10px; border-radius: 100px; flex: 0 0 auto; white-space: nowrap;
+    padding: 3px 10px; border-radius: 100px;
   }
   .alloc-sum-status.ontarget { background: var(--gain-soft); color: var(--gain); }
   .alloc-sum-status.over { background: var(--loss-soft); color: var(--loss); }
@@ -367,16 +364,14 @@
     font-size: 11.5px; font-weight: 700; color: var(--accent-dark-text);
     background: var(--accent-dark); border: none; border-radius: 100px;
     padding: 5px 10px; cursor: pointer; white-space: nowrap;
-    transition: transform .12s ease; flex: 0 0 auto;
+    transition: transform .12s ease;
   }
   .alloc-normalize-btn:active { transform: scale(0.94); }
   .dca-calc-suffix { font-size: 13px; color: var(--ink-soft); font-weight: 600; }
   .dca-alloc-projection {
     margin-top: 6px; padding-top: 6px; border-top: 1px solid var(--accent-border);
     font-size: 12px; color: var(--ink-soft); font-family: var(--mono);
-    white-space: nowrap; overflow-x: auto; scrollbar-width: none;
   }
-  .dca-alloc-projection::-webkit-scrollbar { display: none; }
   .dca-alloc-projection b { color: var(--ink); }
   .alloc-right { text-align: right; flex: 0 0 auto; }
   .alloc-value { font-family: var(--mono); font-size: 14px; font-weight: 600; }
@@ -394,7 +389,7 @@
     margin-bottom: 8px;
   }
   .dca-calc-label {
-    font-size: 12px; font-weight: 600; color: var(--accent-text); white-space: nowrap;
+    font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3; /* เอา nowrap ออก */
   }
   .dca-calc-input, .alloc-target-input {
     flex: 1; min-width: 0;
@@ -414,9 +409,7 @@
   .dca-calc-hint { color: var(--ink-soft); }
   .dca-current {
     font-size: 12px; color: var(--ink-soft); margin-bottom: 4px;
-    white-space: nowrap; overflow-x: auto; scrollbar-width: none;
   }
-  .dca-current::-webkit-scrollbar { display: none; }
   .dca-current b { color: var(--ink); font-weight: 700; }
 
   .txn-date-group { margin-bottom: 4px; }
@@ -467,7 +460,7 @@
   }
   .chart-meta {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 10px; padding: 0 4px;
+    margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px; /* ป้องกันเนื้อหาถูกบีบ */
   }
   .chart-meta-value {
     font-family: var(--mono); font-size: 17px; font-weight: 700;
@@ -516,7 +509,7 @@
   .bar-ticker-label {
     font-family: var(--mono); font-size: 10.5px; font-weight: 700;
     margin-top: 8px; color: var(--ink);
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+    text-align: center; word-break: break-word; /* เอาจุดไข่ปลาและบรรทัดเดียวออก */
   }
 
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
@@ -689,35 +682,6 @@
     line-height: 1.4; border-top: 1px solid var(--accent-border); padding-top: 8px;
     opacity: 0.85;
   }
-
-  /* =========================================
-     Mobile Optimization: ป้องกันข้อความตกบรรทัด
-     ========================================= */
-  .section-label,
-  .hero-label,
-  .alloc-target-summary-text,
-  .dca-alloc-projection,
-  .alloc-sum-label,
-  .alloc-target-room-label,
-  .alloc-target-over-label,
-  .dca-current {
-    white-space: nowrap;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none; /* สำหรับ Firefox */
-  }
-  
-  .section-label::-webkit-scrollbar,
-  .hero-label::-webkit-scrollbar,
-  .alloc-target-summary-text::-webkit-scrollbar,
-  .dca-alloc-projection::-webkit-scrollbar,
-  .alloc-sum-label::-webkit-scrollbar,
-  .alloc-target-room-label::-webkit-scrollbar,
-  .alloc-target-over-label::-webkit-scrollbar,
-  .dca-current::-webkit-scrollbar {
-    display: none; /* ซ่อนแถบเลื่อนบน Chrome/Safari */
-  }
-
 </style>
 </head>
 <body>
@@ -984,6 +948,7 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
+      // 💡 ทริคเพิ่มความเร็ว: หากคุณแก้ไข Google Apps Script ให้รองรับ action="all_data" ที่ส่งกลับมารวดเดียวใน Object เดียว จะช่วยลดจำนวน HTTP Request บนมือถือ และช่วยเพิ่มความเร็วในการโหลดขึ้นได้มหาศาลครับ
       const [summary, dashboard, ports, txns, history, allocTargetsRes] = await Promise.all([
         api('summary'),
         api('dashboard'),
@@ -1201,6 +1166,7 @@ let _donutInstance = null;
 let _plInstance = null;
 
 function renderBarChart() {
+  // ตรวจสอบความพร้อมของ Chart.js ก่อนเรียกใช้งาน เพื่อป้องกัน Error บล็อกส่วนอื่นกรณีเน็ตช้ามากๆ
   if (typeof Chart === 'undefined') {
     setTimeout(renderBarChart, 200);
     return;
