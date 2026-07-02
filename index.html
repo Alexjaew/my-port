@@ -9,6 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<!-- ย้าย Chart.js มาไว้ที่นี่และเพิ่ม defer เพื่อโหลดขนานตั้งแต่เริ่มแรก ลดเวลาบล็อกเรนเดอร์หน้าจอ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
 <style>
   :root {
@@ -241,11 +242,11 @@
   .hero-foot {
     display: flex; gap: 14px; margin-top: 19px;
     padding-top: 17px; border-top: 1px solid rgba(250,248,244,0.1);
-    flex-wrap: wrap; 
+    flex-wrap: wrap; /* ป้องกันเนื้อหาถูกบีบ */
   }
   .hero-foot-item { flex: 1; min-width: 0; }
-  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; } 
-  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } 
+  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
+  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
 
   .alloc-row-wrap {
     background: var(--paper-raised);
@@ -291,9 +292,6 @@
   .alloc-target-summary-text {
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
     margin-top: 6px;
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
   }
   .alloc-target-summary-text b { color: var(--ink); }
   .alloc-room-bar-track {
@@ -303,7 +301,7 @@
   .alloc-room-bar-fill { height: 100%; border-radius: 4px; transition: width .2s ease; }
   .alloc-target-footer-row {
     display: flex; align-items: center; justify-content: space-between;
-    margin-top: 4px; gap: 8px; flex-wrap: wrap; 
+    margin-top: 4px; gap: 8px; flex-wrap: wrap; /* ป้องกันการบีบข้อความเมื่อแคบ */
   }
   .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); }
   .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; }
@@ -391,7 +389,7 @@
     margin-bottom: 8px;
   }
   .dca-calc-label {
-    font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3;
+    font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3; /* เอา nowrap ออก */
   }
   .dca-calc-input, .alloc-target-input {
     flex: 1; min-width: 0;
@@ -462,7 +460,7 @@
   }
   .chart-meta {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px; 
+    margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px; /* ป้องกันเนื้อหาถูกบีบ */
   }
   .chart-meta-value {
     font-family: var(--mono); font-size: 17px; font-weight: 700;
@@ -511,7 +509,7 @@
   .bar-ticker-label {
     font-family: var(--mono); font-size: 10.5px; font-weight: 700;
     margin-top: 8px; color: var(--ink);
-    text-align: center; word-break: break-word; 
+    text-align: center; word-break: break-word; /* เอาจุดไข่ปลาและบรรทัดเดียวออก */
   }
 
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
@@ -701,6 +699,7 @@
 
   <div id="setupBanner"></div>
 
+  <!-- 1. Portfolio Value -->
   <div class="section">
     <div class="section-label">Portfolio Value · มูลค่าพอร์ต</div>
     <div class="hero-card">
@@ -725,6 +724,7 @@
     </div>
   </div>
 
+  <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
   <div class="section">
     <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
@@ -732,6 +732,7 @@
     </div>
   </div>
 
+  <!-- 3. กราฟวงกลมสัดส่วนหุ้น -->
   <div class="section">
     <div class="section-label">Allocation · สัดส่วนหุ้น</div>
     <div class="chart-card" id="donutChartCard">
@@ -739,6 +740,7 @@
     </div>
   </div>
 
+  <!-- 4. กราฟเส้นมูลค่าพอร์ตรายวัน -->
   <div class="section">
     <div class="section-label">Daily Value · มูลค่าพอร์ตรายวัน</div>
     <div class="chart-card" id="valueChartCard">
@@ -746,6 +748,7 @@
     </div>
   </div>
 
+  <!-- 5. สัดส่วนการลงทุนรายตัว -->
   <div class="section">
     <div class="section-label-row">
       <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
@@ -945,6 +948,7 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
+      // 💡 ทริคเพิ่มความเร็ว: หากคุณแก้ไข Google Apps Script ให้รองรับ action="all_data" ที่ส่งกลับมารวดเดียวใน Object เดียว จะช่วยลดจำนวน HTTP Request บนมือถือ และช่วยเพิ่มความเร็วในการโหลดขึ้นได้มหาศาลครับ
       const [summary, dashboard, ports, txns, history, allocTargetsRes] = await Promise.all([
         api('summary'),
         api('dashboard'),
@@ -1051,7 +1055,7 @@ function renderHero() {
     const profit = marketValue - principal;
     const profitPct = principal ? profit / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
-    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
+    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
     document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
@@ -1059,7 +1063,7 @@ function renderHero() {
     const diff = costValue - principal;
     const diffPct = principal ? diff / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
-    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
+    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)} (${fmtPct(diffPct)})`;
     document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
@@ -1162,6 +1166,7 @@ let _donutInstance = null;
 let _plInstance = null;
 
 function renderBarChart() {
+  // ตรวจสอบความพร้อมของ Chart.js ก่อนเรียกใช้งาน เพื่อป้องกัน Error บล็อกส่วนอื่นกรณีเน็ตช้ามากๆ
   if (typeof Chart === 'undefined') {
     setTimeout(renderBarChart, 200);
     return;
@@ -1592,8 +1597,7 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
 
   return `
     <div class="alloc-target-summary-text">
-      <span>สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b></span>
-      <span>เป้าหมาย: <b>${fmt(targetPct,2)}%</b>${isLocked ? ' <span class="alloc-locked-tag"><i class="ti ti-lock"></i> ล็อก</span>' : ''}</span>
+      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>${isLocked ? ' <span class="alloc-locked-tag"><i class="ti ti-lock"></i> ล็อก</span>' : ''}
     </div>
     <div class="alloc-room-bar-track">
       <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
