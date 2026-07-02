@@ -9,7 +9,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<!-- ย้าย Chart.js มาไว้ที่นี่และเพิ่ม defer เพื่อโหลดขนานตั้งแต่เริ่มแรก ลดเวลาบล็อกเรนเดอร์หน้าจอ -->
+<!-- โหลด Chart.js uMD บิลด์แบบขนานแต่ให้ทำงานตามลำดับอย่างถูกต้อง -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
 <style>
   :root {
@@ -202,10 +202,17 @@
     line-height: 1.08;
   }
   .hero-value .cents { font-size: 22px; opacity: 0.55; }
-  
-  /* ลบส่วน delta เดิมออกเพื่อไม่ให้แสดงซ้ำซ้อน */
-  .hero-delta { display: none !important; }
-
+  .hero-delta {
+    display: inline-flex; align-items: center; gap: 5px;
+    margin-top: 11px;
+    font-family: var(--mono);
+    font-size: 14px; font-weight: 600;
+    padding: 4px 10px 4px 8px;
+    border-radius: 100px;
+    backdrop-filter: blur(4px);
+  }
+  .hero-delta.up { background: rgba(60,190,120,0.2); color: #7CDDA8; }
+  .hero-delta.down { background: rgba(232,100,90,0.2); color: #F1A89E; }
   .hero-daily {
     font-family: var(--mono);
     font-size: 12px; margin-top: 9px;
@@ -235,19 +242,11 @@
   .hero-foot {
     display: flex; gap: 14px; margin-top: 19px;
     padding-top: 17px; border-top: 1px solid rgba(250,248,244,0.1);
-    flex-wrap: wrap; /* ป้องกันเนื้อหาถูกบีบ */
-  }
-  .hero-foot-item { flex: 1; min-width: 0; }
-  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
-  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
-  
-  /* จัดกลุ่มให้เปอร์เซ็นต์แสดงคู่กับจำนวนเงิน */
-  .pnl-container {
-    display: flex;
-    align-items: baseline;
-    gap: 8px;
     flex-wrap: wrap;
   }
+  .hero-foot-item { flex: 1; min-width: 0; }
+  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; }
+  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; }
 
   .alloc-row-wrap {
     background: var(--paper-raised);
@@ -302,7 +301,7 @@
   .alloc-room-bar-fill { height: 100%; border-radius: 4px; transition: width .2s ease; }
   .alloc-target-footer-row {
     display: flex; align-items: center; justify-content: space-between;
-    margin-top: 4px; gap: 8px; flex-wrap: wrap; /* ป้องกันการบีบข้อความเมื่อแคบ */
+    margin-top: 4px; gap: 8px; flex-wrap: wrap;
   }
   .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); }
   .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; }
@@ -390,7 +389,7 @@
     margin-bottom: 8px;
   }
   .dca-calc-label {
-    font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3; /* เอา nowrap ออก */
+    font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3;
   }
   .dca-calc-input, .alloc-target-input {
     flex: 1; min-width: 0;
@@ -461,7 +460,7 @@
   }
   .chart-meta {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px; /* ป้องกันเนื้อหาถูกบีบ */
+    margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px;
   }
   .chart-meta-value {
     font-family: var(--mono); font-size: 17px; font-weight: 700;
@@ -510,7 +509,7 @@
   .bar-ticker-label {
     font-family: var(--mono); font-size: 10.5px; font-weight: 700;
     margin-top: 8px; color: var(--ink);
-    text-align: center; word-break: break-word; /* เอาจุดไข่ปลาและบรรทัดเดียวออก */
+    text-align: center; word-break: break-word;
   }
 
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
@@ -710,11 +709,8 @@
       </div>
       <div class="hero-label" id="heroLabel">มูลค่าปัจจุบัน</div>
       <div class="hero-value" id="heroValue">—</div>
-      
-      <!-- ซ่อนส่วน delta และ daily เดิมออกไป -->
-      <div class="hero-delta" id="heroDelta" style="display:none !important"></div>
-      <div class="hero-daily" id="heroDaily" style="display:none !important"></div>
-      
+      <div class="hero-delta" id="heroDelta" style="display:none"></div>
+      <div class="hero-daily" id="heroDaily" style="display:none"></div>
       <div class="hero-foot">
         <div class="hero-foot-item">
           <div class="hero-foot-label">Cost Basis · เงินต้น</div>
@@ -722,12 +718,7 @@
         </div>
         <div class="hero-foot-item">
           <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน</div>
-          
-          <!-- ปรับโครงสร้างใหม่ให้แสดงผลจำนวนเงินและเปอร์เซ็นต์คู่กัน -->
-          <div class="hero-foot-value pnl-container">
-            <span id="footProfitAmount">—</span>
-            <span id="footProfitPercent" style="font-size: 0.85em; font-weight: 500;">(—)</span>
-          </div>
+          <div class="hero-foot-value" id="footProfit">—</div>
         </div>
       </div>
     </div>
@@ -735,8 +726,7 @@
 
   <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
   <div class="section">
-    <!-- ลบข้อความ *(พร้อม P/L%)* ออก -->
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน</div>
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
     </div>
@@ -1057,47 +1047,56 @@ function renderHero() {
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
   document.getElementById('footCost').textContent = `$${fmt(principal)}`;
 
-  // ดึง Element ใหม่ที่จัดกลุ่มไว้
-  const profitAmountEl = document.getElementById('footProfitAmount');
-  const profitPercentEl = document.getElementById('footProfitPercent');
+  const deltaEl = document.getElementById('heroDelta');
+  deltaEl.style.display = 'inline-flex';
 
   if (isMarket) {
     const profit = marketValue - principal;
     const profitPct = principal ? profit / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
-    
-    // ใส่เฉพาะตัวเลขจำนวนเงิน
-    profitAmountEl.textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
-    
-    // ใส่เปอร์เซ็นต์ในวงเล็บ
-    profitPercentEl.textContent = `(${fmtPct(profitPct)})`;
-    
-    // ปรับสีตามสถานะ กำไร/ขาดทุน
-    const pnlColor = profit >= 0 ? '#7CDDA8' : '#F1A89E';
-    profitAmountEl.style.color = pnlColor;
-    profitPercentEl.style.color = pnlColor;
-    
+    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
+    document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
+    deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
+    deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
   } else {
     const diff = costValue - principal;
     const diffPct = principal ? diff / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
-    
-    // ใส่เฉพาะตัวเลขจำนวนเงินส่วนต่าง
-    profitAmountEl.textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
-    
-    // ใส่เปอร์เซ็นต์ส่วนต่างในวงเล็บ
-    profitPercentEl.textContent = `(${fmtPct(diffPct)})`;
-    
-    // ปรับสีตามสถานะ
-    const pnlColor = diff >= 0 ? '#7CDDA8' : '#F1A89E';
-    profitAmountEl.style.color = pnlColor;
-    profitPercentEl.style.color = pnlColor;
+    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
+    document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
+    deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
+    deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
+  }
+
+  const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
+  const heroDailyEl = document.getElementById('heroDaily');
+  if (historyData.length > 0) {
+    const latest = historyData[historyData.length - 1];
+    const prev = historyData.length > 1 ? historyData[historyData.length - 2] : null;
+    const dailyChange = Number(latest['Daily Change']) || 0;
+    const dailyPct = Number(latest['Daily %']) || 0;
+    const dailyUp = dailyChange >= 0;
+
+    let label = 'วันนี้';
+    if (prev && prev['Date']) {
+      const gapDays = Math.round((new Date(latest['Date']) - new Date(prev['Date'])) / 86400000);
+      if (gapDays > 1) {
+        const sinceDate = new Date(prev['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+        label = `เปลี่ยนแปลงตั้งแต่ ${sinceDate} (${gapDays} วัน)`;
+      }
+    }
+
+    heroDailyEl.style.display = 'block';
+    heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
+    heroDailyEl.innerHTML = `${label} <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
+  } else {
+    heroDailyEl.style.display = 'none';
   }
 }
 
 function renderValueLineChart() {
   const card = document.getElementById('valueChartCard');
-  const data = state.history.filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null);
+  const data = state.history.filter(h => h['Date'] && h['มูลค่าพॉर्ट'] != null);
   if (data.length < 2) {
     card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีข้อมูลย้อนหลังพอแสดงกราฟ</div></div>`;
     return;
@@ -1222,7 +1221,7 @@ function renderDonutChart() {
     plugins: [{
       id: 'sliceLabels',
       afterDraw(chart) {
-        const { ctx, chartArea: { width, height } } = chart;
+        const { ctx } = chart;
         const meta = chart.getDatasetMeta(0);
         meta.data.forEach((arc, i) => {
           const pct = pcts[i];
@@ -1309,7 +1308,7 @@ function renderPLChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ` $${fmt(ctx.raw)} · ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}%`
+            label: context => ` $${fmt(context.raw)} · ${plPcts[context.dataIndex] >= 0 ? '+' : ''}${plPcts[context.dataIndex]}%`
           }
         }
       },
