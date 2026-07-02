@@ -1,3 +1,7 @@
+ได้ทำการย้ายสัดส่วนเปอร์เซ็นต์กำไรขาดทุนพอร์ต (P/L%) ขึ้นมาแสดงอยู่ร่วมกับตัวเลขจำนวนเงินในส่วนของ **Hero Card** (Unrealized P/L · กำไร/ขาดทุน) เรียบร้อยแล้วครับ
+โดยโค้ดที่ปรับปรุงจะแสดงในรูปแบบ $ค่าเงินต้น (±เปอร์เซ็นต์%) เพื่อความสวยงาม กระชับ และเช็กค่าสัดส่วนได้ทันทีในบรรทัดเดียว
+### โค้ดเต็มรูปแบบ (Full Code)
+```html
 <!DOCTYPE html>
 <html lang="th">
 <head>
@@ -726,7 +730,7 @@
 
   <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
   <div class="section">
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน</div>
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
     </div>
@@ -948,6 +952,7 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
+      // 💡 ทริคเพิ่มความเร็ว: หากคุณแก้ไข Google Apps Script ให้รองรับ action="all_data" ที่ส่งกลับมารวดเดียวใน Object เดียว จะช่วยลดจำนวน HTTP Request บนมือถือ และช่วยเพิ่มความเร็วในการโหลดขึ้นได้มหาศาลครับ
       const [summary, dashboard, ports, txns, history, allocTargetsRes] = await Promise.all([
         api('summary'),
         api('dashboard'),
@@ -1054,7 +1059,7 @@ function renderHero() {
     const profit = marketValue - principal;
     const profitPct = principal ? profit / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
-    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)}`;
+    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
     document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
@@ -1062,7 +1067,7 @@ function renderHero() {
     const diff = costValue - principal;
     const diffPct = principal ? diff / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
-    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)}`;
+    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)} (${fmtPct(diffPct)})`;
     document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
@@ -1165,6 +1170,7 @@ let _donutInstance = null;
 let _plInstance = null;
 
 function renderBarChart() {
+  // ตรวจสอบความพร้อมของ Chart.js ก่อนเรียกใช้งาน เพื่อป้องกัน Error บล็อกส่วนอื่นกรณีเน็ตช้ามากๆ
   if (typeof Chart === 'undefined') {
     setTimeout(renderBarChart, 200);
     return;
@@ -1855,3 +1861,5 @@ loadAll();
 </script>
 </body>
 </html>
+
+```
