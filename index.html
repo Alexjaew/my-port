@@ -1049,7 +1049,8 @@ function renderHero() {
   document.getElementById('footCost').textContent = `$${fmt(principal)}`;
 
   const deltaEl = document.getElementById('heroDelta');
-  deltaEl.style.display = 'inline-flex';
+  // นำการปรับแสดงผลเป็น inline-flex ออกเพื่อให้ซ่อนไว้ตาม CSS เริ่มต้น (display:none)
+  deltaEl.style.display = 'none';
 
   if (isMarket) {
     const profit = marketValue - principal;
@@ -1857,5 +1858,3 @@ loadAll();
 </script>
 </body>
 </html>
-
-```
