@@ -7,6 +7,9 @@
 <title>My Port — Portfolio Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
+<link rel="preconnect" href="https://eodhd.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
 <!-- ย้าย Chart.js มาไว้ที่นี่และเพิ่ม defer เพื่อโหลดขนานตั้งแต่เริ่มแรก ลดเวลาบล็อกเรนเดอร์หน้าจอ -->
@@ -948,15 +951,12 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      // 💡 ทริคเพิ่มความเร็ว: หากคุณแก้ไข Google Apps Script ให้รองรับ action="all_data" ที่ส่งกลับมารวดเดียวใน Object เดียว จะช่วยลดจำนวน HTTP Request บนมือถือ และช่วยเพิ่มความเร็วในการโหลดขึ้นได้มหาศาลครับ
-      const [summary, dashboard, ports, txns, history, allocTargetsRes] = await Promise.all([
-        api('summary'),
-        api('dashboard'),
-        api('ports'),
-        api('transactions', { port: state.port === 'ALL' ? null : state.port }),
-        api('history'),
-        api('allocTargets')
-      ]);
+      // เรียก action="all_data" เพียง request เดียว แทนที่จะยิง 6 requests แยกกัน
+      // (Apps Script มักคิว requests พร้อมกันไปที่สคริปต์เดียวกัน ทำให้ Promise.all ไม่ได้เร็วขึ้นจริง)
+      const all = await api('all_data', { port: state.port === 'ALL' ? null : state.port });
+      if (all.error) throw new Error(all.error);
+
+      const { summary, dashboard, ports, transactions: txns, history, allocTargets: allocTargetsRes } = all;
       if (summary.error || dashboard.error || ports.error || txns.error) {
         const errMsg = summary.error || dashboard.error || ports.error || txns.error;
         throw new Error(errMsg);
@@ -981,19 +981,67 @@ async function loadAll() {
       renderAllocList();
       renderTransactions();
       populatePortSelect();
+      cacheSnapshot();
       return;
     } catch (err) {
       console.error(`loadAll attempt ${attempt} failed:`, err);
       if (attempt < MAX_ATTEMPTS) {
-        document.getElementById('allocList').innerHTML =
-          `<div class="empty-state"><div class="icon">⏳</div><div class="msg">กำลังเชื่อมต่อใหม่... (ครั้งที่ ${attempt + 1})</div></div>`;
+        if (!state.summary) {
+          document.getElementById('allocList').innerHTML =
+            `<div class="empty-state"><div class="icon">⏳</div><div class="msg">กำลังเชื่อมต่อใหม่... (ครั้งที่ ${attempt + 1})</div></div>`;
+        }
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS[attempt - 1]));
         continue;
       }
-      document.getElementById('allocList').innerHTML =
-        `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
+      if (!state.summary) {
+        document.getElementById('allocList').innerHTML =
+          `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
+      }
       showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
     }
+  }
+}
+
+// เก็บ snapshot ล่าสุดไว้ใน localStorage เพื่อเปิดแอพครั้งถัดไปแล้วแสดงผลได้ทันที
+// (ไม่ต้องรอ network) แล้วค่อยรีเฟรชด้วยข้อมูลสดจาก server ทับอีกที
+const SNAPSHOT_KEY = 'portfolio_snapshot_v1';
+function cacheSnapshot() {
+  try {
+    localStorage.setItem(SNAPSHOT_KEY, JSON.stringify({
+      summary: state.summary,
+      dashboard: state.dashboard,
+      ports: state.ports,
+      transactions: state.transactions,
+      history: state.history,
+      ts: Date.now()
+    }));
+  } catch (err) {
+    console.error('cacheSnapshot failed:', err);
+  }
+}
+
+function renderFromSnapshot() {
+  try {
+    const raw = localStorage.getItem(SNAPSHOT_KEY);
+    if (!raw) return false;
+    const snap = JSON.parse(raw);
+    if (!snap || !snap.summary) return false;
+    state.summary = snap.summary;
+    state.dashboard = snap.dashboard;
+    state.ports = snap.ports || [];
+    state.transactions = snap.transactions || [];
+    state.history = snap.history || [];
+    renderPortSwitch();
+    renderHero();
+    renderValueLineChart();
+    renderBarChart();
+    renderAllocList();
+    renderTransactions();
+    populatePortSelect();
+    return true;
+  } catch (err) {
+    console.error('renderFromSnapshot failed:', err);
+    return false;
   }
 }
 
@@ -1859,6 +1907,7 @@ document.getElementById('submitBtn').onclick = async () => {
 };
 
 updateThemeIcon();
+renderFromSnapshot(); // แสดงข้อมูลล่าสุดที่แคชไว้ทันที ไม่ต้องรอ network ก่อน
 loadAll();
 </script>
 </body>
