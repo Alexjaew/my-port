@@ -295,7 +295,12 @@
   .alloc-target-summary-text {
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
     margin-top: 6px;
+    white-space: nowrap;
+    overflow-x: auto;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
   }
+  .alloc-target-summary-text::-webkit-scrollbar { display: none; }
   .alloc-target-summary-text b { color: var(--ink); }
   .alloc-room-bar-track {
     height: 7px; background: var(--line); border-radius: 4px;
@@ -1651,7 +1656,7 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
 
   return `
     <div class="alloc-target-summary-text">
-      สัดส่วนปัจจุบัน: <b>${fmt(actualPct,2)}%</b>&nbsp;|&nbsp;เป้าหมาย: <b>${fmt(targetPct,2)}%</b>${isLocked ? ' <span class="alloc-locked-tag"><i class="ti ti-lock"></i> ล็อก</span>' : ''}
+      ปัจจุบัน <b>${fmt(actualPct,1)}%</b>&nbsp;·&nbsp;เป้าหมาย <b>${fmt(targetPct,1)}%</b>${isLocked ? ' <span class="alloc-locked-tag"><i class="ti ti-lock"></i></span>' : ''}
     </div>
     <div class="alloc-room-bar-track">
       <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
