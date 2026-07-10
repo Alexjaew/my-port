@@ -12,7 +12,6 @@
 <link rel="preconnect" href="https://eodhd.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
-<!-- ย้าย Chart.js มาไว้ที่นี่และเพิ่ม defer เพื่อโหลดขนานตั้งแต่เริ่มแรก ลดเวลาบล็อกเรนเดอร์หน้าจอ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
 <style>
   :root {
@@ -245,11 +244,11 @@
   .hero-foot {
     display: flex; gap: 14px; margin-top: 19px;
     padding-top: 17px; border-top: 1px solid rgba(250,248,244,0.1);
-    flex-wrap: wrap; /* ป้องกันเนื้อหาถูกบีบ */
+    flex-wrap: wrap;
   }
   .hero-foot-item { flex: 1; min-width: 0; }
-  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
-  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
+  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; }
+  .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; }
 
   .alloc-row-wrap {
     background: var(--paper-raised);
@@ -312,7 +311,7 @@
   .alloc-room-bar-fill { height: 100%; border-radius: 4px; transition: width .2s ease; }
   .alloc-target-footer-row {
     display: flex; align-items: center; justify-content: space-between;
-    margin-top: 4px; gap: 8px; flex-wrap: wrap; /* ป้องกันการบีบข้อความเมื่อแคบ */
+    margin-top: 4px; gap: 8px; flex-wrap: wrap;
   }
   .alloc-target-room-label { font-size: 10.5px; color: var(--ink-soft); }
   .alloc-target-over-label { font-size: 10.5px; color: var(--loss); font-weight: 700; }
@@ -400,7 +399,7 @@
     margin-bottom: 8px;
   }
   .dca-calc-label {
-    font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3; /* เอา nowrap ออก */
+    font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3;
   }
   .dca-calc-input, .alloc-target-input {
     flex: 1; min-width: 0;
@@ -471,7 +470,7 @@
   }
   .chart-meta {
     display: flex; justify-content: space-between; align-items: baseline;
-    margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px; /* ป้องกันเนื้อหาถูกบีบ */
+    margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px;
   }
   .chart-meta-value {
     font-family: var(--mono); font-size: 17px; font-weight: 700;
@@ -520,7 +519,7 @@
   .bar-ticker-label {
     font-family: var(--mono); font-size: 10.5px; font-weight: 700;
     margin-top: 8px; color: var(--ink);
-    text-align: center; word-break: break-word; /* เอาจุดไข่ปลาและบรรทัดเดียวออก */
+    text-align: center; word-break: break-word;
   }
 
   .empty-state .icon { font-size: 32px; margin-bottom: 8px; }
@@ -959,8 +958,6 @@ async function loadAll() {
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      // เรียก action="all_data" เพียง request เดียว แทนที่จะยิง 6 requests แยกกัน
-      // (Apps Script มักคิว requests พร้อมกันไปที่สคริปต์เดียวกัน ทำให้ Promise.all ไม่ได้เร็วขึ้นจริง)
       const all = await api('all_data', { port: state.port === 'ALL' ? null : state.port });
       if (all.error) throw new Error(all.error);
 
@@ -1010,8 +1007,6 @@ async function loadAll() {
   }
 }
 
-// เก็บ snapshot ล่าสุดไว้ใน localStorage เพื่อเปิดแอพครั้งถัดไปแล้วแสดงผลได้ทันที
-// (ไม่ต้องรอ network) แล้วค่อยรีเฟรชด้วยข้อมูลสดจาก server ทับอีกที
 const SNAPSHOT_KEY = 'portfolio_snapshot_v1';
 function cacheSnapshot() {
   try {
@@ -1067,12 +1062,6 @@ function renderPortSwitch() {
   });
 }
 
-function rerenderForBasisOrPort() {
-  renderHero();
-  renderAllocList();
-  renderBarChart();
-}
-
 function getFilteredSummaryRows() {
   if (!state.summary) return [];
   const rows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
@@ -1109,7 +1098,6 @@ function renderHero() {
   document.getElementById('footCost').textContent = `$${fmt(principal)}`;
 
   const deltaEl = document.getElementById('heroDelta');
-  // นำการปรับแสดงผลเป็น inline-flex ออกเพื่อให้ซ่อนไว้ตาม CSS เริ่มต้น (display:none)
   deltaEl.style.display = 'none';
 
   if (isMarket) {
@@ -1227,7 +1215,6 @@ let _donutInstance = null;
 let _plInstance = null;
 
 function renderBarChart() {
-  // ตรวจสอบความพร้อมของ Chart.js ก่อนเรียกใช้งาน เพื่อป้องกัน Error บล็อกส่วนอื่นกรณีเน็ตช้ามากๆ
   if (typeof Chart === 'undefined') {
     setTimeout(renderBarChart, 200);
     return;
@@ -1320,12 +1307,6 @@ function renderPLChart() {
   }
   const basis = state.basis;
 
-  const donutSorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
-  const tickerColorMap = {};
-  donutSorted.forEach((r, i) => {
-    tickerColorMap[r['หุ้น']] = CHART_COLORS[i % CHART_COLORS.length];
-  });
-
   const withData = rows.map(r => ({
     ticker: r['หุ้น'],
     value:  Number(r['มูลค่าปัจจุบัน']) || 0,
@@ -1341,30 +1322,15 @@ function renderPLChart() {
   const tickColor = isDark ? '#ECE9E2' : '#0E1116';
   const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const axisColor = isDark ? '#8B92A0' : '#6B7280';
-  const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
-  const lossColor = isDark ? '#E8645A' : '#B23B2E';
-  const gainSoft  = isDark ? '#1E3A28' : '#CDEBDA';
-  const lossSoft  = isDark ? '#3E211E' : '#F5CFC8';
-
-  const hexToRgb = h => {
-    const n = h.replace('#','');
-    return [parseInt(n.slice(0,2),16), parseInt(n.slice(2,4),16), parseInt(n.slice(4,6),16)];
-  };
-  const lerpColor = (from, to, t) => {
-    const a = hexToRgb(from), b = hexToRgb(to);
-    const c = a.map((v,i) => Math.round(v + (b[i]-v) * t));
-    return `rgb(${c[0]},${c[1]},${c[2]})`;
-  };
-
-  const maxAbsPct = Math.max(1, ...plPcts.map(p => Math.abs(p)));
-  const barColors = plPcts.map(p => {
-    const t = 0.2 + 0.8 * Math.min(Math.abs(p) / maxAbsPct, 1); // floor so 0% bars stay visible
-    return p >= 0 ? lerpColor(gainSoft, gainColor, t) : lerpColor(lossSoft, lossColor, t);
-  });
+  
+  // ใช้สี Solid สำหรับกำไร (เขียว) และขาดทุน (แดง)
+  const gainColor = '#1B7A4D'; 
+  const lossColor = '#B23B2E';
+  const barColors = plPcts.map(p => p >= 0 ? gainColor : lossColor);
 
   card.innerHTML = `<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
-      aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
+      aria-label="Bar chart of current market value per stock with P&L% label"></canvas>
   </div>`;
 
   if (_plInstance) { _plInstance.destroy(); _plInstance = null; }
@@ -1394,7 +1360,7 @@ function renderPLChart() {
           }
         }
       },
-      layout: { padding: { top: 25, bottom: 25 } },
+      layout: { padding: { top: 30, bottom: 25 } },
       scales: {
         x: {
           grid: { display: false },
@@ -1419,30 +1385,12 @@ function renderPLChart() {
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
           const pct = plPcts[i];
           const label = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-          
           c.save();
-          c.font = 'bold 11px -apple-system, monospace, sans-serif';
+          c.font = 'bold 10px -apple-system, sans-serif';
           c.textAlign = 'center';
-
-          if (pct >= 0) {
-            c.save();
-            c.translate(bar.x, bar.y + 24);
-            c.rotate(Math.PI / 2);
-            c.textAlign = "center";
-            c.textBaseline = "middle";
-            c.fillStyle = "#ffffff";
-            c.fillText(label, 0, 0);
-            c.restore();
-          } else {
-            c.save();
-            c.translate(bar.x, bar.base - 22);
-            c.rotate(-Math.PI / 2);
-            c.textAlign = "center";
-            c.textBaseline = "middle";
-            c.fillStyle = "#ffffff";
-            c.fillText(label, 0, 0);
-            c.restore();
-          }
+          c.fillStyle = isDark ? '#fff' : '#000';
+          c.fillText(label, bar.x, pct >= 0 ? bar.y - 8 : bar.y + 35);
+          c.restore();
         });
       }
     }]
@@ -1496,12 +1444,6 @@ function updateAllocTargetSumBar() {
         alert(`หุ้นที่ล็อกไว้รวมกันแล้ว ${fmt(lockedSum,1)}% เกิน 100% ไปแล้ว กรุณาปลดล็อกบางตัวก่อน`);
         return;
       }
-
-      const lockMsg = lockedTickers.length
-        ? `(คงค่า ${lockedTickers.join(', ')} ที่ล็อกไว้ไม่เปลี่ยน รวม ${fmt(lockedSum,1)}% แล้วปรับตัวที่เหลือให้รวมเป็น ${fmt(remaining,1)}%)`
-        : '(ลดทุกตัวตามสัดส่วนเดิม)';
-      const ok = confirm(`ปรับเป้าหมายให้รวมกันเป็น 100% พอดี ${lockMsg} ใช่ไหม?`);
-      if (!ok) return;
 
       const scale = remaining / unlockedSum;
       unlockedTickers.forEach(ticker => {
@@ -1936,7 +1878,7 @@ document.getElementById('submitBtn').onclick = async () => {
 };
 
 updateThemeIcon();
-renderFromSnapshot(); // แสดงข้อมูลล่าสุดที่แคชไว้ทันที ไม่ต้องรอ network ก่อน
+renderFromSnapshot();
 loadAll();
 </script>
 </body>
