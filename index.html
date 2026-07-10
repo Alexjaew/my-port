@@ -480,11 +480,16 @@
   }
   .pl-legend-swatch {
     width: 11px; height: 11px; border-radius: 3.5px; flex: 0 0 auto;
-    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-text) 100%);
   }
-  .pl-legend-swatch.cost {
-    width: 14px; height: 0; border-radius: 0;
-    border-top: 2px dashed var(--ink-soft);
+  .pl-legend-swatch.gain { background: var(--gain); }
+  .pl-legend-swatch.loss { background: var(--loss); }
+  .pl-legend-swatch.tint {
+    background: var(--gain);
+    position: relative; overflow: hidden;
+  }
+  .pl-legend-swatch.tint::after {
+    content: ''; position: absolute; inset: 0;
+    background: rgba(255,255,255,0.55);
   }
   .chart-meta {
     display: flex; justify-content: space-between; align-items: baseline;
@@ -754,7 +759,7 @@
 
   <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
   <div class="section">
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อมเส้นต้นทุน &amp; P/L%)</div>
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน (สีตามกำไร/ขาดทุน)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
     </div>
@@ -1337,12 +1342,6 @@ function renderPLChart() {
   }
   const basis = state.basis;
 
-  const donutSorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
-  const tickerColorMap = {};
-  donutSorted.forEach((r, i) => {
-    tickerColorMap[r['หุ้น']] = CHART_COLORS[i % CHART_COLORS.length];
-  });
-
   const withData = rows.map(r => {
     const value  = Number(r['มูลค่าปัจจุบัน']) || 0;
     const profit = basis === 'AVG' ? (Number(r['กำไร AVG']) || 0) : (Number(r['กำไร FIFO']) || 0);
@@ -1354,35 +1353,38 @@ function renderPLChart() {
     };
   }).sort((a,b) => b.value - a.value);
 
-  const tickers   = withData.map(r => r.ticker);
-  const values    = withData.map(r => r.value);
-  const costs     = withData.map(r => r.cost);
-  const plPcts    = withData.map(r => r.plPct);
-  const barColors = tickers.map(t => tickerColorMap[t] || '#2a78d6');
+  const tickers = withData.map(r => r.ticker);
+  const values  = withData.map(r => r.value);
+  const costs   = withData.map(r => r.cost);
+  const plPcts  = withData.map(r => r.plPct);
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const tickColor   = isDark ? '#ECE9E2' : '#0E1116';
-  const gridColor   = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const axisColor   = isDark ? '#8B92A0' : '#6B7280';
-  const costLine    = isDark ? 'rgba(236,233,226,0.85)' : 'rgba(14,17,22,0.75)';
-  const costLineCap = isDark ? '#1C1E23' : '#FFFFFF';
+  const tickColor  = isDark ? '#ECE9E2' : '#0E1116';
+  const gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
+  const axisColor  = isDark ? '#8B92A0' : '#6B7280';
+  const gainColor  = isDark ? '#3DBE7C' : '#1B7A4D';
+  const lossColor  = isDark ? '#E8645A' : '#B23B2E';
+  const tintColor  = 'rgba(255,255,255,0.25)';
+
+  // สีของแต่ละแท่งอิงจากกำไร/ขาดทุน แทนที่จะอิงจากสีประจำหุ้นเหมือนเดิม
+  const barColors = plPcts.map(pct => pct >= 0 ? gainColor : lossColor);
 
   card.innerHTML = `
     <div class="pl-chart-legend">
-      <span class="pl-legend-item"><span class="pl-legend-swatch"></span>มูลค่าตลาด · Market Value</span>
-      <span class="pl-legend-item"><span class="pl-legend-swatch cost"></span>มูลค่าต้นทุน · Cost Basis</span>
+      <span class="pl-legend-item"><span class="pl-legend-swatch gain"></span>กำไร · Gain</span>
+      <span class="pl-legend-item"><span class="pl-legend-swatch loss"></span>ขาดทุน · Loss</span>
+      <span class="pl-legend-item"><span class="pl-legend-swatch tint"></span>โซนต้นทุน · Cost zone</span>
     </div>
     <div style="position:relative;height:230px;">
       <canvas id="plCanvas" role="img"
-        aria-label="Bar chart of current market value per stock, with cost basis marker and P&L% label: ${tickers.map((t,i)=>`${t} value $${values[i].toLocaleString()}, cost $${costs[i].toLocaleString()}, ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
+        aria-label="Bar chart of current market value per stock, colored green for gain or red for loss, with cost basis shown as a lighter tint and P&L% label: ${tickers.map((t,i)=>`${t} value $${values[i].toLocaleString()}, cost $${costs[i].toLocaleString()}, ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
     </div>`;
 
   if (_plInstance) { _plInstance.destroy(); _plInstance = null; }
   const ctx = document.getElementById('plCanvas');
   if (!ctx) return;
 
-  // ให้แกน Y ครอบคลุมทั้งมูลค่าตลาดและมูลค่าต้นทุน กันเส้นต้นทุนหลุดกรอบกราฟตอนขาดทุนหนัก
   const scaleMax = Math.max(...values, ...costs, 1) * 1.18;
 
   _plInstance = new Chart(ctx.getContext('2d'), {
@@ -1454,37 +1456,23 @@ function renderPLChart() {
       }
     },
     plugins: [{
-      // เส้นประแสดงมูลค่าต้นทุนคาดอยู่ตำแหน่งที่ถูกต้องภายในแท่งกราฟแต่ละตัว
-      id: 'costBasisMarker',
+      // โซนต้นทุนเป็นแถบสีอ่อนซ้อนอยู่ด้านล่างของแท่งกำไร แสดงว่าเงินต้นอยู่ตรงไหนของแท่ง
+      // (แท่งขาดทุนไม่มีแถบนี้ เพราะมูลค่าทั้งแท่งอยู่ต่ำกว่าทุนอยู่แล้ว)
+      id: 'costZoneTint',
       afterDatasetDraw(chart) {
         const { ctx: c, scales: { y } } = chart;
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          const costY = y.getPixelForValue(costs[i]);
-          const halfW = (bar.width || 20) / 2;
-          const x1 = bar.x - halfW, x2 = bar.x + halfW;
+          if (plPcts[i] < 0) return;
+          const costY  = y.getPixelForValue(Math.min(costs[i], values[i]));
+          const halfW  = (bar.width || 20) / 2;
+          const top    = Math.min(costY, bar.base);
+          const height = Math.abs(bar.base - costY);
+          if (height <= 0) return;
 
           c.save();
-          c.setLineDash([4, 3]);
-          c.lineWidth = 2;
-          c.strokeStyle = costLine;
-          c.beginPath();
-          c.moveTo(x1, costY);
-          c.lineTo(x2, costY);
-          c.stroke();
+          c.fillStyle = tintColor;
+          c.fillRect(bar.x - halfW, top, halfW * 2, height);
           c.restore();
-
-          // จุดปลายทั้งสองข้างของเส้นต้นทุนให้ดูคมและอ่านง่ายขึ้น
-          [x1, x2].forEach(x => {
-            c.save();
-            c.beginPath();
-            c.arc(x, costY, 2.5, 0, Math.PI * 2);
-            c.fillStyle = costLineCap;
-            c.fill();
-            c.lineWidth = 1.4;
-            c.strokeStyle = costLine;
-            c.stroke();
-            c.restore();
-          });
         });
       }
     }, {
