@@ -1343,7 +1343,24 @@ function renderPLChart() {
   const axisColor = isDark ? '#8B92A0' : '#6B7280';
   const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
   const lossColor = isDark ? '#E8645A' : '#B23B2E';
-  const barColors = plPcts.map(p => p >= 0 ? gainColor : lossColor);
+  const gainSoft  = isDark ? '#1E3A28' : '#CDEBDA';
+  const lossSoft  = isDark ? '#3E211E' : '#F5CFC8';
+
+  const hexToRgb = h => {
+    const n = h.replace('#','');
+    return [parseInt(n.slice(0,2),16), parseInt(n.slice(2,4),16), parseInt(n.slice(4,6),16)];
+  };
+  const lerpColor = (from, to, t) => {
+    const a = hexToRgb(from), b = hexToRgb(to);
+    const c = a.map((v,i) => Math.round(v + (b[i]-v) * t));
+    return `rgb(${c[0]},${c[1]},${c[2]})`;
+  };
+
+  const maxAbsPct = Math.max(1, ...plPcts.map(p => Math.abs(p)));
+  const barColors = plPcts.map(p => {
+    const t = 0.2 + 0.8 * Math.min(Math.abs(p) / maxAbsPct, 1); // floor so 0% bars stay visible
+    return p >= 0 ? lerpColor(gainSoft, gainColor, t) : lerpColor(lossSoft, lossColor, t);
+  });
 
   card.innerHTML = `<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
