@@ -469,28 +469,6 @@
     padding: 16px 14px 14px;
     box-shadow: var(--shadow-sm);
   }
-  .pl-chart-legend {
-    display: flex; align-items: center; gap: 16px;
-    margin-bottom: 12px; padding: 0 4px;
-  }
-  .pl-legend-item {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; font-weight: 600; color: var(--ink-soft);
-    letter-spacing: .01em;
-  }
-  .pl-legend-swatch {
-    width: 11px; height: 11px; border-radius: 3.5px; flex: 0 0 auto;
-  }
-  .pl-legend-swatch.gain { background: var(--gain); }
-  .pl-legend-swatch.loss { background: var(--loss); }
-  .pl-legend-swatch.tint {
-    background: var(--gain);
-    position: relative; overflow: hidden;
-  }
-  .pl-legend-swatch.tint::after {
-    content: ''; position: absolute; inset: 0;
-    background: rgba(255,255,255,0.55);
-  }
   .chart-meta {
     display: flex; justify-content: space-between; align-items: baseline;
     margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px; /* ป้องกันเนื้อหาถูกบีบ */
@@ -759,7 +737,7 @@
 
   <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
   <div class="section">
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน (สีตามกำไร/ขาดทุน)</div>
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
     </div>
@@ -1342,50 +1320,37 @@ function renderPLChart() {
   }
   const basis = state.basis;
 
-  const withData = rows.map(r => {
-    const value  = Number(r['มูลค่าปัจจุบัน']) || 0;
-    const profit = basis === 'AVG' ? (Number(r['กำไร AVG']) || 0) : (Number(r['กำไร FIFO']) || 0);
-    return {
-      ticker: r['หุ้น'],
-      value,
-      cost: value - profit,
-      plPct: parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
-    };
-  }).sort((a,b) => b.value - a.value);
+  const donutSorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
+  const tickerColorMap = {};
+  donutSorted.forEach((r, i) => {
+    tickerColorMap[r['หุ้น']] = CHART_COLORS[i % CHART_COLORS.length];
+  });
 
-  const tickers = withData.map(r => r.ticker);
-  const values  = withData.map(r => r.value);
-  const costs   = withData.map(r => r.cost);
-  const plPcts  = withData.map(r => r.plPct);
+  const withData = rows.map(r => ({
+    ticker: r['หุ้น'],
+    value:  Number(r['มูลค่าปัจจุบัน']) || 0,
+    plPct:  parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
+  })).sort((a,b) => b.value - a.value)
+
+  const tickers   = withData.map(r => r.ticker);
+  const values    = withData.map(r => r.value);
+  const plPcts    = withData.map(r => r.plPct);
+  const barColors = tickers.map(t => tickerColorMap[t] || '#2a78d6');
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const tickColor  = isDark ? '#ECE9E2' : '#0E1116';
-  const gridColor  = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.06)';
-  const axisColor  = isDark ? '#8B92A0' : '#6B7280';
-  const gainColor  = isDark ? '#3DBE7C' : '#1B7A4D';
-  const lossColor  = isDark ? '#E8645A' : '#B23B2E';
-  const tintColor  = 'rgba(255,255,255,0.25)';
+  const tickColor = isDark ? '#ECE9E2' : '#0E1116';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const axisColor = isDark ? '#8B92A0' : '#6B7280';
 
-  // สีของแต่ละแท่งอิงจากกำไร/ขาดทุน แทนที่จะอิงจากสีประจำหุ้นเหมือนเดิม
-  const barColors = plPcts.map(pct => pct >= 0 ? gainColor : lossColor);
-
-  card.innerHTML = `
-    <div class="pl-chart-legend">
-      <span class="pl-legend-item"><span class="pl-legend-swatch gain"></span>กำไร · Gain</span>
-      <span class="pl-legend-item"><span class="pl-legend-swatch loss"></span>ขาดทุน · Loss</span>
-      <span class="pl-legend-item"><span class="pl-legend-swatch tint"></span>โซนต้นทุน · Cost zone</span>
-    </div>
-    <div style="position:relative;height:230px;">
-      <canvas id="plCanvas" role="img"
-        aria-label="Bar chart of current market value per stock, colored green for gain or red for loss, with cost basis shown as a lighter tint and P&L% label: ${tickers.map((t,i)=>`${t} value $${values[i].toLocaleString()}, cost $${costs[i].toLocaleString()}, ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
-    </div>`;
+  card.innerHTML = `<div style="position:relative;height:230px;">
+    <canvas id="plCanvas" role="img"
+      aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
+  </div>`;
 
   if (_plInstance) { _plInstance.destroy(); _plInstance = null; }
   const ctx = document.getElementById('plCanvas');
   if (!ctx) return;
-
-  const scaleMax = Math.max(...values, ...costs, 1) * 1.18;
 
   _plInstance = new Chart(ctx.getContext('2d'), {
     type: 'bar',
@@ -1393,48 +1358,24 @@ function renderPLChart() {
       labels: tickers,
       datasets: [{
         data: values,
-        backgroundColor: (chartCtx) => {
-          const { chart, dataIndex } = chartCtx;
-          const { ctx: c, chartArea } = chart;
-          if (!chartArea) return barColors[dataIndex];
-          const base = barColors[dataIndex];
-          const g = c.createLinearGradient(0, chartArea.top, 0, chartArea.bottom);
-          g.addColorStop(0, base);
-          g.addColorStop(1, shadeColor(base, -18));
-          return g;
-        },
-        hoverBackgroundColor: barColors,
-        borderRadius: { topLeft: 8, topRight: 8, bottomLeft: 3, bottomRight: 3 },
+        backgroundColor: barColors,
+        borderRadius: 4,
         borderSkipped: false,
-        barThickness: 22,
-        maxBarThickness: 26
+        barThickness: 20
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      animation: { duration: 500, easing: 'easeOutQuart' },
       plugins: {
         legend: { display: false },
         tooltip: {
-          padding: 10,
-          cornerRadius: 8,
-          titleFont: { size: 12, weight: 'bold' },
-          bodyFont: { size: 11.5 },
-          bodySpacing: 4,
           callbacks: {
-            label: ctx => {
-              const i = ctx.dataIndex;
-              return [
-                `มูลค่าตลาด: $${fmt(values[i])}`,
-                `ต้นทุน: $${fmt(costs[i])}`,
-                `${plPcts[i] >= 0 ? '+' : ''}${plPcts[i]}%`
-              ];
-            }
+            label: ctx => ` $${fmt(ctx.raw)} · ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}%`
           }
         }
       },
-      layout: { padding: { top: 28, bottom: 25 } },
+      layout: { padding: { top: 25, bottom: 25 } },
       scales: {
         x: {
           grid: { display: false },
@@ -1442,82 +1383,51 @@ function renderPLChart() {
           ticks: { color: tickColor, font: { size: 11, weight: 'bold', family: 'monospace' } }
         },
         y: {
-          min: 0,
-          max: scaleMax,
           grid: { color: gridColor },
           border: { display: false },
           ticks: {
             color: axisColor,
             font: { size: 10 },
-            maxTicksLimit: 5,
             callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
           }
         }
       }
     },
     plugins: [{
-      // โซนต้นทุนเป็นแถบสีอ่อนซ้อนอยู่ด้านล่างของแท่งกำไร แสดงว่าเงินต้นอยู่ตรงไหนของแท่ง
-      // (แท่งขาดทุนไม่มีแถบนี้ เพราะมูลค่าทั้งแท่งอยู่ต่ำกว่าทุนอยู่แล้ว)
-      id: 'costZoneTint',
-      afterDatasetDraw(chart) {
-        const { ctx: c, scales: { y } } = chart;
-        chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          if (plPcts[i] < 0) return;
-          const costY  = y.getPixelForValue(Math.min(costs[i], values[i]));
-          const halfW  = (bar.width || 20) / 2;
-          const top    = Math.min(costY, bar.base);
-          const height = Math.abs(bar.base - costY);
-          if (height <= 0) return;
-
-          c.save();
-          c.fillStyle = tintColor;
-          c.fillRect(bar.x - halfW, top, halfW * 2, height);
-          c.restore();
-        });
-      }
-    }, {
       id: 'plValueLabels',
       afterDatasetDraw(chart) {
         const { ctx: c } = chart;
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
           const pct = plPcts[i];
           const label = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-
+          
           c.save();
           c.font = 'bold 11px -apple-system, monospace, sans-serif';
           c.textAlign = 'center';
-          c.shadowColor = 'rgba(0,0,0,0.35)';
-          c.shadowBlur = 3;
 
           if (pct >= 0) {
+            c.save();
             c.translate(bar.x, bar.y + 24);
             c.rotate(Math.PI / 2);
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            c.fillStyle = "#ffffff";
+            c.fillText(label, 0, 0);
+            c.restore();
           } else {
+            c.save();
             c.translate(bar.x, bar.base - 22);
             c.rotate(-Math.PI / 2);
+            c.textAlign = "center";
+            c.textBaseline = "middle";
+            c.fillStyle = "#ffffff";
+            c.fillText(label, 0, 0);
+            c.restore();
           }
-          c.textAlign = 'center';
-          c.textBaseline = 'middle';
-          c.fillStyle = '#ffffff';
-          c.fillText(label, 0, 0);
-          c.restore();
         });
       }
     }]
   });
-}
-
-// ปรับความสว่าง/มืดของสี hex เพื่อทำ gradient บนแท่งกราฟให้ดูมีมิติมากขึ้น
-function shadeColor(hex, percent) {
-  if (!hex || hex[0] !== '#') return hex;
-  const num = parseInt(hex.slice(1), 16);
-  let r = (num >> 16) + Math.round(2.55 * percent);
-  let g = ((num >> 8) & 0x00FF) + Math.round(2.55 * percent);
-  let b = (num & 0x0000FF) + Math.round(2.55 * percent);
-  r = Math.min(255, Math.max(0, r));
-  g = Math.min(255, Math.max(0, g));
-  b = Math.min(255, Math.max(0, b));
-  return `#${(1 << 24 | r << 16 | g << 8 | b).toString(16).slice(1)}`;
 }
 
 function updateAllocTargetSumBar() {
