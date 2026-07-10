@@ -289,6 +289,8 @@
   .alloc-ticker-row { display: flex; align-items: baseline; gap: 8px; }
   .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
   .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
+.alloc-cost-row { font-size: 11px; color: var(--ink-soft); font-family: var(--mono); margin-top: 2px; }
+.alloc-cost-total { font-size: 10.5px; color: var(--ink-soft); font-family: var(--mono); margin-top: 2px; }
 
   .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; position: relative; }
   .alloc-bar-fill { height: 100%; border-radius: 4px; }
@@ -1535,6 +1537,8 @@ function renderAllocList() {
     const color = CHART_COLORS[i % CHART_COLORS.length];
     const ticker = r['หุ้น'];
     const currentPrice = Number(r['price']) || 0;
+    const avgCostPerShare = Number(r['ราคา FIFO']) || 0;
+    const totalCostBasis = Number(r['ทุน  FIFO']) || 0;
     const inputVal = state.dcaInputs[ticker] || '';
     const targetVal = state.allocTargets[ticker];
     const hasTarget = targetVal !== undefined;
@@ -1552,10 +1556,12 @@ function renderAllocList() {
               <div class="alloc-ticker">${ticker}</div>
               <div class="alloc-current-price">$${fmt(currentPrice)}</div>
             </div>
+            <div class="alloc-cost-row">ต้นทุนเฉลี่ย $${fmt(avgCostPerShare)}/หุ้น</div>
           </div>
           <div class="alloc-right">
             <div class="alloc-value">$${fmt(value)}</div>
             <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})</div>
+            <div class="alloc-cost-total">ทุนรวม $${fmt(totalCostBasis)}</div>
           </div>
         </div>
 
