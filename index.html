@@ -469,23 +469,6 @@
     padding: 16px 14px 14px;
     box-shadow: var(--shadow-sm);
   }
-  .pl-chart-legend {
-    display: flex; align-items: center; gap: 16px;
-    margin-bottom: 12px; padding: 0 4px;
-  }
-  .pl-legend-item {
-    display: flex; align-items: center; gap: 6px;
-    font-size: 11px; font-weight: 600; color: var(--ink-soft);
-    letter-spacing: .01em;
-  }
-  .pl-legend-swatch {
-    width: 11px; height: 11px; border-radius: 3.5px; flex: 0 0 auto;
-    background: linear-gradient(180deg, var(--accent) 0%, var(--accent-text) 100%);
-  }
-  .pl-legend-swatch.cost {
-    width: 14px; height: 0; border-radius: 0;
-    border-top: 2px dashed var(--ink-soft);
-  }
   .chart-meta {
     display: flex; justify-content: space-between; align-items: baseline;
     margin-bottom: 10px; padding: 0 4px; flex-wrap: wrap; gap: 8px; /* ป้องกันเนื้อหาถูกบีบ */
@@ -754,7 +737,7 @@
 
   <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
   <div class="section">
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อมเส้นต้นทุน &amp; P/L%)</div>
+    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
     </div>
@@ -1343,47 +1326,33 @@ function renderPLChart() {
     tickerColorMap[r['หุ้น']] = CHART_COLORS[i % CHART_COLORS.length];
   });
 
-  const withData = rows.map(r => {
-    const value  = Number(r['มูลค่าปัจจุบัน']) || 0;
-    const profit = basis === 'AVG' ? (Number(r['กำไร AVG']) || 0) : (Number(r['กำไร FIFO']) || 0);
-    return {
-      ticker: r['หุ้น'],
-      value,
-      cost: value - profit,
-      plPct: parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
-    };
-  }).sort((a,b) => b.value - a.value);
+  const withData = rows.map(r => ({
+    ticker: r['หุ้น'],
+    value:  Number(r['มูลค่าปัจจุบัน']) || 0,
+    plPct:  parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
+  })).sort((a,b) => b.value - a.value)
 
   const tickers   = withData.map(r => r.ticker);
   const values    = withData.map(r => r.value);
-  const costs     = withData.map(r => r.cost);
   const plPcts    = withData.map(r => r.plPct);
-  const barColors = tickers.map(t => tickerColorMap[t] || '#2a78d6');
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const tickColor   = isDark ? '#ECE9E2' : '#0E1116';
-  const gridColor   = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const axisColor   = isDark ? '#8B92A0' : '#6B7280';
-  const costLine    = isDark ? 'rgba(236,233,226,0.85)' : 'rgba(14,17,22,0.75)';
-  const costLineCap = isDark ? '#1C1E23' : '#FFFFFF';
+  const tickColor = isDark ? '#ECE9E2' : '#0E1116';
+  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+  const axisColor = isDark ? '#8B92A0' : '#6B7280';
+  const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
+  const lossColor = isDark ? '#E8645A' : '#B23B2E';
+  const barColors = plPcts.map(p => p >= 0 ? gainColor : lossColor);
 
-  card.innerHTML = `
-    <div class="pl-chart-legend">
-      <span class="pl-legend-item"><span class="pl-legend-swatch"></span>มูลค่าตลาด · Market Value</span>
-      <span class="pl-legend-item"><span class="pl-legend-swatch cost"></span>มูลค่าต้นทุน · Cost Basis</span>
-    </div>
-    <div style="position:relative;height:230px;">
-      <canvas id="plCanvas" role="img"
-        aria-label="Bar chart of current market value per stock, with cost basis marker and P&L% label: ${tickers.map((t,i)=>`${t} value $${values[i].toLocaleString()}, cost $${costs[i].toLocaleString()}, ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
-    </div>`;
+  card.innerHTML = `<div style="position:relative;height:230px;">
+    <canvas id="plCanvas" role="img"
+      aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
+  </div>`;
 
   if (_plInstance) { _plInstance.destroy(); _plInstance = null; }
   const ctx = document.getElementById('plCanvas');
   if (!ctx) return;
-
-  // ให้แกน Y ครอบคลุมทั้งมูลค่าตลาดและมูลค่าต้นทุน กันเส้นต้นทุนหลุดกรอบกราฟตอนขาดทุนหนัก
-  const scaleMax = Math.max(...values, ...costs, 1) * 1.18;
 
   _plInstance = new Chart(ctx.getContext('2d'), {
     type: 'bar',
@@ -1404,14 +1373,7 @@ function renderPLChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => {
-              const i = ctx.dataIndex;
-              return [
-                ` มูลค่าตลาด: $${fmt(values[i])}`,
-                ` ต้นทุน: $${fmt(costs[i])}`,
-                ` ${plPcts[i] >= 0 ? '+' : ''}${plPcts[i]}%`
-              ];
-            }
+            label: ctx => ` $${fmt(ctx.raw)} · ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}%`
           }
         }
       },
@@ -1423,8 +1385,6 @@ function renderPLChart() {
           ticks: { color: tickColor, font: { size: 11, weight: 'bold', family: 'monospace' } }
         },
         y: {
-          min: 0,
-          max: scaleMax,
           grid: { color: gridColor },
           border: { display: false },
           ticks: {
@@ -1436,39 +1396,6 @@ function renderPLChart() {
       }
     },
     plugins: [{
-      // เส้นประแสดงมูลค่าต้นทุนอยู่ในตำแหน่งที่ถูกต้องภายในแท่งกราฟแต่ละตัว
-      id: 'costBasisMarker',
-      afterDatasetDraw(chart) {
-        const { ctx: c, scales: { y } } = chart;
-        chart.getDatasetMeta(0).data.forEach((bar, i) => {
-          const costY = y.getPixelForValue(costs[i]);
-          const halfW = (bar.width || 20) / 2;
-          const x1 = bar.x - halfW, x2 = bar.x + halfW;
-
-          c.save();
-          c.setLineDash([4, 3]);
-          c.lineWidth = 2;
-          c.strokeStyle = costLine;
-          c.beginPath();
-          c.moveTo(x1, costY);
-          c.lineTo(x2, costY);
-          c.stroke();
-          c.restore();
-
-          [x1, x2].forEach(x => {
-            c.save();
-            c.beginPath();
-            c.arc(x, costY, 2.5, 0, Math.PI * 2);
-            c.fillStyle = costLineCap;
-            c.fill();
-            c.lineWidth = 1.4;
-            c.strokeStyle = costLine;
-            c.stroke();
-            c.restore();
-          });
-        });
-      }
-    }, {
       id: 'plValueLabels',
       afterDatasetDraw(chart) {
         const { ctx: c } = chart;
