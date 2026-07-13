@@ -1343,28 +1343,38 @@ function renderPLChart() {
   const tickColor = isDark ? '#ECE9E2' : '#0E1116';
   const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const axisColor = isDark ? '#8B92A0' : '#6B7280';
-  const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
-  const lossColor = isDark ? '#E8645A' : '#B23B2E';
-  const gainSoft  = isDark ? '#1E3A28' : '#CDEBDA';
-  const lossSoft  = isDark ? '#3E211E' : '#F5CFC8';
+  // สีแบบ 6 ระดับตายตัว (discrete tier) แทนไล่เฉดต่อเนื่อง เพื่อให้อ่านสีของแต่ละแท่งได้ทันที
+  // โดยไม่ต้องเทียบกับแท่งอื่นในกราฟ ระดับ % คงที่เสมอ ไม่ขึ้นกับค่าสูงสุดในชุดข้อมูลปัจจุบัน
+  const gainSoft   = isDark ? '#1E3A28' : '#CDEBDA'; // slight gain 0% ถึง 3%
+  const gainColor  = isDark ? '#3DBE7C' : '#1B7A4D'; // moderate gain 3% ถึง 10%
+  const gainStrong = isDark ? '#7CF0AE' : '#0F5C39'; // strong gain ตั้งแต่ 10% ขึ้นไป
+  const lossSoft   = isDark ? '#3E211E' : '#F5CFC8'; // slight loss 0% ถึง -3%
+  const lossColor  = isDark ? '#E8645A' : '#B23B2E'; // moderate loss -3% ถึง -10%
+  const lossStrong = isDark ? '#FF9186' : '#7A231D'; // strong loss ตั้งแต่ -10% ลงไป
 
-  const hexToRgb = h => {
-    const n = h.replace('#','');
-    return [parseInt(n.slice(0,2),16), parseInt(n.slice(2,4),16), parseInt(n.slice(4,6),16)];
+  const tierColor = p => {
+    if (p >= 10) return gainStrong;
+    if (p >= 3)  return gainColor;
+    if (p >= 0)  return gainSoft;
+    if (p >= -3) return lossSoft;
+    if (p >= -10) return lossColor;
+    return lossStrong;
   };
-  const lerpColor = (from, to, t) => {
-    const a = hexToRgb(from), b = hexToRgb(to);
-    const c = a.map((v,i) => Math.round(v + (b[i]-v) * t));
-    return `rgb(${c[0]},${c[1]},${c[2]})`;
-  };
+  const barColors = plPcts.map(tierColor);
 
-  const maxAbsPct = Math.max(1, ...plPcts.map(p => Math.abs(p)));
-  const barColors = plPcts.map(p => {
-    const t = 0.2 + 0.8 * Math.min(Math.abs(p) / maxAbsPct, 1); // floor so 0% bars stay visible
-    return p >= 0 ? lerpColor(gainSoft, gainColor, t) : lerpColor(lossSoft, lossColor, t);
-  });
+  const legendItems = [
+    { label: '≥ +10%', color: gainStrong },
+    { label: '+3% ถึง +10%', color: gainColor },
+    { label: '0% ถึง +3%', color: gainSoft },
+    { label: '0% ถึง -3%', color: lossSoft },
+    { label: '-3% ถึง -10%', color: lossColor },
+    { label: '≤ -10%', color: lossStrong }
+  ];
+  const legendHtml = `<div class="pl-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px;font-size:11px;color:${axisColor};">
+    ${legendItems.map(it => `<span style="display:flex;align-items:center;gap:4px;"><span style="width:9px;height:9px;border-radius:2px;background:${it.color};display:inline-block;"></span>${it.label}</span>`).join('')}
+  </div>`;
 
-  card.innerHTML = `<div style="position:relative;height:230px;">
+  card.innerHTML = `${legendHtml}<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
       aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
   </div>`;
