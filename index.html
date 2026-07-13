@@ -1328,29 +1328,37 @@ function renderPLChart() {
     tickerColorMap[r['หุ้น']] = CHART_COLORS[i % CHART_COLORS.length];
   });
 
+  // เพิ่ม cost (ทุน FIFO) ต่อแท่ง เพื่อแยกส่วน "ต้นทุน" กับ "กำไร/ขาดทุน" ออกจากกันในแท่งเดียว
   const withData = rows.map(r => ({
     ticker: r['หุ้น'],
     value:  Number(r['มูลค่าปัจจุบัน']) || 0,
+    cost:   Number(r['ทุน  FIFO']) || 0,
     plPct:  parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
   })).sort((a,b) => b.value - a.value)
 
   const tickers   = withData.map(r => r.ticker);
   const values    = withData.map(r => r.value);
   const plPcts    = withData.map(r => r.plPct);
+  // floor = ส่วนต้นทุน (สีน้ำเงิน) เท่ากับค่าที่น้อยกว่าระหว่างทุนกับมูลค่าปัจจุบัน
+  // deltaAbs = ส่วนกำไร/ขาดทุน (สีเขียว/แดงตามระดับ) วางซ้อนด้านบน รวมกันแล้วเท่ากับ max(ทุน, มูลค่า)
+  const floors    = withData.map(r => Math.min(r.cost, r.value));
+  const deltas    = withData.map(r => Math.abs(r.value - r.cost));
 
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const tickColor = isDark ? '#ECE9E2' : '#0E1116';
   const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
   const axisColor = isDark ? '#8B92A0' : '#6B7280';
-  // สีแบบ 6 ระดับตายตัว (discrete tier) แทนไล่เฉดต่อเนื่อง เพื่อให้อ่านสีของแต่ละแท่งได้ทันที
-  // โดยไม่ต้องเทียบกับแท่งอื่นในกราฟ ระดับ % คงที่เสมอ ไม่ขึ้นกับค่าสูงสุดในชุดข้อมูลปัจจุบัน
-  const gainSoft   = isDark ? '#1E3A28' : '#CDEBDA'; // slight gain 0% ถึง 3%
+  // สีตามธีมของแอพ ตรงกับ --gain / --loss / --gain-soft / --loss-soft ใน CSS
+  // (Canvas อ่านค่า CSS variable ไม่ได้ เลยต้องกำหนดค่า hex คู่ light/dark ไว้ตรงนี้ให้ตรงกับสไตล์ชีตด้วยมือ)
+  const gainSoft   = isDark ? '#16291E' : '#E6F4EC'; // slight gain 0% ถึง 3%
   const gainColor  = isDark ? '#3DBE7C' : '#1B7A4D'; // moderate gain 3% ถึง 10%
   const gainStrong = isDark ? '#7CF0AE' : '#0F5C39'; // strong gain ตั้งแต่ 10% ขึ้นไป
-  const lossSoft   = isDark ? '#3E211E' : '#F5CFC8'; // slight loss 0% ถึง -3%
+  const lossSoft   = isDark ? '#2E1916' : '#FBEAE7'; // slight loss 0% ถึง -3%
   const lossColor  = isDark ? '#E8645A' : '#B23B2E'; // moderate loss -3% ถึง -10%
   const lossStrong = isDark ? '#FF9186' : '#7A231D'; // strong loss ตั้งแต่ -10% ลงไป
+  // สีน้ำเงินสำหรับส่วน "ต้นทุน" ปรับโทนให้เข้ากับพาเลตอุ่นของธีม (โทนเดียวกับ accent/ink)
+  const costColor  = isDark ? '#5B9BD9' : '#2F6FA8';
 
   const tierColor = p => {
     if (p >= 10) return gainStrong;
@@ -1360,9 +1368,10 @@ function renderPLChart() {
     if (p >= -10) return lossColor;
     return lossStrong;
   };
-  const barColors = plPcts.map(tierColor);
+  const deltaColors = plPcts.map(tierColor);
 
   const legendItems = [
+    { label: 'ต้นทุน', color: costColor },
     { label: '≥ +10%', color: gainStrong },
     { label: '+3% ถึง +10%', color: gainColor },
     { label: '0% ถึง +3%', color: gainSoft },
@@ -1376,7 +1385,7 @@ function renderPLChart() {
 
   card.innerHTML = `${legendHtml}<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
-      aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
+      aria-label="Stacked bar chart per stock: cost basis segment plus profit or loss segment. ${tickers.map((t,i)=>`${t} cost $${floors[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
   </div>`;
 
   if (_plInstance) { _plInstance.destroy(); _plInstance = null; }
@@ -1387,13 +1396,26 @@ function renderPLChart() {
     type: 'bar',
     data: {
       labels: tickers,
-      datasets: [{
-        data: values,
-        backgroundColor: barColors,
-        borderRadius: 4,
-        borderSkipped: false,
-        barThickness: 20
-      }]
+      datasets: [
+        {
+          label: 'ต้นทุน',
+          data: floors,
+          backgroundColor: costColor,
+          stack: 's',
+          borderRadius: { topLeft: 0, topRight: 0, bottomLeft: 4, bottomRight: 4 },
+          borderSkipped: false,
+          barThickness: 20
+        },
+        {
+          label: 'กำไร/ขาดทุน',
+          data: deltas,
+          backgroundColor: deltaColors,
+          stack: 's',
+          borderRadius: { topLeft: 4, topRight: 4, bottomLeft: 0, bottomRight: 0 },
+          borderSkipped: false,
+          barThickness: 20
+        }
+      ]
     },
     options: {
       responsive: true,
@@ -1402,18 +1424,22 @@ function renderPLChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ` $${fmt(ctx.raw)} · ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}%`
+            label: ctx => ctx.datasetIndex === 0
+              ? ` ทุน $${fmt(floors[ctx.dataIndex])}`
+              : ` ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}% · $${fmt(values[ctx.dataIndex])}`
           }
         }
       },
       layout: { padding: { top: 25, bottom: 25 } },
       scales: {
         x: {
+          stacked: true,
           grid: { display: false },
           border: { display: false },
           ticks: { color: tickColor, font: { size: 11, weight: 'bold', family: 'monospace' } }
         },
         y: {
+          stacked: true,
           grid: { color: gridColor },
           border: { display: false },
           ticks: {
@@ -1426,35 +1452,19 @@ function renderPLChart() {
     },
     plugins: [{
       id: 'plValueLabels',
-      afterDatasetDraw(chart) {
+      afterDatasetDraw(chart, args) {
+        if (args.index !== 1) return; // วาดครั้งเดียวตอนวาด dataset บนสุด (delta) เพื่อรู้ตำแหน่งยอดแท่งจริง
         const { ctx: c } = chart;
-        chart.getDatasetMeta(0).data.forEach((bar, i) => {
+        chart.getDatasetMeta(1).data.forEach((bar, i) => {
           const pct = plPcts[i];
           const label = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-          
           c.save();
-          c.font = 'bold 11px -apple-system, monospace, sans-serif';
+          c.font = 'bold 10.5px -apple-system, monospace, sans-serif';
           c.textAlign = 'center';
-
-          if (pct >= 0) {
-            c.save();
-            c.translate(bar.x, bar.y + 24);
-            c.rotate(Math.PI / 2);
-            c.textAlign = "center";
-            c.textBaseline = "middle";
-            c.fillStyle = "#ffffff";
-            c.fillText(label, 0, 0);
-            c.restore();
-          } else {
-            c.save();
-            c.translate(bar.x, bar.base - 22);
-            c.rotate(-Math.PI / 2);
-            c.textAlign = "center";
-            c.textBaseline = "middle";
-            c.fillStyle = "#ffffff";
-            c.fillText(label, 0, 0);
-            c.restore();
-          }
+          c.textBaseline = 'bottom';
+          c.fillStyle = tickColor;
+          c.fillText(label, bar.x, bar.y - 6);
+          c.restore();
         });
       }
     }]
