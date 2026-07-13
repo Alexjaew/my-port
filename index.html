@@ -1340,6 +1340,8 @@ function renderPLChart() {
   const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
   const lossColor = isDark ? '#E8645A' : '#B23B2E';
   const accentColor = isDark ? '#D9A655' : '#C98A2C';
+    const gainSoft = isDark ? '#16291E' : '#E6F4EC';
+  const lossSoft = isDark ? '#2E1916' : '#FBEAE7';
 
   card.innerHTML = `<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
@@ -1356,7 +1358,7 @@ function renderPLChart() {
       labels: tickers,
       datasets: [{
         data: values,
-        backgroundColor: accentColor,
+        backgroundColor: plPcts.map(p => p >= 0 ? gainSoft : lossSoft),
         borderRadius: 4,
         borderSkipped: false,
         barThickness: 20
