@@ -1170,7 +1170,9 @@ function renderHeroBgChart() {
   
   // กำหนดสีตามเงื่อนไข
   const lineColor = isUp ? (isDark ? '#3DBE7C' : '#1B7A4D') : (isDark ? '#E8645A' : '#B23B2E');
-  const gradStart = isUp ? (isDark ? 'rgba(61,190,124,0.3)' : 'rgba(27,122,77,0.3)') : (isDark ? 'rgba(232,100,90,0.3)' : 'rgba(178,59,46,0.3)');
+  const gradRGB = isUp ? (isDark ? '61,190,124' : '27,122,77') : (isDark ? '232,100,90' : '178,59,46');
+  const gradStart = `rgba(${gradRGB},0.55)`;
+  const gradMid = `rgba(${gradRGB},0.22)`;
 
   const min = Math.min(...values), max = Math.max(...values);
   const range = (max - min) || 1;
@@ -1184,6 +1186,7 @@ function renderHeroBgChart() {
     <defs>
       <linearGradient id="heroBgGrad" x1="0" y1="0" x2="0" y2="1">
         <stop offset="0%" stop-color="${gradStart}" stop-opacity="1"/>
+        <stop offset="45%" stop-color="${gradMid}" stop-opacity="1"/>
         <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
       </linearGradient>
     </defs>
