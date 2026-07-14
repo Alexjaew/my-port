@@ -1169,19 +1169,6 @@ function renderHeroBgChart() {
 
   const W = 400, H = 200;
   const values = data.map(d => Number(d['มูลค่าพอร์ต']));
-
-// 1. ตั้งค่าฐาน (เช่น เงินต้น)
-  const baseValue = Number(state.principal) || values[0]; 
-  
-  // 2. คำนวณขอบเขตสูงสุดเพื่อไม่ให้กราฟล้น
-  const maxVal = Math.max(...values, baseValue);
-  const diff = Math.max(Math.abs(maxVal - baseValue), 1); // ระยะห่างจากฐานถึงจุดสูงสุด
-  
-  // 3. กำหนดตำแหน่ง Y โดยให้ baseValue อยู่ที่ระดับเส้นสีขาวเสมอ
-  // สมมติว่าเส้นสีขาวอยู่ล่างๆ ของกราฟ (เช่น 80% ของความสูง)
-  const baseLineY = H * 0.8; 
-  const scale = (H * 0.7) / diff; // พื้นที่การขยับของกราฟ
-
   
   // ตรวจสอบการเปลี่ยนแปลงจากวันแรกถึงวันล่าสุดเพื่อกำหนดสี
   const isUp = values[values.length - 1] >= values[values.length - 2]
