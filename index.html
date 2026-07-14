@@ -1139,10 +1139,10 @@ function renderHero() {
   const heroDailyEl = document.getElementById('heroDaily');
   if (historyData.length > 0) {
     const latest = historyData[historyData.length - 1];
+    const prev = historyData.length > 1 ? historyData[historyData.length - 2] : null;
     const dailyChange = Number(latest['Daily Change']) || 0;
     const dailyPct = Number(latest['Daily %']) || 0;
     const dailyUp = dailyChange >= 0;
-
 
     let label = 'วันนี้';
     if (prev && prev['Date']) {
@@ -1154,8 +1154,7 @@ function renderHero() {
     }
 
     heroDailyEl.style.display = 'block';
-        heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    
+    heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
     heroDailyEl.innerHTML = `${label} <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
   } else {
     heroDailyEl.style.display = 'none';
