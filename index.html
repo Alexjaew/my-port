@@ -1246,12 +1246,19 @@ function renderDonutChart() {
     card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
     return;
   }
+  const basis = state.basis;
 
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   const total  = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
   const tickers = sorted.map(r => r['หุ้น']);
   const pcts    = sorted.map(r => parseFloat((Number(r['มูลค่าปัจจุบัน']) / total * 100).toFixed(1)));
-  const colors  = tickers.map((_, i) => CHART_COLORS[i % CHART_COLORS.length]);
+  const plPcts  = sorted.map(r => (basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100);
+
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
+    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
+  const lossColor = isDark ? '#E8645A' : '#B23B2E';
+  const colors  = plPcts.map(p => p >= 0 ? gainColor : lossColor);
 
   card.innerHTML = `<div style="position:relative;height:280px;">
     <canvas id="donutCanvas" role="img"
@@ -1286,7 +1293,7 @@ function renderDonutChart() {
     plugins: [{
       id: 'sliceLabels',
       afterDraw(chart) {
-        const { ctx, chartArea: { width, height } } = chart;
+        const { ctx } = chart;
         const meta = chart.getDatasetMeta(0);
         meta.data.forEach((arc, i) => {
           const pct = pcts[i];
@@ -1311,6 +1318,7 @@ function renderDonutChart() {
     }]
   });
 }
+
 
 function renderPLChart() {
   const card = document.getElementById('barChartCard');
