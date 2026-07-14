@@ -182,6 +182,7 @@
     border-radius: var(--radius-lg);
     padding: 26px 22px 22px;
     position: relative;
+    z-index: 0;
     overflow: hidden;
     box-shadow: var(--shadow-lg);
   }
@@ -191,6 +192,15 @@
     width: 220px; height: 220px;
     border-radius: 50%;
     background: radial-gradient(circle, rgba(217,166,85,0.18), transparent 70%);
+    pointer-events: none;
+  }
+  .hero-bg-chart {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    z-index: -1;
+    opacity: 0.18;
     pointer-events: none;
   }
   .hero-label {
@@ -716,6 +726,7 @@
   <div class="section">
     <div class="section-label">Portfolio Value · มูลค่าพอร์ต</div>
     <div class="hero-card">
+      <svg class="hero-bg-chart" id="heroBgChart" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
       <div class="basis-toggle" id="valueModeToggle">
         <div class="basis-btn active" data-mode="market">มูลค่าตามราคาตลาด</div>
         <div class="basis-btn" data-mode="cost">มูลค่าตามต้นทุน</div>
@@ -753,15 +764,7 @@
     </div>
   </div>
 
-  <!-- 4. กราฟเส้นมูลค่าพอร์ตรายวัน -->
-  <div class="section">
-    <div class="section-label">Daily Value · มูลค่าพอร์ตรายวัน</div>
-    <div class="chart-card" id="valueChartCard">
-      <div class="skel" style="height:160px;"></div>
-    </div>
-  </div>
-
-  <!-- 5. สัดส่วนการลงทุนรายตัว -->
+  <!-- 4. สัดส่วนการลงทุนรายตัว -->
   <div class="section">
     <div class="section-label-row">
       <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
@@ -986,7 +989,7 @@ async function loadAll() {
       }
       renderPortSwitch();
       renderHero();
-      renderValueLineChart();
+      renderHeroBgChart();
       renderBarChart();
       renderAllocList();
       renderTransactions();
@@ -1043,7 +1046,7 @@ function renderFromSnapshot() {
     state.history = snap.history || [];
     renderPortSwitch();
     renderHero();
-    renderValueLineChart();
+    renderHeroBgChart();
     renderBarChart();
     renderAllocList();
     renderTransactions();
@@ -1158,68 +1161,38 @@ function renderHero() {
   }
 }
 
-function renderValueLineChart() {
-  const card = document.getElementById('valueChartCard');
+function renderHeroBgChart() {
+  const svg = document.getElementById('heroBgChart');
+  if (!svg) return;
   const data = state.history.filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null);
-  if (data.length < 2) {
-    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีข้อมูลย้อนหลังพอแสดงกราฟ</div></div>`;
-    return;
-  }
+  if (data.length < 2) { svg.innerHTML = ''; return; }
 
-  const W = 600, H = 160, PAD_X = 8, PAD_TOP = 10, PAD_BOTTOM = 4;
+  const W = 400, H = 200;
   const values = data.map(d => Number(d['มูลค่าพอร์ต']));
   const min = Math.min(...values), max = Math.max(...values);
   const range = (max - min) || 1;
-
-  const xStep = (W - PAD_X * 2) / (data.length - 1);
+  const xStep = W / (data.length - 1);
   const points = values.map((v, i) => {
-    const x = PAD_X + i * xStep;
-    const y = PAD_TOP + (1 - (v - min) / range) * (H - PAD_TOP - PAD_BOTTOM);
+    const x = i * xStep;
+    const y = (1 - (v - min) / range) * H;
     return [x, y];
   });
 
   const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H-PAD_BOTTOM} L${points[0][0].toFixed(1)},${H-PAD_BOTTOM} Z`;
+  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H} L${points[0][0].toFixed(1)},${H} Z`;
 
-  const last = values[values.length - 1];
-  const latestRow = data[data.length - 1];
-  const prevRow = data.length > 1 ? data[data.length - 2] : null;
-  const dailyChange = Number(latestRow['Daily Change']) || 0;
-  const dailyPct = Number(latestRow['Daily %']) || 0;
-  const up = dailyChange >= 0;
-  const lineColor = up ? '#1B7A4D' : '#B23B2E';
+  const up = values[values.length - 1] >= values[0];
+  const lineColor = up ? '#7CDDA8' : '#F1A89E';
 
-  let deltaLabel = '';
-  if (prevRow && prevRow['Date']) {
-    const gapDays = Math.round((new Date(latestRow['Date']) - new Date(prevRow['Date'])) / 86400000);
-    if (gapDays > 1) {
-      const sinceDate = new Date(prevRow['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-      deltaLabel = ` (ตั้งแต่ ${sinceDate})`;
-    }
-  }
-
-  const firstDate = new Date(data[0]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-  const lastDate = new Date(data[data.length-1]['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-
-  card.innerHTML = `
-    <div class="chart-meta">
-      <div class="chart-meta-value">$${fmt(last)}</div>
-      <div class="chart-meta-delta ${up?'up':'down'}">${up?'▲':'▼'} ${fmt(Math.abs(dailyChange))} (${fmtPct(dailyPct)})${deltaLabel}</div>
-    </div>
-    <div class="line-svg-wrap">
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none">
-        <defs>
-          <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.18"/>
-            <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
-          </linearGradient>
-        </defs>
-        <path d="${areaD}" fill="url(#areaGrad)" stroke="none"/>
-        <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="2.2" stroke-linejoin="round" stroke-linecap="round"/>
-        <circle cx="${points[points.length-1][0].toFixed(1)}" cy="${points[points.length-1][1].toFixed(1)}" r="3.5" fill="${lineColor}"/>
-      </svg>
-    </div>
-    <div class="chart-axis-labels"><span>${firstDate}</span><span>${lastDate}</span></div>
+  svg.innerHTML = `
+    <defs>
+      <linearGradient id="heroBgGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${lineColor}" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="${lineColor}" stop-opacity="0"/>
+      </linearGradient>
+    </defs>
+    <path d="${areaD}" fill="url(#heroBgGrad)" stroke="none"/>
+    <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="3"/>
   `;
 }
 
@@ -1293,7 +1266,7 @@ function renderDonutChart() {
     plugins: [{
       id: 'sliceLabels',
       afterDraw(chart) {
-        const { ctx } = chart;
+        const { ctx, chartArea: { width, height } } = chart;
         const meta = chart.getDatasetMeta(0);
         meta.data.forEach((arc, i) => {
           const pct = pcts[i];
@@ -1318,7 +1291,6 @@ function renderDonutChart() {
     }]
   });
 }
-
 
 function renderPLChart() {
   const card = document.getElementById('barChartCard');
@@ -1347,9 +1319,8 @@ function renderPLChart() {
   const axisColor = isDark ? '#8B92A0' : '#6B7280';
   const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
   const lossColor = isDark ? '#E8645A' : '#B23B2E';
-  const accentColor = isDark ? '#D9A655' : '#C98A2C';
-  const gainSoft = isDark ? '#145e34' : '#E6F4EC';
-  const lossSoft = isDark ? '#a82713' : '#FBEAE7';
+  const gainSoft  = isDark ? '#16291E' : '#E6F4EC';
+  const lossSoft  = isDark ? '#2E1916' : '#FBEAE7';
 
   card.innerHTML = `<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
@@ -1432,7 +1403,7 @@ function renderPLChart() {
         chart.getDatasetMeta(0).data.forEach((bar, i) => {
           const pct = plPcts[i];
           const label = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
-
+          
           c.save();
           c.font = 'bold 11px -apple-system, monospace, sans-serif';
           c.textAlign = 'center';
