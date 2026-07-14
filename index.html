@@ -183,12 +183,15 @@
     z-index: 0;
     overflow: hidden;
     box-shadow: var(--shadow-lg);
+  
   }
-
-  /* ลบหรือคอมเมนต์ส่วนนี้ออกเพื่อเอาวงกลมจางๆ ที่มุมออก */
   .hero-card::before {
-    display: none; 
-  }
+    content: '';
+    position: absolute; right: -60px; top: -60px;
+    width: 220px; height: 220px;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(217,166,85,0.18), transparent 70%);
+    pointer-events: none;
   }
   .hero-bg-chart {
     position: absolute;
