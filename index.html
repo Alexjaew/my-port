@@ -1170,37 +1170,40 @@ function renderHeroBgChart() {
   const W = 400, H = 200;
   const values = data.map(d => Number(d['มูลค่าพอร์ต']));
   
-  // ตรวจสอบการเปลี่ยนแปลงจากวันแรกถึงวันล่าสุดเพื่อกำหนดสี
-  const isUp = values[values.length - 1] >= values[values.length - 2]
-  
-  // ใช้ตัวแปรสีจาก CSS Variable หรือกำหนดค่าสีที่ต้องการ
-  // ตรวจสอบ Theme เพื่อให้สีสวยงามเข้ากับระบบ
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  
-  // กำหนดสีตามเงื่อนไข
-  const lineColor = isUp ? (isDark ? '#3DBE7C' : '#1B7A4D') : (isDark ? '#E8645A' : '#B23B2E');
-  const gradStart = isUp ? (isDark ? 'rgba(61,190,124,0.3)' : 'rgba(27,122,77,0.3)') : (isDark ? 'rgba(232,100,90,0.3)' : 'rgba(178,59,46,0.3)');
+  // 1. กำหนดค่าฐาน (เช่น เงินต้น หรือจุดที่อยากให้เป็นเส้นขีดขาว)
+  // สมมติฐานคือดึงจากตัวแปร principal ที่คุณมี
+  const baseValue = getCashBalance(); 
+  const maxVal = Math.max(...values, baseValue);
+  const minVal = Math.min(...values, baseValue);
+  const range = (maxVal - minVal) || 1;
 
-  const min = Math.min(...values), max = Math.max(...values);
-  const range = (max - min) || 1;
+  // 2. ฟังก์ชันคำนวณ Y ใหม่
+  const getY = (val) => H - ((val - minVal) / range) * H;
+  const baseLineY = getY(baseValue); // นี่คือตำแหน่ง Y ของเส้นสีขาว
+
   const xStep = W / (data.length - 1);
-  const points = values.map((v, i) => [i * xStep, (1 - (v - min) / range) * H]);
+  const points = values.map((v, i) => [i * xStep, getY(v)]);
 
+  // 3. ปรับ Path ให้เริ่มจากจุดที่ต้องการ
   const pathD = points.map((p, i) => (i === 0 ? 'M' : 'L') + p[0].toFixed(1) + ',' + p[1].toFixed(1)).join(' ');
-  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${H} L${points[0][0].toFixed(1)},${H} Z`;
+  
+  // ให้พื้นที่ใต้กราฟระบายลงมาถึงเส้นฐาน แทนที่จะระบายถึงขอบล่างสุดของ SVG
+  const areaD = pathD + ` L${points[points.length-1][0].toFixed(1)},${baseLineY} L${points[0][0].toFixed(1)},${baseLineY} Z`;
 
   svg.innerHTML = `
     <defs>
       <linearGradient id="heroBgGrad" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="${gradStart}" stop-opacity="1"/>
+        <stop offset="0%" stop-color="rgba(201,138,44,0.2)" stop-opacity="1"/>
         <stop offset="100%" stop-color="transparent" stop-opacity="0"/>
       </linearGradient>
     </defs>
+    <!-- วาดเส้นฐานสีขาว -->
+    <line x1="0" y1="${baseLineY}" x2="${W}" y2="${baseLineY}" stroke="rgba(255,255,255,0.2)" stroke-width="2" stroke-dasharray="4 4"/>
     <path d="${areaD}" fill="url(#heroBgGrad)" stroke="none"/>
-    <path d="${pathD}" fill="none" stroke="${lineColor}" stroke-width="3"/>
+    <path d="${pathD}" fill="none" stroke="#C98A2C" stroke-width="3"/>
   `;
 }
+
 
 
 const CHART_COLORS = ['#D9A655','#378ADD','#7F77DD','#5DCAA5','#D85A30','#ED93B1','#888780','#3DBE7C','#F5A623','#9B59B6'];
