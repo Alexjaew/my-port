@@ -173,11 +173,9 @@
   }
   .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
 
-  .hero-card {
-    background:
-      radial-gradient(circle at 88% -10%, rgba(201,138,44,0.35), transparent 55%),
-      radial-gradient(circle at -10% 110%, rgba(201,138,44,0.12), transparent 50%),
-      var(--accent-dark);
+.hero-card {
+    /* ลบ radial-gradient ออก หรือปรับค่า alpha (0.35, 0.12) ให้เป็น 0 เพื่อยกเลิกความจาง */
+    background: var(--accent-dark); /* เปลี่ยนเป็นสีพื้นหลังล้วน */
     color: var(--accent-dark-text);
     border-radius: var(--radius-lg);
     padding: 26px 22px 22px;
@@ -186,13 +184,11 @@
     overflow: hidden;
     box-shadow: var(--shadow-lg);
   }
+
+  /* ลบหรือคอมเมนต์ส่วนนี้ออกเพื่อเอาวงกลมจางๆ ที่มุมออก */
   .hero-card::before {
-    content: '';
-    position: absolute; right: -60px; top: -60px;
-    width: 220px; height: 220px;
-    border-radius: 50%;
-    background: radial-gradient(circle, rgba(217,166,85,0.18), transparent 70%);
-    pointer-events: none;
+    display: none; 
+  }
   }
   .hero-bg-chart {
     position: absolute;
