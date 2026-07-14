@@ -31,18 +31,6 @@
     --accent-border: #E5C98A;
     --accent-dark: #0E1116;
     --accent-dark-text: #FAF8F4;
-    --hero-bg: var(--paper-raised);
-    --hero-text: var(--ink);
-    --hero-text-dim: var(--ink-soft);
-    --hero-border: var(--line);
-    --hero-chip-bg: rgba(14,17,22,0.05);
-    --hero-chip-border: rgba(14,17,22,0.08);
-    --hero-chip-active-bg: var(--ink);
-    --hero-chip-active-text: var(--paper-raised);
-    --hero-gain-text: var(--gain);
-    --hero-loss-text: var(--loss);
-    --hero-gain-bg: var(--gain-soft);
-    --hero-loss-bg: var(--loss-soft);
     --skel-shine: #ECE8DE;
     --mono: 'JetBrains Mono', 'SF Mono', 'IBM Plex Mono', ui-monospace, monospace;
     --serif: 'Fraunces', 'Source Serif Pro', 'Iowan Old Style', Georgia, serif;
@@ -74,18 +62,6 @@
       --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
       --shadow-md: 0 8px 24px -8px rgba(0,0,0,0.45), 0 2px 6px -2px rgba(0,0,0,0.3);
       --shadow-lg: 0 24px 56px -16px rgba(0,0,0,0.6), 0 8px 20px -8px rgba(0,0,0,0.4);
-      --hero-bg: var(--accent-dark);
-      --hero-text: var(--accent-dark-text);
-      --hero-text-dim: rgba(250,248,244,0.55);
-      --hero-border: rgba(250,248,244,0.1);
-      --hero-chip-bg: rgba(250,248,244,0.1);
-      --hero-chip-border: rgba(250,248,244,0.08);
-      --hero-chip-active-bg: var(--accent-dark-text);
-      --hero-chip-active-text: var(--accent-dark);
-      --hero-gain-text: #7CDDA8;
-      --hero-loss-text: #F1A89E;
-      --hero-gain-bg: rgba(60,190,120,0.2);
-      --hero-loss-bg: rgba(232,100,90,0.2);
     }
   }
   :root[data-theme="dark"] {
@@ -103,18 +79,6 @@
     --accent-text: #E0C088;
     --accent-border: #4A3D24;
     --skel-shine: #2A2D33;
-    --hero-bg: var(--accent-dark);
-    --hero-text: var(--accent-dark-text);
-    --hero-text-dim: rgba(250,248,244,0.55);
-    --hero-border: rgba(250,248,244,0.1);
-    --hero-chip-bg: rgba(250,248,244,0.1);
-    --hero-chip-border: rgba(250,248,244,0.08);
-    --hero-chip-active-bg: var(--accent-dark-text);
-    --hero-chip-active-text: var(--accent-dark);
-    --hero-gain-text: #7CDDA8;
-    --hero-loss-text: #F1A89E;
-    --hero-gain-bg: rgba(60,190,120,0.2);
-    --hero-loss-bg: rgba(232,100,90,0.2);
     --shadow-sm: 0 1px 2px rgba(0,0,0,0.2);
     --shadow-md: 0 8px 24px -8px rgba(0,0,0,0.45), 0 2px 6px -2px rgba(0,0,0,0.3);
     --shadow-lg: 0 24px 56px -16px rgba(0,0,0,0.6), 0 8px 20px -8px rgba(0,0,0,0.4);
@@ -211,16 +175,14 @@
 
 .hero-card {
     /* ลบ radial-gradient ออก หรือปรับค่า alpha (0.35, 0.12) ให้เป็น 0 เพื่อยกเลิกความจาง */
-    background: var(--hero-bg); /* ปรับตามธีมสว่าง/มืด */
-    color: var(--hero-text);
-    border: 1px solid var(--hero-border);
+    background: var(--accent-dark); /* เปลี่ยนเป็นสีพื้นหลังล้วน */
+    color: var(--accent-dark-text);
     border-radius: var(--radius-lg);
     padding: 26px 22px 22px;
     position: relative;
     z-index: 0;
     overflow: hidden;
     box-shadow: var(--shadow-lg);
-    transition: background-color .2s ease, color .2s ease, border-color .2s ease;
   }
   .hero-bg-chart {
     position: absolute;
@@ -233,7 +195,7 @@
   }
   .hero-label {
     font-size: 12px; letter-spacing: 0.07em; text-transform: uppercase;
-    color: var(--hero-text-dim); margin-bottom: 7px; font-weight: 600;
+    color: rgba(250,248,244,0.55); margin-bottom: 7px; font-weight: 600;
   }
   .hero-value {
     font-family: var(--mono);
@@ -252,20 +214,20 @@
     border-radius: 100px;
     backdrop-filter: blur(4px);
   }
-  .hero-delta.up { background: var(--hero-gain-bg); color: var(--hero-gain-text); }
-  .hero-delta.down { background: var(--hero-loss-bg); color: var(--hero-loss-text); }
+  .hero-delta.up { background: rgba(60,190,120,0.2); color: #7CDDA8; }
+  .hero-delta.down { background: rgba(232,100,90,0.2); color: #F1A89E; }
   .hero-daily {
     font-family: var(--mono);
     font-size: 12px; margin-top: 9px;
-    color: var(--hero-text-dim);
+    color: rgba(250,248,244,0.6);
   }
   .hero-daily b { font-weight: 600; }
-  .hero-daily.up b { color: var(--hero-gain-text); }
-  .hero-daily.down b { color: var(--hero-loss-text); }
+  .hero-daily.up b { color: #7CDDA8; }
+  .hero-daily.down b { color: #F1A89E; }
 
   .basis-toggle {
-    display: flex; background: var(--hero-chip-bg);
-    border: 1px solid var(--hero-chip-border);
+    display: flex; background: rgba(250,248,244,0.1);
+    border: 1px solid rgba(250,248,244,0.08);
     border-radius: 100px; padding: 3px;
     margin-bottom: 16px;
     width: fit-content;
@@ -274,19 +236,19 @@
   }
   .basis-btn {
     font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
-    padding: 6px 11px; border-radius: 100px; color: var(--hero-text-dim);
+    padding: 6px 11px; border-radius: 100px; color: rgba(250,248,244,0.6);
     cursor: pointer; transition: all .18s cubic-bezier(.4,0,.2,1);
     white-space: nowrap;
   }
-  .basis-btn.active { background: var(--hero-chip-active-bg); color: var(--hero-chip-active-text); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
+  .basis-btn.active { background: var(--accent-dark-text); color: var(--accent-dark); box-shadow: 0 2px 6px rgba(0,0,0,0.2); }
 
   .hero-foot {
     display: flex; gap: 14px; margin-top: 19px;
-    padding-top: 17px; border-top: 1px solid var(--hero-border);
+    padding-top: 17px; border-top: 1px solid rgba(250,248,244,0.1);
     flex-wrap: wrap; /* ป้องกันเนื้อหาถูกบีบ */
   }
   .hero-foot-item { flex: 1; min-width: 0; }
-  .hero-foot-label { font-size: 10.5px; color: var(--hero-text-dim); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
+  .hero-foot-label { font-size: 10.5px; color: rgba(250,248,244,0.5); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
   .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
 
   .alloc-row-wrap {
@@ -1150,7 +1112,7 @@ function renderHero() {
     const profitPct = principal ? profit / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
     document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
-    document.getElementById('footProfit').style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
+    document.getElementById('footProfit').style.color = profit >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
   } else {
@@ -1158,7 +1120,7 @@ function renderHero() {
     const diffPct = principal ? diff / principal : 0;
     document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
     document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)} (${fmtPct(diffPct)})`;
-    document.getElementById('footProfit').style.color = diff >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
+    document.getElementById('footProfit').style.color = diff >= 0 ? '#7CDDA8' : '#F1A89E';
     deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
     deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
   }
