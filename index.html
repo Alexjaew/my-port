@@ -1172,7 +1172,7 @@ function renderHeroBgChart() {
   const lineColor = isUp ? (isDark ? '#3DBE7C' : '#1B7A4D') : (isDark ? '#E8645A' : '#B23B2E');
   const gradRGB = isUp ? (isDark ? '61,190,124' : '27,122,77') : (isDark ? '232,100,90' : '178,59,46');
   const gradStart = `rgba(${gradRGB},0.65)`;
-  const gradMid = `rgba(${gradRGB},0.25)`;
+  const gradMid = `rgba(${gradRGB},0.50)`;
 
   const min = Math.min(...values), max = Math.max(...values);
   const range = (max - min) || 1;
