@@ -1351,15 +1351,14 @@ function renderPLChart() {
   const values    = withData.map(r => r.value);
   const plPcts    = withData.map(r => r.plPct);
 
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const tickColor = isDark ? '#ECE9E2' : '#0E1116';
-  const gridColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-  const axisColor = isDark ? '#8B92A0' : '#6B7280';
-  const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
-  const lossColor = isDark ? '#E8645A' : '#B23B2E';
-  const gainSoft = isDark ? '#145e34' : '#E6F4EC';
-  const lossSoft = isDark ? '#a82713' : '#FBEAE7';
+  // ใช้ชุดสีของ dark theme เสมอสำหรับกราฟแท่ง ไม่สลับไปใช้ light theme
+  const tickColor = '#ECE9E2';
+  const gridColor = 'rgba(255,255,255,0.07)';
+  const axisColor = '#8B92A0';
+  const gainColor = '#3DBE7C';
+  const lossColor = '#E8645A';
+  const gainSoft = '#145e34';
+  const lossSoft = '#a82713';
 
 
   card.innerHTML = `<div style="position:relative;height:230px;">
