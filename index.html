@@ -1267,10 +1267,9 @@ function renderDonutChart() {
   const pcts    = sorted.map(r => parseFloat((Number(r['มูลค่าปัจจุบัน']) / total * 100).toFixed(1)));
   const plPcts  = sorted.map(r => (basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100);
 
-  const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
-    (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const gainColor = isDark ? '#3DBE7C' : '#1B7A4D';
-  const lossColor = isDark ? '#E8645A' : '#B23B2E';
+  // ใช้สีของ light theme เสมอ ไม่สลับตาม dark/light เพื่อให้สีสัดส่วนคงที่ทั้งสองธีม
+  const gainColor = '#1B7A4D';
+  const lossColor = '#B23B2E';
   const colors  = plPcts.map(p => p >= 0 ? gainColor : lossColor);
 
   card.innerHTML = `<div style="position:relative;height:280px;">
