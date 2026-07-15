@@ -965,6 +965,8 @@ document.getElementById('themeToggleBtn').onclick = () => {
   document.documentElement.setAttribute('data-theme', next);
   localStorage.setItem('portfolio_theme', next);
   updateThemeIcon();
+  renderHeroBgChart();
+  renderBarChart();
 };
 
 async function api(action, params = {}) {
