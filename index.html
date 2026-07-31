@@ -897,6 +897,10 @@
           </button>
         </div>
       </div>
+      <div class="hero-cash-row" id="heroTotalRow" style="display:none;margin-top:8px;padding-top:8px;border-top:none">
+        <div class="hero-cash-label"><i class="ti ti-wallet" aria-hidden="true"></i>มูลค่ารวม (หุ้น + เงินสด)</div>
+        <div class="hero-cash-value" id="heroTotalValue">—</div>
+      </div>
       <div class="hero-cash-row" id="heroPrincipalRow" style="display:none;margin-top:8px;padding-top:8px;border-top:none">
         <div class="hero-cash-label"><i class="ti ti-piggy-bank" aria-hidden="true"></i>เงินต้น (ฝากเข้าพอร์ตสะสม)</div>
         <div class="hero-cash-value" id="heroPrincipalValue">—</div>
@@ -1308,6 +1312,15 @@ function renderHero() {
     document.getElementById('heroCashValue').textContent = `$${fmt(cashBalance)}`;
   } else {
     cashRowEl.style.display = 'none';
+  }
+
+  // มูลค่ารวม = มูลค่าหุ้นตามราคาตลาด + เงินสดคงเหลือ แสดงต่อจากเงินสดคงเหลือ
+  const totalRowEl = document.getElementById('heroTotalRow');
+  if (cashBalance) {
+    totalRowEl.style.display = 'flex';
+    document.getElementById('heroTotalValue').textContent = `$${fmt(marketValue + cashBalance)}`;
+  } else {
+    totalRowEl.style.display = 'none';
   }
 
   // เงินต้น (ยอดฝากเข้าพอร์ตสะสม) แสดงแยกต่างหากเช่นกัน
