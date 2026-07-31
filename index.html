@@ -301,6 +301,13 @@
   .hero-foot-label { font-size: 10.5px; color: var(--hero-text-dim); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
   .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
 
+  .hero-cash-row {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--hero-border);
+  }
+  .hero-cash-label { font-size: 11.5px; color: var(--hero-text-dim); display: flex; align-items: center; gap: 6px; }
+  .hero-cash-value { font-family: var(--mono); font-size: 13.5px; font-weight: 600; }
+
   .alloc-row-wrap {
     background: var(--paper-raised);
     border: 1px solid var(--line);
@@ -885,6 +892,10 @@
           <div class="hero-foot-value" id="footProfit">—</div>
         </div>
       </div>
+      <div class="hero-cash-row" id="heroCashRow" style="display:none">
+        <div class="hero-cash-label"><i class="ti ti-cash" aria-hidden="true"></i>เงินสดคงเหลือ (USD)</div>
+        <div class="hero-cash-value" id="heroCashValue">—</div>
+      </div>
     </div>
   </div>
 
@@ -1265,7 +1276,7 @@ function renderHero() {
     costValue += Number(r['ทุน  FIFO']) || 0;
   });
 
-  const principal = getCashBalance();
+  const cashBalance = getCashBalance();
   const isMarket = state.valueMode === 'market';
   const displayValue = isMarket ? marketValue : costValue;
 
@@ -1275,29 +1286,30 @@ function renderHero() {
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
-  document.getElementById('footCost').textContent = `$${fmt(principal)}`;
+  // Cost Basis ต้องมาจากต้นทุนหุ้นจริง (costValue) ไม่ใช่เงินสด USD ที่เหลือในพอร์ต
+  document.getElementById('footCost').textContent = `$${fmt(costValue)}`;
+
+  // เงินสดคงเหลือ (USD) แสดงแยกต่างหาก ไม่ปนกับ Cost Basis / กำไรขาดทุน
+  const cashRowEl = document.getElementById('heroCashRow');
+  if (cashBalance) {
+    cashRowEl.style.display = 'flex';
+    document.getElementById('heroCashValue').textContent = `$${fmt(cashBalance)}`;
+  } else {
+    cashRowEl.style.display = 'none';
+  }
 
   const deltaEl = document.getElementById('heroDelta');
   // นำการปรับแสดงผลเป็น inline-flex ออกเพื่อให้ซ่อนไว้ตาม CSS เริ่มต้น (display:none)
   deltaEl.style.display = 'none';
 
-  if (isMarket) {
-    const profit = marketValue - principal;
-    const profitPct = principal ? profit / principal : 0;
-    document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
-    document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
-    document.getElementById('footProfit').style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
-    deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
-    deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
-  } else {
-    const diff = costValue - principal;
-    const diffPct = principal ? diff / principal : 0;
-    document.getElementById('footProfitLabel').textContent = 'Vs. Cost Basis · ส่วนต่างจากเงินต้น';
-    document.getElementById('footProfit').textContent = `${diff>=0?'+':''}$${fmt(diff)} (${fmtPct(diffPct)})`;
-    document.getElementById('footProfit').style.color = diff >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
-    deltaEl.className = 'hero-delta ' + (diff >= 0 ? 'up' : 'down');
-    deltaEl.textContent = `${diff>=0?'▲':'▼'} ${fmtPct(diffPct)}`;
-  }
+  // กำไร/ขาดทุน = มูลค่าตลาด - ต้นทุน (costValue) เสมอ ไม่ว่าจะสลับโหมดแสดงผลเป็นราคาตลาดหรือต้นทุนก็ตาม
+  const profit = marketValue - costValue;
+  const profitPct = costValue ? profit / costValue : 0;
+  document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
+  document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
+  document.getElementById('footProfit').style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
+  deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
+  deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
 
   const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
   const heroDailyEl = document.getElementById('heroDaily');
