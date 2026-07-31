@@ -894,7 +894,12 @@
       </div>
       <div class="hero-cash-row" id="heroCashRow" style="display:none">
         <div class="hero-cash-label"><i class="ti ti-cash" aria-hidden="true"></i>เงินสดคงเหลือ (USD)</div>
-        <div class="hero-cash-value" id="heroCashValue">—</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <div class="hero-cash-value" id="heroCashValue">—</div>
+          <button type="button" id="editCashBtn" title="แก้ไขยอดเงินสดจริง" style="background:none;border:none;cursor:pointer;color:var(--hero-text-dim);padding:2px;display:flex;align-items:center">
+            <i class="ti ti-pencil" aria-hidden="true" style="font-size:14px"></i>
+          </button>
+        </div>
       </div>
     </div>
   </div>
@@ -2032,6 +2037,36 @@ document.getElementById('valueModeToggle').addEventListener('click', (e) => {
   btn.classList.add('active');
   state.valueMode = btn.dataset.mode;
   renderHero();
+});
+
+document.getElementById('editCashBtn').addEventListener('click', async () => {
+  const currentText = document.getElementById('heroCashValue').textContent.replace(/[^0-9.\-]/g, '');
+  const input = prompt('ใส่ยอดเงินสดจริงล่าสุดในพอร์ต (USD):', currentText || '0');
+  if (input === null) return; // ผู้ใช้กดยกเลิก
+
+  const amount = Number(input);
+  if (isNaN(amount)) {
+    alert('กรุณาใส่ตัวเลขที่ถูกต้อง');
+    return;
+  }
+
+  const btn = document.getElementById('editCashBtn');
+  const originalIcon = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader-2"></i>';
+  try {
+    const result = await apiPost({ endpoint: 'setActualCash', amount: amount });
+    if (result.success) {
+      loadAll();
+    } else {
+      alert(result.error || 'อัปเดตไม่สำเร็จ');
+    }
+  } catch (err) {
+    alert('เชื่อมต่อไม่สำเร็จ: ' + err.message);
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = originalIcon;
+  }
 });
 
 const sheet = document.getElementById('addSheet');
