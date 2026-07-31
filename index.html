@@ -884,7 +884,7 @@
       <div class="hero-daily" id="heroDaily" style="display:none"></div>
       <div class="hero-foot">
         <div class="hero-foot-item">
-          <div class="hero-foot-label">Cost Basis · เงินต้น</div>
+          <div class="hero-foot-label">มูลค่าที่ซื้อ</div>
           <div class="hero-foot-value" id="footCost">—</div>
         </div>
         <div class="hero-foot-item">
@@ -900,6 +900,10 @@
             <i class="ti ti-pencil" aria-hidden="true" style="font-size:14px"></i>
           </button>
         </div>
+      </div>
+      <div class="hero-cash-row" id="heroPrincipalRow" style="display:none;margin-top:8px;padding-top:8px;border-top:none">
+        <div class="hero-cash-label"><i class="ti ti-piggy-bank" aria-hidden="true"></i>เงินต้น (ฝากเข้าพอร์ตสะสม)</div>
+        <div class="hero-cash-value" id="heroPrincipalValue">—</div>
       </div>
     </div>
   </div>
@@ -1272,6 +1276,20 @@ function getCashBalance() {
     .reduce((sum, r) => sum + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
 }
 
+// เงินต้น = ยอดเงินที่ฝากเข้าพอร์ตสะสมทั้งหมด (ซื้อ USD) หักด้วยเงินที่ถอนออก (ขาย USD ถ้ามี)
+// ต่างจาก getCashBalance() ตรงที่ตัวนี้ไม่หักเงินที่เอาไปซื้อหุ้นตัวอื่นออก เพราะเป็นแค่ยอดฝาก/ถอนเงินสดล้วนๆ
+function getPrincipalBalance() {
+  if (!state.transactions) return 0;
+  return state.transactions
+    .filter(t => t['รายการ'] === 'USD')
+    .reduce((sum, t) => {
+      const amount = Number(t['รวม $']) || 0;
+      if (t['action'] === 'ซื้อ') return sum + amount;
+      if (t['action'] === 'ขาย') return sum - amount;
+      return sum;
+    }, 0);
+}
+
 function renderHero() {
   const rows = getFilteredSummaryRows();
   let marketValue = 0, costValue = 0;
@@ -1301,6 +1319,16 @@ function renderHero() {
     document.getElementById('heroCashValue').textContent = `$${fmt(cashBalance)}`;
   } else {
     cashRowEl.style.display = 'none';
+  }
+
+  // เงินต้น (ยอดฝากเข้าพอร์ตสะสม) แสดงแยกต่างหากเช่นกัน
+  const principalBalance = getPrincipalBalance();
+  const principalRowEl = document.getElementById('heroPrincipalRow');
+  if (principalBalance) {
+    principalRowEl.style.display = 'flex';
+    document.getElementById('heroPrincipalValue').textContent = `$${fmt(principalBalance)}`;
+  } else {
+    principalRowEl.style.display = 'none';
   }
 
   const deltaEl = document.getElementById('heroDelta');
