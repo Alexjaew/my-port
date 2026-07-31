@@ -874,10 +874,6 @@
     <div class="section-label">Portfolio Value · มูลค่าพอร์ต</div>
     <div class="hero-card">
       <svg class="hero-bg-chart" id="heroBgChart" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
-      <div class="basis-toggle" id="valueModeToggle">
-        <div class="basis-btn active" data-mode="market">มูลค่าตามราคาตลาด</div>
-        <div class="basis-btn" data-mode="cost">มูลค่าตามต้นทุน</div>
-      </div>
       <div class="hero-label" id="heroLabel">มูลค่าปัจจุบัน</div>
       <div class="hero-value" id="heroValue">—</div>
       <div class="hero-delta" id="heroDelta" style="display:none"></div>
@@ -1277,17 +1273,12 @@ function getCashBalance() {
 }
 
 // เงินต้น = ยอดเงินที่ฝากเข้าพอร์ตสะสมทั้งหมด (ซื้อ USD) หักด้วยเงินที่ถอนออก (ขาย USD ถ้ามี)
-// ต่างจาก getCashBalance() ตรงที่ตัวนี้ไม่หักเงินที่เอาไปซื้อหุ้นตัวอื่นออก เพราะเป็นแค่ยอดฝาก/ถอนเงินสดล้วนๆ
+// ดึงจาก state.summary (คำนวณฝั่ง backend แบบไม่กรอง port) เพื่อไม่ให้ค่าหายตอนสลับดูเฉพาะบางพอร์ต
 function getPrincipalBalance() {
-  if (!state.transactions) return 0;
-  return state.transactions
-    .filter(t => t['รายการ'] === 'USD')
-    .reduce((sum, t) => {
-      const amount = Number(t['รวม $']) || 0;
-      if (t['action'] === 'ซื้อ') return sum + amount;
-      if (t['action'] === 'ขาย') return sum - amount;
-      return sum;
-    }, 0);
+  if (!state.summary) return 0;
+  return state.summary.rows
+    .filter(r => r['หุ้น'] === 'USD')
+    .reduce((sum, r) => sum + (Number(r['เงินต้นสะสม']) || 0), 0);
 }
 
 function renderHero() {
@@ -1300,12 +1291,10 @@ function renderHero() {
   });
 
   const cashBalance = getCashBalance();
-  const isMarket = state.valueMode === 'market';
-  const displayValue = isMarket ? marketValue : costValue;
 
-  document.getElementById('heroLabel').textContent = isMarket ? 'Current Value · มูลค่าปัจจุบัน' : 'Cost Basis (FIFO) · มูลค่าตามต้นทุน';
+  document.getElementById('heroLabel').textContent = 'Current Value · มูลค่าปัจจุบัน';
 
-  const valStr = fmt(displayValue, 2);
+  const valStr = fmt(marketValue, 2);
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
@@ -2056,15 +2045,6 @@ document.getElementById('basisToggle').addEventListener('click', (e) => {
   btn.classList.add('active');
   state.basis = btn.dataset.basis;
   renderAllocList();
-});
-
-document.getElementById('valueModeToggle').addEventListener('click', (e) => {
-  const btn = e.target.closest('.basis-btn');
-  if (!btn) return;
-  document.querySelectorAll('#valueModeToggle .basis-btn').forEach(b => b.classList.remove('active'));
-  btn.classList.add('active');
-  state.valueMode = btn.dataset.mode;
-  renderHero();
 });
 
 document.getElementById('editCashBtn').addEventListener('click', async () => {
