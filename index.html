@@ -11,7 +11,9 @@
 <link rel="preconnect" href="https://script.googleusercontent.com">
 <link rel="preconnect" href="https://eodhd.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css">
+<!-- โหลด CSS ไอคอนแบบ non-blocking: หน้าเว็บไม่ต้องรอไฟล์นี้โหลดเสร็จก่อนแสดงผล (สำคัญมากบนเน็ตมือถือที่ช้า) -->
+<link rel="preload" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css" as="style" onload="this.onload=null;this.rel='stylesheet'">
+<noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"></noscript>
 <!-- ย้าย Chart.js มาไว้ที่นี่และเพิ่ม defer เพื่อโหลดขนานตั้งแต่เริ่มแรก ลดเวลาบล็อกเรนเดอร์หน้าจอ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
 <style>
@@ -1143,26 +1145,29 @@ async function apiPost(body) {
 async function loadAll() {
   if (!API_URL) { showSetupBanner(); return; }
 
+  const ok = await loadOverview();
+  if (ok) {
+    loadRest(); // โหลดส่วนที่หนัก (ธุรกรรม/แดชบอร์ด/ประวัติ) แบบพื้นหลัง ไม่บล็อกการแสดงผลหน้าหลัก
+  }
+}
+
+// เฟส 1: ข้อมูลที่จำเป็นสำหรับหน้าภาพรวมพอร์ตเท่านั้น (summary + ports + allocTargets)
+// เบากว่า all_data มาก เพราะไม่ต้องอ่านชีต Transactions ที่มีสูตร FIFO หนักๆ, Dashboard, และ History
+async function loadOverview() {
   const MAX_ATTEMPTS = 3;
   const RETRY_DELAY_MS = [1500, 3000];
 
   for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
     try {
-      // เรียก action="all_data" เพียง request เดียว แทนที่จะยิง 6 requests แยกกัน
-      // (Apps Script มักคิว requests พร้อมกันไปที่สคริปต์เดียวกัน ทำให้ Promise.all ไม่ได้เร็วขึ้นจริง)
-      const all = await api('all_data', { port: state.port === 'ALL' ? null : state.port });
-      if (all.error) throw new Error(all.error);
+      const res = await api('overview', { port: state.port === 'ALL' ? null : state.port });
+      if (res.error) throw new Error(res.error);
 
-      const { summary, dashboard, ports, transactions: txns, history, allocTargets: allocTargetsRes } = all;
-      if (summary.error || dashboard.error || ports.error || txns.error) {
-        const errMsg = summary.error || dashboard.error || ports.error || txns.error;
-        throw new Error(errMsg);
+      const { summary, ports, allocTargets: allocTargetsRes } = res;
+      if (summary.error || ports.error) {
+        throw new Error(summary.error || ports.error);
       }
       state.summary = summary;
-      state.dashboard = dashboard;
       state.ports = ports.ports || [];
-      state.transactions = txns.rows || [];
-      state.history = (history && history.rows) || [];
       if (allocTargetsRes && !allocTargetsRes.error) {
         state.allocTargets = allocTargetsRes.targets || {};
         saveAllocTargets();
@@ -1173,15 +1178,13 @@ async function loadAll() {
       }
       renderPortSwitch();
       renderHero();
-      renderHeroBgChart();
       renderBarChart();
       renderAllocList();
-      renderTransactions();
       populatePortSelect();
       cacheSnapshot();
-      return;
+      return true;
     } catch (err) {
-      console.error(`loadAll attempt ${attempt} failed:`, err);
+      console.error(`loadOverview attempt ${attempt} failed:`, err);
       if (attempt < MAX_ATTEMPTS) {
         if (!state.summary) {
           document.getElementById('allocList').innerHTML =
@@ -1195,7 +1198,32 @@ async function loadAll() {
           `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
       }
       showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
+      return false;
     }
+  }
+  return false;
+}
+
+// เฟส 2: ข้อมูลที่หนักกว่า (ธุรกรรม/แดชบอร์ด/ประวัติ) โหลดแบบพื้นหลัง ไม่มี retry loop
+// ถ้าพลาดก็แค่ log ไว้เฉยๆ ไม่รบกวนหน้าภาพรวมที่แสดงผลไปแล้ว
+async function loadRest() {
+  try {
+    const res = await api('rest_data', { port: state.port === 'ALL' ? null : state.port });
+    if (res.error) throw new Error(res.error);
+
+    const { dashboard, transactions: txns, history } = res;
+    if (dashboard.error || txns.error) {
+      throw new Error(dashboard.error || txns.error);
+    }
+    state.dashboard = dashboard;
+    state.transactions = txns.rows || [];
+    state.history = (history && history.rows) || [];
+
+    renderHeroBgChart();
+    renderTransactions();
+    cacheSnapshot();
+  } catch (err) {
+    console.error('loadRest failed:', err);
   }
 }
 
