@@ -907,6 +907,10 @@
         <div class="hero-cash-label"><i class="ti ti-piggy-bank" aria-hidden="true"></i>เงินต้น (ฝากเข้าพอร์ตสะสม)</div>
         <div class="hero-cash-value" id="heroPrincipalValue">—</div>
       </div>
+      <div class="hero-cash-row" id="heroOverallPLRow" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--hero-border)">
+        <div class="hero-cash-label"><i class="ti ti-scale" aria-hidden="true"></i>กำไร/ขาดทุนรวม (มูลค่ารวม − เงินต้น)</div>
+        <div class="hero-cash-value" id="heroOverallPLValue">—</div>
+      </div>
     </div>
   </div>
 
@@ -1359,6 +1363,20 @@ function renderHero() {
     document.getElementById('heroPrincipalValue').textContent = `$${fmt(principalBalance)}`;
   } else {
     principalRowEl.style.display = 'none';
+  }
+
+  // กำไร/ขาดทุนรวม = มูลค่ารวม (หุ้น+เงินสด) - เงินต้น
+  const overallPLRowEl = document.getElementById('heroOverallPLRow');
+  if (principalBalance) {
+    const totalValue = marketValue + cashBalance;
+    const overallPL = totalValue - principalBalance;
+    const overallPLPct = principalBalance ? overallPL / principalBalance : 0;
+    overallPLRowEl.style.display = 'flex';
+    const overallPLValueEl = document.getElementById('heroOverallPLValue');
+    overallPLValueEl.textContent = `${overallPL >= 0 ? '+' : ''}$${fmt(overallPL)} (${fmtPct(overallPLPct)})`;
+    overallPLValueEl.style.color = overallPL >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
+  } else {
+    overallPLRowEl.style.display = 'none';
   }
 
   const deltaEl = document.getElementById('heroDelta');
