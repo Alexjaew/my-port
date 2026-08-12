@@ -510,6 +510,18 @@
   .txn-right { text-align: right; }
   .txn-amount { font-family: var(--mono); font-weight: 600; font-size: 14px; }
   .txn-shares { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .txn-edit {
+    flex: 0 0 auto;
+    width: 30px; height: 30px;
+    border-radius: 8px; border: none;
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 15px;
+    cursor: pointer;
+    margin-left: 2px;
+  }
+  .txn-edit:active { background: var(--surface-2); }
+  .txn-edit:disabled { opacity: 0.4; }
   .txn-delete {
     flex: 0 0 auto;
     width: 30px; height: 30px;
@@ -961,7 +973,7 @@
   <div class="sheet" id="addSheet">
     <div class="sheet-handle"></div>
     <div class="sheet-head">
-      <div class="sheet-title">เพิ่มรายการ</div>
+      <div class="sheet-title" id="sheetTitle">เพิ่มรายการ</div>
       <button class="sheet-close" id="sheetClose">✕</button>
     </div>
     <div class="sheet-body">
@@ -2055,6 +2067,7 @@ function renderTransactions() {
             <div class="txn-amount">$${fmt(t['รวม $'])}</div>
             <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
           </div>
+          <button class="txn-edit" data-row="${t['_row']}" title="แก้ไขรายการนี้"><i class="ti ti-pencil"></i></button>
           <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้"><i class="ti ti-trash"></i></button>
         </div>`;
     }).join('');
@@ -2064,6 +2077,15 @@ function renderTransactions() {
         ${rowsHtml}
       </div>`;
   }).join('');
+
+  el.querySelectorAll('.txn-edit').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const row = Number(btn.dataset.row);
+      const t = state.transactions.find(tx => Number(tx['_row']) === row);
+      if (!t) { alert('ไม่พบรายการนี้ (ข้อมูลอาจไม่ตรงกันชั่วคราว ลองรีเฟรชแล้วลองใหม่)'); return; }
+      openEditSheet(t);
+    });
+  });
 
   el.querySelectorAll('.txn-delete').forEach(btn => {
     btn.addEventListener('click', async () => {
@@ -2094,7 +2116,14 @@ function renderTransactions() {
 
 function populatePortSelect() {
   const sel = document.getElementById('fPort');
-  sel.innerHTML = state.ports.map(p => `<option value="${p}">${p}</option>`).join('');
+  // เรียง "1 St" ไว้อันดับแรกเสมอ กันลืมสลับจาก "เงินต้น" ตอนจะบันทึกซื้อ/ขายหุ้น
+  const sortedPorts = [...state.ports].sort((a, b) => {
+    if (a === '1 St') return -1;
+    if (b === '1 St') return 1;
+    return 0;
+  });
+  sel.innerHTML = sortedPorts.map(p => `<option value="${p}">${p}</option>`).join('');
+  if (sortedPorts.includes('1 St')) sel.value = '1 St';
 }
 
 document.getElementById('basisToggle').addEventListener('click', (e) => {
@@ -2139,22 +2168,66 @@ document.getElementById('editCashBtn').addEventListener('click', async () => {
 const sheet = document.getElementById('addSheet');
 const backdrop = document.getElementById('sheetBackdrop');
 
+let selectedAction = 'ซื้อ';
+let editingTxn = null; // เก็บรายการที่กำลังแก้ไขอยู่ (null = โหมดเพิ่มรายการใหม่)
+
 function openSheet() {
+  editingTxn = null;
+  document.getElementById('sheetTitle').textContent = 'เพิ่มรายการ';
+  document.getElementById('submitBtn').textContent = 'บันทึกรายการ';
   document.getElementById('fDate').valueAsDate = new Date();
+  document.getElementById('fStock').value = '';
+  document.getElementById('fAmount').value = '';
+  document.getElementById('fShares').value = '';
+  document.getElementById('fNote').value = '';
+  selectedAction = 'ซื้อ';
+  document.querySelectorAll('.action-btn').forEach(b => b.classList.toggle('active', b.dataset.action === 'ซื้อ'));
+  const portSel = document.getElementById('fPort');
+  if ([...portSel.options].some(o => o.value === '1 St')) portSel.value = '1 St';
   sheet.classList.add('open');
   backdrop.classList.add('open');
 }
+
+function openEditSheet(t) {
+  editingTxn = t;
+  document.getElementById('sheetTitle').textContent = 'แก้ไขรายการ';
+  document.getElementById('submitBtn').textContent = 'บันทึกการแก้ไข';
+
+  const portSel = document.getElementById('fPort');
+  if ([...portSel.options].some(o => o.value === t['Port'])) portSel.value = t['Port'];
+
+  selectedAction = t['action'] === 'ขาย' ? 'ขาย' : 'ซื้อ';
+  document.querySelectorAll('.action-btn').forEach(b => b.classList.toggle('active', b.dataset.action === selectedAction));
+
+  document.getElementById('fStock').value = t['รายการ'] || '';
+  document.getElementById('fAmount').value = Number(t['รวม $']) || '';
+  document.getElementById('fShares').value = Number(t['จำนวนหุ้น']) || '';
+  document.getElementById('fNote').value = t['note'] || '';
+
+  const rawDate = t['_date'] || t['Date'] || null;
+  const d = rawDate ? new Date(rawDate) : null;
+  if (d && !isNaN(d.getTime())) {
+    const pad = n => String(n).padStart(2, '0');
+    document.getElementById('fDate').value = `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  } else {
+    document.getElementById('fDate').valueAsDate = new Date();
+  }
+
+  sheet.classList.add('open');
+  backdrop.classList.add('open');
+}
+
 function closeSheet() {
   sheet.classList.remove('open');
   backdrop.classList.remove('open');
   document.getElementById('formMsg').textContent = '';
   document.getElementById('formMsg').className = 'form-msg';
+  editingTxn = null;
 }
 document.getElementById('fabAdd').onclick = openSheet;
 document.getElementById('sheetClose').onclick = closeSheet;
 backdrop.onclick = closeSheet;
 
-let selectedAction = 'ซื้อ';
 document.querySelector('.action-toggle').addEventListener('click', (e) => {
   const btn = e.target.closest('.action-btn');
   if (!btn) return;
@@ -2180,17 +2253,15 @@ document.getElementById('submitBtn').onclick = async () => {
   }
 
   btn.disabled = true;
-  btn.textContent = 'กำลังบันทึก...';
+  btn.textContent = editingTxn ? 'กำลังบันทึกการแก้ไข...' : 'กำลังบันทึก...';
   msg.textContent = '';
   msg.className = 'form-msg';
 
   try {
-    const result = await apiPost({
-      endpoint: 'addTransaction',
-      port,
-      txnAction: selectedAction,
-      stock, totalAmount: amount, shares, date, note
-    });
+    const payload = editingTxn
+      ? { endpoint: 'updateTransaction', row: editingTxn['_row'], port, txnAction: selectedAction, stock, totalAmount: amount, shares, date, note }
+      : { endpoint: 'addTransaction', port, txnAction: selectedAction, stock, totalAmount: amount, shares, date, note };
+    const result = await apiPost(payload);
 
     if (result.success) {
       msg.textContent = '✓ บันทึกสำเร็จ';
