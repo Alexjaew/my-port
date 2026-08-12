@@ -2024,7 +2024,7 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
 
 function renderTransactions() {
   const el = document.getElementById('txnList');
-  const txns = state.transactions.filter(t => t['รายการ'] && t['รายการ'] !== 'USD').slice(0, 40);
+  const txns = state.transactions.filter(t => t['รายการ']).slice(0, 40);
   if (!txns.length) {
     el.innerHTML = `<div class="empty-state"><div class="icon"><i class="ti ti-clipboard-list"></i></div><div class="msg">ยังไม่มีรายการ</div></div>`;
     return;
