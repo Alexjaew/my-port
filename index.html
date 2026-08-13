@@ -2259,7 +2259,7 @@ document.getElementById('submitBtn').onclick = async () => {
 
   try {
     const payload = editingTxn
-      ? { endpoint: 'updateTransaction', row: editingTxn['_row'], port, txnAction: selectedAction, stock, totalAmount: amount, shares, date, note }
+      ? { endpoint: 'updateTransaction', row: editingTxn['_row'], originalStock: editingTxn['รายการ'], port, txnAction: selectedAction, stock, totalAmount: amount, shares, date, note }
       : { endpoint: 'addTransaction', port, txnAction: selectedAction, stock, totalAmount: amount, shares, date, note };
     const result = await apiPost(payload);
 
