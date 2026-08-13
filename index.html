@@ -1350,8 +1350,10 @@ function renderHero() {
   document.getElementById('footCost').textContent = `$${fmt(costValue)}`;
 
   // เงินสดคงเหลือ (USD) แสดงแยกต่างหาก ไม่ปนกับ Cost Basis / กำไรขาดทุน
+  // เช็คว่าข้อมูลโหลดแล้วหรือยัง (state.summary) แทนการเช็คค่าตรงๆ เพราะถ้าเงินสด = 0 พอดี
+  // การเช็คแบบ if (cashBalance) จะถือว่า 0 เป็น falsy แล้วซ่อนแถวไปเลย ทำให้ดูเหมือนข้อมูลหาย
   const cashRowEl = document.getElementById('heroCashRow');
-  if (cashBalance) {
+  if (state.summary) {
     cashRowEl.style.display = 'flex';
     document.getElementById('heroCashValue').textContent = `$${fmt(cashBalance)}`;
   } else {
@@ -1360,7 +1362,7 @@ function renderHero() {
 
   // มูลค่ารวม = มูลค่าหุ้นตามราคาตลาด + เงินสดคงเหลือ แสดงต่อจากเงินสดคงเหลือ
   const totalRowEl = document.getElementById('heroTotalRow');
-  if (cashBalance) {
+  if (state.summary) {
     totalRowEl.style.display = 'flex';
     document.getElementById('heroTotalValue').textContent = `$${fmt(marketValue + cashBalance)}`;
   } else {
@@ -1370,7 +1372,7 @@ function renderHero() {
   // เงินต้น (ยอดฝากเข้าพอร์ตสะสม) แสดงแยกต่างหากเช่นกัน
   const principalBalance = getPrincipalBalance();
   const principalRowEl = document.getElementById('heroPrincipalRow');
-  if (principalBalance) {
+  if (state.summary) {
     principalRowEl.style.display = 'flex';
     document.getElementById('heroPrincipalValue').textContent = `$${fmt(principalBalance)}`;
   } else {
@@ -1379,7 +1381,7 @@ function renderHero() {
 
   // กำไร/ขาดทุนรวม = มูลค่ารวม (หุ้น+เงินสด) - เงินต้น
   const overallPLRowEl = document.getElementById('heroOverallPLRow');
-  if (principalBalance) {
+  if (state.summary && principalBalance) {
     const totalValue = marketValue + cashBalance;
     const overallPL = totalValue - principalBalance;
     const overallPLPct = principalBalance ? overallPL / principalBalance : 0;
