@@ -348,7 +348,10 @@
   .alloc-ticker-row { display: flex; align-items: baseline; gap: 8px; }
   .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
   .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
-.alloc-cost-row { font-size: 11px; color: var(--ink-soft); font-family: var(--mono); margin-top: 2px; }
+.alloc-cost-row { font-size: 13.5px; font-weight: 700; font-family: var(--mono); margin-top: 3px; }
+.alloc-cost-row.cost-below { color: var(--gain); } /* ต้นทุนเฉลี่ยต่ำกว่าราคาปัจจุบัน = กำไร */
+.alloc-cost-row.cost-above { color: var(--loss); } /* ต้นทุนเฉลี่ยสูงกว่าราคาปัจจุบัน = ขาดทุน */
+.alloc-cost-row.cost-equal { color: var(--ink-soft); }
 .alloc-cost-total { font-size: 10.5px; color: var(--ink-soft); font-family: var(--mono); margin-top: 2px; }
 
   .alloc-bar-track { height: 4px; background: var(--line); border-radius: 4px; margin-top: 6px; overflow: hidden; position: relative; }
@@ -450,6 +453,20 @@
   .alloc-gain { font-family: var(--mono); font-size: 12px; font-weight: 600; margin-top: 2px; }
   .alloc-gain.up { color: var(--gain); }
   .alloc-gain.down { color: var(--loss); }
+
+  .dca-toggle-btn {
+    width: 100%;
+    display: flex; align-items: center; justify-content: center; gap: 6px;
+    border: none; border-top: 1px solid var(--line);
+    background: transparent;
+    color: var(--ink-soft);
+    font-size: 12px; font-weight: 600;
+    padding: 8px 14px;
+    cursor: pointer;
+  }
+  .dca-toggle-btn:active { background: var(--accent-soft); }
+  .dca-toggle-chevron { transition: transform 0.15s ease; margin-left: 2px; }
+  .dca-toggle-btn.open .dca-toggle-chevron { transform: rotate(180deg); }
 
   .dca-calc {
     border-top: 1px solid var(--line);
@@ -1824,7 +1841,7 @@ function renderAllocList() {
               <div class="alloc-ticker">${ticker}</div>
               <div class="alloc-current-price">$${fmt(currentPrice)}</div>
             </div>
-            <div class="alloc-cost-row">ต้นทุนเฉลี่ย $${fmt(avgCostPerShare)}/หุ้น</div>
+            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">ต้นทุนเฉลี่ย $${fmt(avgCostPerShare)}/หุ้น</div>
           </div>
           <div class="alloc-right">
             <div class="alloc-value">$${fmt(value)}</div>
@@ -1855,7 +1872,11 @@ function renderAllocList() {
             <button class="alloc-target-save-btn" data-ticker="${ticker}">✓</button>
           </div>
         </div>
-        <div class="dca-calc">
+        <button class="dca-toggle-btn" data-ticker="${ticker}">
+          <i class="ti ti-calculator"></i> DCA คำนวณเพิ่ม
+          <i class="ti ti-chevron-down dca-toggle-chevron"></i>
+        </button>
+        <div class="dca-calc" id="dcaCalc-${ticker}" style="display:none">
           <div class="dca-calc-input-row">
             <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
             <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
@@ -1866,6 +1887,16 @@ function renderAllocList() {
   }).join('');
 
   updateAllocTargetSumBar();
+
+  el.querySelectorAll('.dca-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ticker = btn.dataset.ticker;
+      const calcEl = document.getElementById(`dcaCalc-${ticker}`);
+      const isOpen = calcEl.style.display !== 'none';
+      calcEl.style.display = isOpen ? 'none' : 'block';
+      btn.classList.toggle('open', !isOpen);
+    });
+  });
 
   el.querySelectorAll('.dca-calc-input').forEach(input => {
     input.addEventListener('input', (e) => {
