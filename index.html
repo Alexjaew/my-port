@@ -510,6 +510,9 @@
   .txn-right { text-align: right; }
   .txn-amount { font-family: var(--mono); font-weight: 600; font-size: 14px; }
   .txn-shares { font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .txn-pl { font-size: 11.5px; font-family: var(--mono); font-weight: 600; margin-top: 1px; }
+  .txn-pl.gain { color: var(--gain); }
+  .txn-pl.loss { color: var(--loss); }
   .txn-edit {
     flex: 0 0 auto;
     width: 30px; height: 30px;
@@ -2058,6 +2061,10 @@ function renderTransactions() {
       const shortDate = (parsedDate && !isNaN(parsedDate.getTime()))
         ? parsedDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
         : 'ไม่ระบุวันที่';
+      const fifoPL = Number(t['FIFO P/L']) || 0;
+      const plHtml = fifoPL !== 0
+        ? `<div class="txn-pl ${fifoPL >= 0 ? 'gain' : 'loss'}">${fifoPL >= 0 ? '+' : ''}$${fmt(fifoPL)}</div>`
+        : '';
       return `
         <div class="txn-row">
           <div class="txn-badge ${isBuy?'buy':'sell'}">${isBuy?'B':'S'}</div>
@@ -2068,6 +2075,7 @@ function renderTransactions() {
           <div class="txn-right">
             <div class="txn-amount">$${fmt(t['รวม $'])}</div>
             <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
+            ${plHtml}
           </div>
           <button class="txn-edit" data-row="${t['_row']}" title="แก้ไขรายการนี้"><i class="ti ti-pencil"></i></button>
           <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้"><i class="ti ti-trash"></i></button>
