@@ -971,7 +971,6 @@
         <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
       </div>
     </div>
-    <div id="allocTargetSumBar"></div>
     <div id="allocList">
       <div class="skel" style="height:64px;margin-bottom:8px"></div>
       <div class="skel" style="height:64px;margin-bottom:8px"></div>
@@ -1841,7 +1840,7 @@ function renderAllocList() {
               <div class="alloc-ticker">${ticker}</div>
               <div class="alloc-current-price">$${fmt(currentPrice)}</div>
             </div>
-            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">ต้นทุนเฉลี่ย $${fmt(avgCostPerShare)}/หุ้น</div>
+            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">ต้นทุน $${fmt(avgCostPerShare)}/หุ้น</div>
           </div>
           <div class="alloc-right">
             <div class="alloc-value">$${fmt(value)}</div>
