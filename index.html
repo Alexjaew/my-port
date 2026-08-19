@@ -1875,18 +1875,6 @@ function renderAllocList() {
             <button class="alloc-target-save-btn" data-ticker="${ticker}">✓</button>
           </div>
         </div>
-        <button class="dca-toggle-btn" data-ticker="${ticker}">
-          <i class="ti ti-calculator"></i> DCA คำนวณเพิ่ม
-          <i class="ti ti-chevron-down dca-toggle-chevron"></i>
-        </button>
-        <div class="dca-calc" id="dcaCalc-${ticker}" style="display:none">
-          <div class="dca-calc-input-row">
-            <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
-            <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
-          </div>
-          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal, total)}</div>
-        </div>
-
         <button class="target-price-toggle-btn" data-ticker="${ticker}">
           <i class="ti ti-target-arrow"></i> เป้าหมายราคา · คาดกำไร/ขาดทุน
           <i class="ti ti-chevron-down dca-toggle-chevron"></i>
@@ -1897,6 +1885,18 @@ function renderAllocList() {
             <input type="number" class="target-price-input" data-ticker="${ticker}" placeholder="${currentPrice ? fmt(currentPrice) : '0'}" inputmode="decimal" value="${targetPriceInputVal}">
           </div>
           <div class="dca-calc-result" id="targetPriceResult-${ticker}">${renderTargetPriceResultHtml(r, targetPriceInputVal)}</div>
+        </div>
+
+        <button class="dca-toggle-btn" data-ticker="${ticker}">
+          <i class="ti ti-calculator"></i> DCA คำนวณเพิ่ม
+          <i class="ti ti-chevron-down dca-toggle-chevron"></i>
+        </button>
+        <div class="dca-calc" id="dcaCalc-${ticker}" style="display:none">
+          <div class="dca-calc-input-row">
+            <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
+            <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
+          </div>
+          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal, total)}</div>
         </div>
       </div>`;
   }).join('');
