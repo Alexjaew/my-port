@@ -467,7 +467,17 @@
   .target-price-toggle-btn-top {
     border-top: none;
     border-bottom: 1px solid var(--line);
+    font-size: 14px;
+    font-weight: 700;
+    padding: 14px;
+    color: var(--accent-text);
+    background: var(--accent-soft);
   }
+  .target-price-toggle-btn-top .ti-target-arrow,
+  .target-price-toggle-btn-top .dca-toggle-chevron {
+    font-size: 17px;
+  }
+  .target-price-toggle-btn-top:active { background: var(--accent-border); }
   .dca-toggle-btn:active, .target-price-toggle-btn:active { background: var(--accent-soft); }
   .dca-toggle-chevron { transition: transform 0.15s ease; margin-left: 2px; }
   .dca-toggle-btn.open .dca-toggle-chevron, .target-price-toggle-btn.open .dca-toggle-chevron { transform: rotate(180deg); }
