@@ -389,22 +389,6 @@
   }
   .alloc-target-save-btn { padding: 7px 12px; font-size: 13px; flex: 0 0 auto; }
 
-  .alloc-target-lock-btn {
-    display: flex; align-items: center; justify-content: center;
-    width: 22px; height: 22px; border-radius: 50%;
-    border: 1px solid var(--line); background: var(--paper);
-    color: var(--ink-soft); font-size: 11.5px; cursor: pointer;
-    transition: all .15s ease; flex: 0 0 auto;
-  }
-  .alloc-target-lock-btn.locked {
-    background: var(--accent-soft); border-color: var(--accent-border); color: var(--accent-text);
-  }
-  .alloc-locked-tag {
-    display: inline-flex; align-items: center; gap: 3px;
-    font-size: 10px; font-weight: 700; color: var(--accent-text);
-    background: var(--accent-soft); border-radius: 100px; padding: 1px 7px;
-  }
-
   .alloc-target-input-row {
     display: flex; align-items: center; gap: 6px;
     margin-top: 8px;
@@ -1107,13 +1091,8 @@ const state = {
   history: [],
   dcaInputs: {},
   targetPriceInputs: {},
-  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}'),
-  allocLocked: JSON.parse(localStorage.getItem('portfolio_alloc_locked') || '{}')
+  allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}')
 };
-
-function saveAllocLocked() {
-  localStorage.setItem('portfolio_alloc_locked', JSON.stringify(state.allocLocked));
-}
 
 function saveAllocTargets() {
   localStorage.setItem('portfolio_alloc_targets', JSON.stringify(state.allocTargets));
@@ -1223,10 +1202,6 @@ async function loadOverview() {
       if (allocTargetsRes && !allocTargetsRes.error) {
         state.allocTargets = allocTargetsRes.targets || {};
         saveAllocTargets();
-        if (allocTargetsRes.locked) {
-          state.allocLocked = allocTargetsRes.locked;
-          saveAllocLocked();
-        }
       }
       renderPortSwitch();
       renderHero();
@@ -1785,29 +1760,18 @@ function updateAllocTargetSumBar() {
   if (normalizeBtn) {
     normalizeBtn.onclick = () => {
       const allTickers = Object.keys(state.allocTargets);
-      const lockedTickers = allTickers.filter(t => state.allocLocked[t]);
-      const unlockedTickers = allTickers.filter(t => !state.allocLocked[t]);
-      const lockedSum = lockedTickers.reduce((s, t) => s + (Number(state.allocTargets[t]) || 0), 0);
-      const unlockedSum = unlockedTickers.reduce((s, t) => s + (Number(state.allocTargets[t]) || 0), 0);
-      const remaining = 100 - lockedSum;
+      const sum = allTickers.reduce((s, t) => s + (Number(state.allocTargets[t]) || 0), 0);
 
-      if (!unlockedTickers.length) {
-        alert('ทุกตัวถูกล็อกไว้หมดแล้ว ไม่มีตัวให้ปรับ');
-        return;
-      }
-      if (remaining <= 0) {
-        alert(`หุ้นที่ล็อกไว้รวมกันแล้ว ${fmt(lockedSum,1)}% เกิน 100% ไปแล้ว กรุณาปลดล็อกบางตัวก่อน`);
+      if (!allTickers.length || sum <= 0) {
+        alert('ยังไม่มีเป้าหมายให้ปรับ');
         return;
       }
 
-      const lockMsg = lockedTickers.length
-        ? `(คงค่า ${lockedTickers.join(', ')} ที่ล็อกไว้ไม่เปลี่ยน รวม ${fmt(lockedSum,1)}% แล้วปรับตัวที่เหลือให้รวมเป็น ${fmt(remaining,1)}%)`
-        : '(ลดทุกตัวตามสัดส่วนเดิม)';
-      const ok = confirm(`ปรับเป้าหมายให้รวมกันเป็น 100% พอดี ${lockMsg} ใช่ไหม?`);
+      const ok = confirm('ปรับเป้าหมายทุกตัวให้รวมกันเป็น 100% พอดี (ลดทุกตัวตามสัดส่วนเดิม) ใช่ไหม?');
       if (!ok) return;
 
-      const scale = remaining / unlockedSum;
-      unlockedTickers.forEach(ticker => {
+      const scale = 100 / sum;
+      allTickers.forEach(ticker => {
         state.allocTargets[ticker] = Math.round(state.allocTargets[ticker] * scale * 100) / 100;
       });
       saveAllocTargets();
@@ -1984,16 +1948,6 @@ function renderAllocList() {
     });
   });
 
-  el.querySelectorAll('.alloc-target-lock-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const ticker = btn.dataset.ticker;
-      state.allocLocked[ticker] = !state.allocLocked[ticker];
-      saveAllocLocked();
-      saveAllocTargetsToServer();
-      renderAllocList();
-    });
-  });
-
   el.querySelectorAll('.alloc-target-input').forEach(input => {
     input.addEventListener('input', (e) => {
       const ticker = e.target.dataset.ticker;
@@ -2026,7 +1980,7 @@ function saveAllocTargetsToServer() {
   clearTimeout(allocTargetsSaveTimer);
   allocTargetsSaveTimer = setTimeout(async () => {
     try {
-      await apiPost({ endpoint: 'saveAllocTargets', targets: state.allocTargets, locked: state.allocLocked });
+      await apiPost({ endpoint: 'saveAllocTargets', targets: state.allocTargets });
     } catch (err) {
       console.error('saveAllocTargetsToServer failed:', err);
     }
@@ -2044,21 +1998,17 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
   const barWidth = Math.min(ratio, 1) * 100;
   const overTarget = ratio > 1;
   const color = overTarget ? '#D9483B' : getRoomColor(ratio);
-  const isLocked = !!state.allocLocked[ticker];
 
   return `
     <div class="alloc-target-summary-text">
-      ปัจจุบัน <b>${fmt(actualPct,1)}%</b>&nbsp;·&nbsp;เป้าหมาย <b>${fmt(targetPct,1)}%</b>${isLocked ? ' <span class="alloc-locked-tag"><i class="ti ti-lock"></i></span>' : ''}
+      ปัจจุบัน <b>${fmt(actualPct,1)}%</b>&nbsp;·&nbsp;เป้าหมาย <b>${fmt(targetPct,1)}%</b>
     </div>
     <div class="alloc-room-bar-track">
       <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
     </div>
     <div class="alloc-target-footer-row">
       ${overTarget ? `<span class="alloc-target-over-label">⚠ เกินเป้าหมายแล้ว</span>` : `<span class="alloc-target-room-label">เหลือที่ลงทุนได้อีก ${fmt(Math.max(0,targetPct-actualPct),2)}%</span>`}
-      <div style="display:flex;align-items:center;gap:10px;">
-        <button class="alloc-target-lock-btn ${isLocked ? 'locked' : ''}" data-ticker="${ticker}" title="${isLocked ? 'ล็อกอยู่ — จะไม่ถูกปรับตอนกด \u0022ปรับให้รวม 100%\u0022' : 'กดเพื่อล็อกเป้าหมายนี้ไว้'}"><i class="ti ti-${isLocked ? 'lock' : 'lock-open'}"></i></button>
-        <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ แก้ไข</button>
-      </div>
+      <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ แก้ไข</button>
     </div>
   `;
 }
