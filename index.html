@@ -464,6 +464,10 @@
     padding: 8px 14px;
     cursor: pointer;
   }
+  .target-price-toggle-btn-top {
+    border-top: none;
+    border-bottom: 1px solid var(--line);
+  }
   .dca-toggle-btn:active, .target-price-toggle-btn:active { background: var(--accent-soft); }
   .dca-toggle-chevron { transition: transform 0.15s ease; margin-left: 2px; }
   .dca-toggle-btn.open .dca-toggle-chevron, .target-price-toggle-btn.open .dca-toggle-chevron { transform: rotate(180deg); }
@@ -1833,6 +1837,18 @@ function renderAllocList() {
 
     return `
       <div class="alloc-row-wrap">
+        <button class="target-price-toggle-btn target-price-toggle-btn-top" data-ticker="${ticker}">
+          <i class="ti ti-target-arrow"></i> เป้าหมายราคา · คาดกำไร/ขาดทุน
+          <i class="ti ti-chevron-down dca-toggle-chevron"></i>
+        </button>
+        <div class="dca-calc" id="targetPriceCalc-${ticker}" style="display:none">
+          <div class="dca-calc-input-row">
+            <span class="dca-calc-label">ราคาเป้าหมาย $</span>
+            <input type="number" class="target-price-input" data-ticker="${ticker}" placeholder="${currentPrice ? fmt(currentPrice) : '0'}" inputmode="decimal" value="${targetPriceInputVal}">
+          </div>
+          <div class="dca-calc-result" id="targetPriceResult-${ticker}">${renderTargetPriceResultHtml(r, targetPriceInputVal)}</div>
+        </div>
+
         <div class="alloc-row">
           <div class="alloc-icon">
             <img src="https://eodhd.com/img/logos/US/${ticker}.png" alt="${ticker}" loading="lazy"
@@ -1874,17 +1890,6 @@ function renderAllocList() {
             <span class="dca-calc-suffix">%</span>
             <button class="alloc-target-save-btn" data-ticker="${ticker}">✓</button>
           </div>
-        </div>
-        <button class="target-price-toggle-btn" data-ticker="${ticker}">
-          <i class="ti ti-target-arrow"></i> เป้าหมายราคา · คาดกำไร/ขาดทุน
-          <i class="ti ti-chevron-down dca-toggle-chevron"></i>
-        </button>
-        <div class="dca-calc" id="targetPriceCalc-${ticker}" style="display:none">
-          <div class="dca-calc-input-row">
-            <span class="dca-calc-label">ราคาเป้าหมาย $</span>
-            <input type="number" class="target-price-input" data-ticker="${ticker}" placeholder="${currentPrice ? fmt(currentPrice) : '0'}" inputmode="decimal" value="${targetPriceInputVal}">
-          </div>
-          <div class="dca-calc-result" id="targetPriceResult-${ticker}">${renderTargetPriceResultHtml(r, targetPriceInputVal)}</div>
         </div>
 
         <button class="dca-toggle-btn" data-ticker="${ticker}">
