@@ -277,6 +277,13 @@
   .hero-daily.up b { color: var(--hero-gain-text); }
   .hero-daily.down b { color: var(--hero-loss-text); }
 
+  .hero-yesterday-small {
+    font-family: var(--mono);
+    font-size: 11.5px; margin-top: 4px;
+    color: var(--hero-text-dim);
+  }
+  .hero-yesterday-small span { font-weight: 600; }
+
   .basis-toggle {
     display: flex; background: var(--hero-chip-bg);
     border: 1px solid var(--hero-chip-border);
@@ -912,6 +919,9 @@
       <div class="hero-value" id="heroValue">—</div>
       <div class="hero-delta" id="heroDelta" style="display:none"></div>
       <div class="hero-daily" id="heroDaily" style="display:none"></div>
+      <div class="hero-yesterday-small" id="heroYesterdaySmall" style="display:none">
+        <span id="heroYesterdayLabel">เมื่อวาน</span> $<span id="heroYesterdayValue">—</span>
+      </div>
       <div class="hero-foot">
         <div class="hero-foot-item">
           <div class="hero-foot-label">มูลค่าที่ซื้อ</div>
@@ -1246,6 +1256,7 @@ async function loadRest() {
     state.transactions = txns.rows || [];
     state.history = (history && history.rows) || [];
 
+    renderHero();
     renderHeroBgChart();
     renderTransactions();
     cacheSnapshot();
@@ -1419,6 +1430,7 @@ function renderHero() {
 
   const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
   const heroDailyEl = document.getElementById('heroDaily');
+  const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
   if (historyData.length > 0) {
     const latest = historyData[historyData.length - 1];
     const prev = historyData.length > 1 ? historyData[historyData.length - 2] : null;
@@ -1438,8 +1450,19 @@ function renderHero() {
     heroDailyEl.style.display = 'block';
     heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
     heroDailyEl.innerHTML = `${label} <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
+
+    // มูลค่าเมื่อวาน (หรือวันล่าสุดที่มีบันทึกก่อนหน้า ถ้าข้ามวันหยุดตลาด)
+    if (prev && prev['มูลค่าพอร์ต'] != null) {
+      const gapDays = prev['Date'] ? Math.round((new Date(latest['Date']) - new Date(prev['Date'])) / 86400000) : 1;
+      document.getElementById('heroYesterdayLabel').textContent = gapDays > 1 ? `มูลค่า ${gapDays} วันก่อน` : 'เมื่อวาน';
+      document.getElementById('heroYesterdayValue').textContent = fmt(Number(prev['มูลค่าพอร์ต']));
+      yesterdaySmallEl.style.display = 'block';
+    } else {
+      yesterdaySmallEl.style.display = 'none';
+    }
   } else {
     heroDailyEl.style.display = 'none';
+    yesterdaySmallEl.style.display = 'none';
   }
 }
 
