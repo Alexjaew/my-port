@@ -1908,13 +1908,22 @@ function renderAllocList() {
 
   updateAllocTargetSumBar();
 
+  // ปิดช่องคำนวณอื่นๆ ที่เปิดค้างอยู่ทั้งหมด (ทั้ง DCA และเป้าหมายราคา ทุกหุ้น) ก่อนเปิดอันใหม่
+  function closeAllCalcPanels() {
+    el.querySelectorAll('.dca-calc').forEach(panel => { panel.style.display = 'none'; });
+    el.querySelectorAll('.dca-toggle-btn, .target-price-toggle-btn').forEach(b => b.classList.remove('open'));
+  }
+
   el.querySelectorAll('.dca-toggle-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const ticker = btn.dataset.ticker;
       const calcEl = document.getElementById(`dcaCalc-${ticker}`);
       const isOpen = calcEl.style.display !== 'none';
-      calcEl.style.display = isOpen ? 'none' : 'block';
-      btn.classList.toggle('open', !isOpen);
+      closeAllCalcPanels();
+      if (!isOpen) {
+        calcEl.style.display = 'block';
+        btn.classList.add('open');
+      }
     });
   });
 
@@ -1923,8 +1932,11 @@ function renderAllocList() {
       const ticker = btn.dataset.ticker;
       const calcEl = document.getElementById(`targetPriceCalc-${ticker}`);
       const isOpen = calcEl.style.display !== 'none';
-      calcEl.style.display = isOpen ? 'none' : 'block';
-      btn.classList.toggle('open', !isOpen);
+      closeAllCalcPanels();
+      if (!isOpen) {
+        calcEl.style.display = 'block';
+        btn.classList.add('open');
+      }
     });
   });
 
