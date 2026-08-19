@@ -1897,6 +1897,11 @@ function renderAllocList() {
       if (!isOpen) {
         calcEl.style.display = 'block';
         btn.classList.add('open');
+        const inputEl = calcEl.querySelector('.dca-calc-input');
+        if (inputEl) {
+          inputEl.focus();
+          inputEl.select();
+        }
       }
     });
   });
@@ -1910,6 +1915,11 @@ function renderAllocList() {
       if (!isOpen) {
         calcEl.style.display = 'block';
         btn.classList.add('open');
+        const inputEl = calcEl.querySelector('.target-price-input');
+        if (inputEl) {
+          inputEl.focus();
+          inputEl.select();
+        }
       }
     });
   });
