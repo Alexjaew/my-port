@@ -454,7 +454,7 @@
   .alloc-gain.up { color: var(--gain); }
   .alloc-gain.down { color: var(--loss); }
 
-  .dca-toggle-btn {
+  .dca-toggle-btn, .target-price-toggle-btn {
     width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 6px;
     border: none; border-top: 1px solid var(--line);
@@ -464,9 +464,9 @@
     padding: 8px 14px;
     cursor: pointer;
   }
-  .dca-toggle-btn:active { background: var(--accent-soft); }
+  .dca-toggle-btn:active, .target-price-toggle-btn:active { background: var(--accent-soft); }
   .dca-toggle-chevron { transition: transform 0.15s ease; margin-left: 2px; }
-  .dca-toggle-btn.open .dca-toggle-chevron { transform: rotate(180deg); }
+  .dca-toggle-btn.open .dca-toggle-chevron, .target-price-toggle-btn.open .dca-toggle-chevron { transform: rotate(180deg); }
 
   .dca-calc {
     border-top: 1px solid var(--line);
@@ -1090,6 +1090,7 @@ const state = {
   ports: [],
   history: [],
   dcaInputs: {},
+  targetPriceInputs: {},
   allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}'),
   allocLocked: JSON.parse(localStorage.getItem('portfolio_alloc_locked') || '{}')
 };
@@ -1824,6 +1825,7 @@ function renderAllocList() {
     const avgCostPerShare = Number(r['ราคา FIFO']) || 0;
     const totalCostBasis = Number(r['ทุน  FIFO']) || 0;
     const inputVal = state.dcaInputs[ticker] || '';
+    const targetPriceInputVal = state.targetPriceInputs[ticker] || '';
     const targetVal = state.allocTargets[ticker];
     const hasTarget = targetVal !== undefined;
 
@@ -1882,6 +1884,18 @@ function renderAllocList() {
           </div>
           <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal, total)}</div>
         </div>
+
+        <button class="target-price-toggle-btn" data-ticker="${ticker}">
+          <i class="ti ti-target-arrow"></i> เป้าหมายราคา · คาดกำไร/ขาดทุน
+          <i class="ti ti-chevron-down dca-toggle-chevron"></i>
+        </button>
+        <div class="dca-calc" id="targetPriceCalc-${ticker}" style="display:none">
+          <div class="dca-calc-input-row">
+            <span class="dca-calc-label">ราคาเป้าหมาย $</span>
+            <input type="number" class="target-price-input" data-ticker="${ticker}" placeholder="${currentPrice ? fmt(currentPrice) : '0'}" inputmode="decimal" value="${targetPriceInputVal}">
+          </div>
+          <div class="dca-calc-result" id="targetPriceResult-${ticker}">${renderTargetPriceResultHtml(r, targetPriceInputVal)}</div>
+        </div>
       </div>`;
   }).join('');
 
@@ -1894,6 +1908,27 @@ function renderAllocList() {
       const isOpen = calcEl.style.display !== 'none';
       calcEl.style.display = isOpen ? 'none' : 'block';
       btn.classList.toggle('open', !isOpen);
+    });
+  });
+
+  el.querySelectorAll('.target-price-toggle-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const ticker = btn.dataset.ticker;
+      const calcEl = document.getElementById(`targetPriceCalc-${ticker}`);
+      const isOpen = calcEl.style.display !== 'none';
+      calcEl.style.display = isOpen ? 'none' : 'block';
+      btn.classList.toggle('open', !isOpen);
+    });
+  });
+
+  el.querySelectorAll('.target-price-input').forEach(input => {
+    input.addEventListener('input', (e) => {
+      const ticker = e.target.dataset.ticker;
+      const val = e.target.value;
+      state.targetPriceInputs[ticker] = val;
+      const row = sorted.find(r => r['หุ้น'] === ticker);
+      const resultEl = document.getElementById(`targetPriceResult-${ticker}`);
+      if (resultEl && row) resultEl.innerHTML = renderTargetPriceResultHtml(row, val);
     });
   });
 
@@ -2054,6 +2089,41 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
       ${isDrop ? '↓ ลดลง' : '↑ เพิ่มขึ้น'} $${fmt(Math.abs(diff))} (${fmtPct(Math.abs(diffPct))})
     </span>
     ${allocLine}
+  `;
+}
+
+function renderTargetPriceResultHtml(row, priceStr) {
+  const currentPrice = Number(row['price']) || 0;
+  const currentShares = Number(row['จำนวนหุ้น']) || 0;
+  const currentAvgCost = Number(row['ราคา FIFO']) || 0;
+  const currentLine = `<div class="dca-current">ต้นทุนเฉลี่ยปัจจุบัน: <b>$${fmt(currentAvgCost)}</b> · ถืออยู่ <b>${fmt(currentShares,4)}</b> หุ้น</div>`;
+
+  const targetPrice = Number(priceStr);
+  if (!priceStr || isNaN(targetPrice) || targetPrice <= 0) {
+    return `${currentLine}<span class="dca-calc-hint">พิมพ์ราคาเป้าหมายเพื่อดูกำไร/ขาดทุนถ้าขายที่ราคานี้</span>`;
+  }
+  if (currentShares <= 0) {
+    return `${currentLine}<span class="dca-calc-hint">ยังไม่มีหุ้นที่ถืออยู่สำหรับคำนวณ</span>`;
+  }
+
+  // กำไร/ขาดทุนถ้าขายทั้งหมดที่ราคาเป้าหมายนี้ (เทียบกับต้นทุนเฉลี่ย FIFO)
+  const estProfit = (targetPrice - currentAvgCost) * currentShares;
+  const estProfitPct = currentAvgCost ? (targetPrice - currentAvgCost) / currentAvgCost : 0;
+  const isGain = estProfit >= 0;
+
+  // ราคาต้องขึ้น/ลงอีกกี่ % จากราคาปัจจุบันถึงจะถึงเป้าหมายนี้
+  const moveNeeded = currentPrice ? (targetPrice - currentPrice) / currentPrice : 0;
+  const moveDirection = moveNeeded >= 0 ? 'ขึ้นอีก' : 'ลงอีก';
+
+  return `
+    ${currentLine}
+    ถ้าขายที่ <b>$${fmt(targetPrice)}</b> จะได้:
+    <span class="dca-calc-drop ${isGain?'up':'down'}">
+      ${isGain ? '↑ กำไร' : '↓ ขาดทุน'} $${fmt(Math.abs(estProfit))} (${fmtPct(Math.abs(estProfitPct))})
+    </span>
+    <div class="dca-alloc-projection">
+      ราคาต้อง${moveDirection} ${fmtPct(Math.abs(moveNeeded))} จากราคาปัจจุบัน ($${fmt(currentPrice)})
+    </div>
   `;
 }
 
