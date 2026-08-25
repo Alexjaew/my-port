@@ -1526,16 +1526,6 @@ function renderBarChart() {
   renderPLChart();
 }
 
-// สีไล่ระดับตามเปอร์เซ็นต์กำไร/ขาดทุน — ยิ่งกำไร/ขาดทุนเยอะ สียิ่งเข้ม, ใกล้ 0 สียิ่งอ่อน
-function getPLColor(plPct, isCash) {
-  if (isCash) return '#64748B'; // เงินสด ใช้สีกลาง ไม่เขียว/แดง เพราะไม่มีกำไร/ขาดทุน
-  const clamped = Math.max(-30, Math.min(30, plPct));
-  const intensity = Math.abs(clamped) / 30; // 0 (ใกล้ 0%) ถึง 1 (±30% ขึ้นไป)
-  const lightness = 68 - intensity * 38; // 68% (อ่อน) ลงไปจนถึง ~30% (เข้ม)
-  const hue = plPct >= 0 ? 150 : 5;
-  return `hsl(${hue}, 58%, ${lightness}%)`;
-}
-
 // preload โลโก้หุ้นไว้ล่วงหน้า เพื่อวาดลงบน canvas ได้ (ถ้าโหลดไม่ได้ก็ fallback เป็นวงกลมสี+อักษรย่อ)
 const _logoImgCache = {};
 function preloadLogo(ticker) {
@@ -1579,7 +1569,10 @@ async function renderDonutChart() {
   const total = stockTotal + (cashBalance > 0 ? cashBalance : 0) || 1;
   const tickers = items.map(it => it.ticker);
   const pcts = items.map(it => parseFloat((it.value / total * 100).toFixed(1)));
-  const colors = items.map(it => it.isCash ? '#FFFFFF' : getPLColor(it.plPct, it.isCash));
+  // สีเดิม: เขียวถ้ากำไร แดงถ้าขาดทุน (ไม่ไล่เฉด) ยกเว้นเงินสดใช้สีขาว
+  const gainColor = '#1B7A4D';
+  const lossColor = '#B23B2E';
+  const colors = items.map(it => it.isCash ? '#FFFFFF' : (it.plPct >= 0 ? gainColor : lossColor));
   const isCashArr = items.map(it => it.isCash);
 
   card.innerHTML = `<div style="position:relative;height:380px;">
@@ -1597,20 +1590,35 @@ async function renderDonutChart() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
   const textColor = isDark ? '#FFFFFF' : '#1A1A1A';
-  const pctColor = isDark ? 'rgba(255,255,255,0.72)' : 'rgba(26,26,26,0.6)';
+  const pctColor = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(26,26,26,0.65)';
   const lineColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)';
 
-  // ปรับขนาด/ระยะให้เล็กลงบนจอแคบ (มือถือ) เพื่อไม่ให้ป้ายชื่อล้นออกนอกกรอบ
+  // ปรับขนาด/ระยะให้เล็กลงบนจอแคบ (มือถือ)
   const containerWidth = card.clientWidth || 380;
   const isNarrow = containerWidth < 460;
-  const layoutPadding = isNarrow ? 44 : 78;
-  const hLen = isNarrow ? 14 : 26;
-  const logoSize = isNarrow ? 14 : 18;
+  const midGap = isNarrow ? 8 : 16;
+  const hLen = isNarrow ? 12 : 26;
+  const logoSize = isNarrow ? 13 : 18;
+  const labelGap = isNarrow ? 3 : 5;
   const tickerFont = isNarrow ? 'bold 9.5px -apple-system, sans-serif' : 'bold 11px -apple-system, sans-serif';
   const pctFont = isNarrow ? '8.5px -apple-system, sans-serif' : '10px -apple-system, sans-serif';
 
+  // วัดความกว้างข้อความจริงของทุกป้าย (ticker และ %) ก่อนสร้างกราฟ
+  // เพื่อคำนวณ padding รอบกราฟให้พอดี ป้ายจะได้ไม่ล้นออกนอกขอบ canvas เด็ดขาด ไม่ว่าจอจะแคบแค่ไหน
+  const measureCtx = ctx.getContext('2d');
+  let maxTextWidth = 0;
+  tickers.forEach((t, i) => {
+    measureCtx.font = tickerFont;
+    const tw = measureCtx.measureText(t).width;
+    measureCtx.font = pctFont;
+    const pw = measureCtx.measureText(`${pcts[i]}%`).width;
+    maxTextWidth = Math.max(maxTextWidth, tw, pw);
+  });
+  const requiredPadding = Math.ceil(midGap + hLen + labelGap + logoSize + labelGap + maxTextWidth + 6);
+  const layoutPadding = Math.max(requiredPadding, isNarrow ? 40 : 60);
+
   _donutInstance = new Chart(ctx.getContext('2d'), {
-    type: 'doughnut',
+    type: 'pie',
     data: {
       labels: tickers,
       datasets: [{
@@ -1623,7 +1631,6 @@ async function renderDonutChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '52%',
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
@@ -1648,7 +1655,7 @@ async function renderDonutChart() {
           const sx = arc.x + Math.cos(angle) * outerR;
           const sy = arc.y + Math.sin(angle) * outerR;
           // จุดหักศอก: ออกมานอกวงอีกนิด
-          const midR = outerR + (isNarrow ? 8 : 16);
+          const midR = outerR + midGap;
           const mx = arc.x + Math.cos(angle) * midR;
           const my = arc.y + Math.sin(angle) * midR;
           // เส้นแนวนอนสุดท้าย ยาวคงที่ ชี้ซ้าย/ขวาตามตำแหน่งชิ้น
