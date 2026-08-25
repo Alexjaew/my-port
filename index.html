@@ -1526,7 +1526,32 @@ function renderBarChart() {
   renderPLChart();
 }
 
-function renderDonutChart() {
+// สีไล่ระดับตามเปอร์เซ็นต์กำไร/ขาดทุน — ยิ่งกำไร/ขาดทุนเยอะ สียิ่งเข้ม, ใกล้ 0 สียิ่งอ่อน
+function getPLColor(plPct, isCash) {
+  if (isCash) return '#64748B'; // เงินสด ใช้สีกลาง ไม่เขียว/แดง เพราะไม่มีกำไร/ขาดทุน
+  const clamped = Math.max(-30, Math.min(30, plPct));
+  const intensity = Math.abs(clamped) / 30; // 0 (ใกล้ 0%) ถึง 1 (±30% ขึ้นไป)
+  const lightness = 68 - intensity * 38; // 68% (อ่อน) ลงไปจนถึง ~30% (เข้ม)
+  const hue = plPct >= 0 ? 150 : 5;
+  return `hsl(${hue}, 58%, ${lightness}%)`;
+}
+
+// preload โลโก้หุ้นไว้ล่วงหน้า เพื่อวาดลงบน canvas ได้ (ถ้าโหลดไม่ได้ก็ fallback เป็นวงกลมสี+อักษรย่อ)
+const _logoImgCache = {};
+function preloadLogo(ticker) {
+  if (_logoImgCache[ticker]) return _logoImgCache[ticker];
+  const promise = new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = `https://eodhd.com/img/logos/US/${ticker}.png`;
+  });
+  _logoImgCache[ticker] = promise;
+  return promise;
+}
+
+async function renderDonutChart() {
   const card = document.getElementById('donutChartCard');
   if (!card) return;
   const rows = getFilteredSummaryRows();
@@ -1537,17 +1562,26 @@ function renderDonutChart() {
   const basis = state.basis;
 
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
-  const total  = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
-  const tickers = sorted.map(r => r['หุ้น']);
-  const pcts    = sorted.map(r => parseFloat((Number(r['มูลค่าปัจจุบัน']) / total * 100).toFixed(1)));
-  const plPcts  = sorted.map(r => (basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100);
+  const stockTotal = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0);
+  const cashBalance = getCashBalance();
 
-  // ใช้สีของ light theme เสมอ ไม่สลับตาม dark/light เพื่อให้สีสัดส่วนคงที่ทั้งสองธีม
-  const gainColor = '#1B7A4D';
-  const lossColor = '#B23B2E';
-  const colors  = plPcts.map(p => p >= 0 ? gainColor : lossColor);
+  // รวมเงินสดเข้าไปเป็นอีกชิ้นหนึ่งของสัดส่วนด้วย
+  const items = sorted.map(r => ({
+    ticker: r['หุ้น'],
+    value: Number(r['มูลค่าปัจจุบัน']) || 0,
+    plPct: (basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100,
+    isCash: false
+  }));
+  if (cashBalance > 0) {
+    items.push({ ticker: 'Cash', value: cashBalance, plPct: 0, isCash: true });
+  }
 
-  card.innerHTML = `<div style="position:relative;height:280px;">
+  const total = stockTotal + (cashBalance > 0 ? cashBalance : 0) || 1;
+  const tickers = items.map(it => it.ticker);
+  const pcts = items.map(it => parseFloat((it.value / total * 100).toFixed(1)));
+  const colors = items.map(it => getPLColor(it.plPct, it.isCash));
+
+  card.innerHTML = `<div style="position:relative;height:380px;">
     <canvas id="donutCanvas" role="img"
       aria-label="Pie chart showing portfolio allocation: ${tickers.map((t,i)=>`${t} ${pcts[i]}%`).join(', ')}"></canvas>
   </div>`;
@@ -1556,49 +1590,123 @@ function renderDonutChart() {
   const ctx = document.getElementById('donutCanvas');
   if (!ctx) return;
 
+  // preload โลโก้ทุกตัวก่อนวาด (ยกเว้น Cash ที่ไม่มีโลโก้)
+  const logoImgs = await Promise.all(items.map(it => it.isCash ? Promise.resolve(null) : preloadLogo(it.ticker)));
+
+  const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+  const textColor = isDark ? '#EDEDED' : '#1A1A1A';
+  const lineColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)';
+
   _donutInstance = new Chart(ctx.getContext('2d'), {
-    type: 'pie',
+    type: 'doughnut',
     data: {
       labels: tickers,
       datasets: [{
         data: pcts,
         backgroundColor: colors,
-        borderColor: '#fff',
+        borderColor: isDark ? '#14161A' : '#fff',
         borderWidth: 2
       }]
     },
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: '52%',
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
         datalabels: { display: false }
       },
-      layout: { padding: 10 }
+      layout: { padding: 78 }
     },
     plugins: [{
-      id: 'sliceLabels',
+      id: 'outsideLeaderLabels',
       afterDraw(chart) {
-        const { ctx, chartArea: { width, height } } = chart;
+        const { ctx } = chart;
         const meta = chart.getDatasetMeta(0);
+
         meta.data.forEach((arc, i) => {
           const pct = pcts[i];
-          if (pct < 4) return;
+          const ticker = tickers[i];
           const angle = (arc.startAngle + arc.endAngle) / 2;
-          const r = arc.outerRadius * 0.68;
-          const x = arc.x + Math.cos(angle) * r;
-          const y = arc.y + Math.sin(angle) * r;
+          const outerR = arc.outerRadius;
+          const isRight = Math.cos(angle) >= -0.001;
+
+          // จุดเริ่มเส้นชี้: ขอบวงนอกของชิ้นวงกลม
+          const sx = arc.x + Math.cos(angle) * outerR;
+          const sy = arc.y + Math.sin(angle) * outerR;
+          // จุดหักศอก: ออกมานอกวงอีกนิด
+          const midR = outerR + 16;
+          const mx = arc.x + Math.cos(angle) * midR;
+          const my = arc.y + Math.sin(angle) * midR;
+          // เส้นแนวนอนสุดท้าย ยาวคงที่ ชี้ซ้าย/ขวาตามตำแหน่งชิ้น
+          const hLen = 26;
+          const hx = mx + (isRight ? hLen : -hLen);
+          const hy = my;
+
           ctx.save();
-          ctx.fillStyle = '#fff';
+          ctx.strokeStyle = lineColor;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(sx, sy);
+          ctx.lineTo(mx, my);
+          ctx.lineTo(hx, hy);
+          ctx.stroke();
+          // จุดกลมเล็กๆ ปลายเส้นฝั่งวงกลม
+          ctx.fillStyle = colors[i];
+          ctx.beginPath();
+          ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
+          ctx.fill();
+
+          // โลโก้เล็กๆ ต่อจากปลายเส้น
+          const logoSize = 18;
+          const gap = 5;
+          const logoImg = logoImgs[i];
+          let textX;
+          if (isRight) {
+            const logoX = hx + gap;
+            if (logoImg) {
+              ctx.drawImage(logoImg, logoX, hy - logoSize / 2, logoSize, logoSize);
+            } else {
+              ctx.fillStyle = colors[i];
+              ctx.beginPath();
+              ctx.arc(logoX + logoSize / 2, hy, logoSize / 2, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#fff';
+              ctx.font = 'bold 9px -apple-system, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(ticker.charAt(0), logoX + logoSize / 2, hy + 1);
+            }
+            textX = logoX + logoSize + gap;
+            ctx.textAlign = 'left';
+          } else {
+            const logoX = hx - gap - logoSize;
+            if (logoImg) {
+              ctx.drawImage(logoImg, logoX, hy - logoSize / 2, logoSize, logoSize);
+            } else {
+              ctx.fillStyle = colors[i];
+              ctx.beginPath();
+              ctx.arc(logoX + logoSize / 2, hy, logoSize / 2, 0, Math.PI * 2);
+              ctx.fill();
+              ctx.fillStyle = '#fff';
+              ctx.font = 'bold 9px -apple-system, sans-serif';
+              ctx.textAlign = 'center';
+              ctx.textBaseline = 'middle';
+              ctx.fillText(ticker.charAt(0), logoX + logoSize / 2, hy + 1);
+            }
+            textX = logoX - gap;
+            ctx.textAlign = 'right';
+          }
+
+          ctx.fillStyle = textColor;
           ctx.font = 'bold 11px -apple-system, sans-serif';
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.shadowColor = 'rgba(0,0,0,0.3)';
-          ctx.shadowBlur = 3;
-          ctx.fillText(`${tickers[i]}`, x, y - 6);
+          ctx.textBaseline = 'alphabetic';
+          ctx.fillText(ticker, textX, hy - 3);
           ctx.font = '10px -apple-system, sans-serif';
-          ctx.fillText(`(${pct}%)`, x, y + 8);
+          ctx.fillStyle = isDark ? 'rgba(237,237,237,0.65)' : 'rgba(26,26,26,0.6)';
+          ctx.fillText(`${pct}%`, textX, hy + 11);
+
           ctx.restore();
         });
       }
