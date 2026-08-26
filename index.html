@@ -1755,7 +1755,7 @@ function renderPLChart() {
     ticker: r['หุ้น'],
     value:  Number(r['มูลค่าปัจจุบัน']) || 0,
     plPct:  parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
-  })).sort((a,b) => b.value - a.value)
+  })).sort((a,b) => a.plPct - b.plPct)
 
   const tickers   = withData.map(r => r.ticker);
   const values    = withData.map(r => r.value);
