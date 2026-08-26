@@ -1575,7 +1575,7 @@ async function renderDonutChart() {
   const colors = items.map(it => it.isCash ? '#FFFFFF' : (it.plPct >= 0 ? gainColor : lossColor));
   const isCashArr = items.map(it => it.isCash);
 
-  card.innerHTML = `<div style="position:relative;height:380px;">
+  card.innerHTML = `<div style="position:relative;height:440px;">
     <canvas id="donutCanvas" role="img"
       aria-label="Pie chart showing portfolio allocation: ${tickers.map((t,i)=>`${t} ${pcts[i]}%`).join(', ')}"></canvas>
   </div>`;
@@ -1618,7 +1618,7 @@ async function renderDonutChart() {
   const layoutPadding = Math.max(requiredPadding, isNarrow ? 40 : 60);
 
   _donutInstance = new Chart(ctx.getContext('2d'), {
-    type: 'pie',
+    type: 'doughnut',
     data: {
       labels: tickers,
       datasets: [{
@@ -1631,6 +1631,7 @@ async function renderDonutChart() {
     options: {
       responsive: true,
       maintainAspectRatio: false,
+      cutout: '46%',
       plugins: {
         legend: { display: false },
         tooltip: { enabled: false },
