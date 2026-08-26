@@ -1526,21 +1526,6 @@ function renderBarChart() {
   renderPLChart();
 }
 
-// preload โลโก้หุ้นไว้ล่วงหน้า เพื่อวาดลงบน canvas ได้ (ถ้าโหลดไม่ได้ก็ fallback เป็นวงกลมสี+อักษรย่อ)
-const _logoImgCache = {};
-function preloadLogo(ticker) {
-  if (_logoImgCache[ticker]) return _logoImgCache[ticker];
-  const promise = new Promise((resolve) => {
-    const img = new Image();
-    img.crossOrigin = 'anonymous';
-    img.onload = () => resolve(img);
-    img.onerror = () => resolve(null);
-    img.src = `https://eodhd.com/img/logos/US/${ticker}.png`;
-  });
-  _logoImgCache[ticker] = promise;
-  return promise;
-}
-
 async function renderDonutChart() {
   const card = document.getElementById('donutChartCard');
   if (!card) return;
@@ -1573,9 +1558,8 @@ async function renderDonutChart() {
   const gainColor = '#1B7A4D';
   const lossColor = '#B23B2E';
   const colors = items.map(it => it.isCash ? '#FFFFFF' : (it.plPct >= 0 ? gainColor : lossColor));
-  const isCashArr = items.map(it => it.isCash);
 
-  card.innerHTML = `<div style="position:relative;height:440px;">
+  card.innerHTML = `<div style="position:relative;height:340px;">
     <canvas id="donutCanvas" role="img"
       aria-label="Pie chart showing portfolio allocation: ${tickers.map((t,i)=>`${t} ${pcts[i]}%`).join(', ')}"></canvas>
   </div>`;
@@ -1584,38 +1568,8 @@ async function renderDonutChart() {
   const ctx = document.getElementById('donutCanvas');
   if (!ctx) return;
 
-  // preload โลโก้ทุกตัวก่อนวาด (ยกเว้น Cash ที่ไม่มีโลโก้)
-  const logoImgs = await Promise.all(items.map(it => it.isCash ? Promise.resolve(null) : preloadLogo(it.ticker)));
-
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark' ||
     (!document.documentElement.getAttribute('data-theme') && window.matchMedia('(prefers-color-scheme: dark)').matches);
-  const textColor = isDark ? '#FFFFFF' : '#1A1A1A';
-  const pctColor = isDark ? 'rgba(255,255,255,0.75)' : 'rgba(26,26,26,0.65)';
-  const lineColor = isDark ? 'rgba(255,255,255,0.35)' : 'rgba(0,0,0,0.3)';
-
-  // ปรับขนาด/ระยะให้เล็กลงบนจอแคบ (มือถือ)
-  const containerWidth = card.clientWidth || 380;
-  const isNarrow = containerWidth < 460;
-  const midGap = isNarrow ? 8 : 16;
-  const hLen = isNarrow ? 12 : 26;
-  const logoSize = isNarrow ? 13 : 18;
-  const labelGap = isNarrow ? 3 : 5;
-  const tickerFont = isNarrow ? 'bold 9.5px -apple-system, sans-serif' : 'bold 11px -apple-system, sans-serif';
-  const pctFont = isNarrow ? '8.5px -apple-system, sans-serif' : '10px -apple-system, sans-serif';
-
-  // วัดความกว้างข้อความจริงของทุกป้าย (ticker และ %) ก่อนสร้างกราฟ
-  // เพื่อคำนวณ padding รอบกราฟให้พอดี ป้ายจะได้ไม่ล้นออกนอกขอบ canvas เด็ดขาด ไม่ว่าจอจะแคบแค่ไหน
-  const measureCtx = ctx.getContext('2d');
-  let maxTextWidth = 0;
-  tickers.forEach((t, i) => {
-    measureCtx.font = tickerFont;
-    const tw = measureCtx.measureText(t).width;
-    measureCtx.font = pctFont;
-    const pw = measureCtx.measureText(`${pcts[i]}%`).width;
-    maxTextWidth = Math.max(maxTextWidth, tw, pw);
-  });
-  const requiredPadding = Math.ceil(midGap + hLen + labelGap + logoSize + labelGap + maxTextWidth + 6);
-  const layoutPadding = Math.max(requiredPadding, isNarrow ? 40 : 60);
 
   _donutInstance = new Chart(ctx.getContext('2d'), {
     type: 'doughnut',
@@ -1634,107 +1588,37 @@ async function renderDonutChart() {
       cutout: '46%',
       plugins: {
         legend: { display: false },
-        tooltip: { enabled: false },
+        tooltip: {
+          callbacks: {
+            label: ctx => ` ${tickers[ctx.dataIndex]} — ${pcts[ctx.dataIndex]}%`
+          }
+        },
         datalabels: { display: false }
       },
-      layout: { padding: layoutPadding }
+      layout: { padding: 10 }
     },
     plugins: [{
-      id: 'outsideLeaderLabels',
+      id: 'insideSliceLabels',
       afterDraw(chart) {
         const { ctx } = chart;
         const meta = chart.getDatasetMeta(0);
-
         meta.data.forEach((arc, i) => {
           const pct = pcts[i];
-          const ticker = tickers[i];
+          if (pct < 4) return; // ชิ้นเล็กเกินไปใส่ตัวหนังสือไม่พอ ข้ามไปเพื่อไม่ให้ทับกัน
           const angle = (arc.startAngle + arc.endAngle) / 2;
-          const outerR = arc.outerRadius;
-          const isRight = Math.cos(angle) >= -0.001;
-
-          // จุดเริ่มเส้นชี้: ขอบวงนอกของชิ้นวงกลม
-          const sx = arc.x + Math.cos(angle) * outerR;
-          const sy = arc.y + Math.sin(angle) * outerR;
-          // จุดหักศอก: ออกมานอกวงอีกนิด
-          const midR = outerR + midGap;
-          const mx = arc.x + Math.cos(angle) * midR;
-          const my = arc.y + Math.sin(angle) * midR;
-          // เส้นแนวนอนสุดท้าย ยาวคงที่ ชี้ซ้าย/ขวาตามตำแหน่งชิ้น
-          const hx = mx + (isRight ? hLen : -hLen);
-          const hy = my;
-
+          const r = (arc.innerRadius + arc.outerRadius) / 2;
+          const x = arc.x + Math.cos(angle) * r;
+          const y = arc.y + Math.sin(angle) * r;
           ctx.save();
-          ctx.strokeStyle = lineColor;
-          ctx.lineWidth = 1;
-          ctx.beginPath();
-          ctx.moveTo(sx, sy);
-          ctx.lineTo(mx, my);
-          ctx.lineTo(hx, hy);
-          ctx.stroke();
-          // จุดกลมเล็กๆ ปลายเส้นฝั่งวงกลม
-          ctx.fillStyle = colors[i];
-          ctx.beginPath();
-          ctx.arc(sx, sy, 2.5, 0, Math.PI * 2);
-          ctx.fill();
-
-          // โลโก้เล็กๆ ต่อจากปลายเส้น
-          const gap = isNarrow ? 3 : 5;
-          const logoImg = logoImgs[i];
-          let textX;
-          if (isRight) {
-            const logoX = hx + gap;
-            if (logoImg) {
-              ctx.drawImage(logoImg, logoX, hy - logoSize / 2, logoSize, logoSize);
-            } else {
-              ctx.fillStyle = colors[i];
-              ctx.beginPath();
-              ctx.arc(logoX + logoSize / 2, hy, logoSize / 2, 0, Math.PI * 2);
-              ctx.fill();
-              if (isCashArr[i]) {
-                ctx.strokeStyle = isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.2)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-              }
-              ctx.fillStyle = isCashArr[i] ? '#1A1A1A' : '#fff';
-              ctx.font = `bold ${isNarrow?7:9}px -apple-system, sans-serif`;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(ticker.charAt(0), logoX + logoSize / 2, hy + 1);
-            }
-            textX = logoX + logoSize + gap;
-            ctx.textAlign = 'left';
-          } else {
-            const logoX = hx - gap - logoSize;
-            if (logoImg) {
-              ctx.drawImage(logoImg, logoX, hy - logoSize / 2, logoSize, logoSize);
-            } else {
-              ctx.fillStyle = colors[i];
-              ctx.beginPath();
-              ctx.arc(logoX + logoSize / 2, hy, logoSize / 2, 0, Math.PI * 2);
-              ctx.fill();
-              if (isCashArr[i]) {
-                ctx.strokeStyle = isDark ? 'rgba(0,0,0,0.4)' : 'rgba(0,0,0,0.2)';
-                ctx.lineWidth = 1;
-                ctx.stroke();
-              }
-              ctx.fillStyle = isCashArr[i] ? '#1A1A1A' : '#fff';
-              ctx.font = `bold ${isNarrow?7:9}px -apple-system, sans-serif`;
-              ctx.textAlign = 'center';
-              ctx.textBaseline = 'middle';
-              ctx.fillText(ticker.charAt(0), logoX + logoSize / 2, hy + 1);
-            }
-            textX = logoX - gap;
-            ctx.textAlign = 'right';
-          }
-
-          ctx.fillStyle = textColor;
-          ctx.font = tickerFont;
-          ctx.textBaseline = 'alphabetic';
-          ctx.fillText(ticker, textX, hy - 3);
-          ctx.font = pctFont;
-          ctx.fillStyle = pctColor;
-          ctx.fillText(`${pct}%`, textX, hy + 11);
-
+          ctx.fillStyle = colors[i] === '#FFFFFF' ? '#1A1A1A' : '#fff';
+          ctx.font = 'bold 12px -apple-system, sans-serif';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.shadowColor = colors[i] === '#FFFFFF' ? 'transparent' : 'rgba(0,0,0,0.35)';
+          ctx.shadowBlur = 3;
+          ctx.fillText(tickers[i], x, y - 7);
+          ctx.font = '10.5px -apple-system, sans-serif';
+          ctx.fillText(`${pct}%`, x, y + 8);
           ctx.restore();
         });
       }
