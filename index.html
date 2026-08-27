@@ -1364,7 +1364,8 @@ function renderHero() {
 
   document.getElementById('heroLabel').textContent = 'Current Value · มูลค่าปัจจุบัน';
 
-  const valStr = fmt(marketValue, 2);
+  const totalValueForHero = marketValue + cashBalance;
+  const valStr = fmt(totalValueForHero, 2);
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
@@ -1382,14 +1383,9 @@ function renderHero() {
     cashRowEl.style.display = 'none';
   }
 
-  // มูลค่ารวม = มูลค่าหุ้นตามราคาตลาด + เงินสดคงเหลือ แสดงต่อจากเงินสดคงเหลือ
+  // แถว "มูลค่ารวม" เดิมถูกลบออก เพราะตอนนี้ตัวเลขใหญ่ด้านบน (heroValue) รวมเงินสดเข้าไปแล้วโดยตรง
   const totalRowEl = document.getElementById('heroTotalRow');
-  if (state.summary) {
-    totalRowEl.style.display = 'flex';
-    document.getElementById('heroTotalValue').textContent = `$${fmt(marketValue + cashBalance)}`;
-  } else {
-    totalRowEl.style.display = 'none';
-  }
+  if (totalRowEl) totalRowEl.style.display = 'none';
 
   // เงินต้น (ยอดฝากเข้าพอร์ตสะสม) แสดงแยกต่างหากเช่นกัน
   const principalBalance = getPrincipalBalance();
@@ -1404,8 +1400,7 @@ function renderHero() {
   // กำไร/ขาดทุนรวม = มูลค่ารวม (หุ้น+เงินสด) - เงินต้น
   const overallPLRowEl = document.getElementById('heroOverallPLRow');
   if (state.summary && principalBalance) {
-    const totalValue = marketValue + cashBalance;
-    const overallPL = totalValue - principalBalance;
+    const overallPL = totalValueForHero - principalBalance;
     const overallPLPct = principalBalance ? overallPL / principalBalance : 0;
     overallPLRowEl.style.display = 'flex';
     const overallPLValueEl = document.getElementById('heroOverallPLValue');
