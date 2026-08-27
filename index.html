@@ -1430,21 +1430,26 @@ function renderHero() {
   deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
   deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
 
-  const historyData = state.history.filter(h => h['Date'] && h['Daily Change'] != null);
+  // เทียบ "มูลค่าสดตอนนี้" กับ "ค่าปิดของวันทำการก่อนหน้าล่าสุดที่บันทึกไว้" เสมอ
+  // (ไม่ใช้ค่า Daily Change/% ที่ trigger บันทึกไว้ตรงๆ เพราะนิ่ง ไม่ใช่ราคา ณ ตอนที่เปิดดู)
+  const todayStr = new Date().toDateString();
+  const priorDayEntries = state.history
+    .filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null && new Date(h['Date']).toDateString() !== todayStr)
+    .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
   const heroDailyEl = document.getElementById('heroDaily');
   const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
-  if (historyData.length > 0) {
-    const latest = historyData[historyData.length - 1];
-    const prev = historyData.length > 1 ? historyData[historyData.length - 2] : null;
-    const dailyChange = Number(latest['Daily Change']) || 0;
-    const dailyPct = Number(latest['Daily %']) || 0;
+  if (priorDayEntries.length > 0) {
+    const baseline = priorDayEntries[priorDayEntries.length - 1]; // วันทำการก่อนหน้าล่าสุดที่ไม่ใช่วันนี้
+    const baselineValue = Number(baseline['มูลค่าพอร์ต']) || 0;
+    const dailyChange = totalValueForHero - baselineValue;
+    const dailyPct = baselineValue ? dailyChange / baselineValue : 0;
     const dailyUp = dailyChange >= 0;
 
     let label = 'วันนี้';
-    if (prev && prev['Date']) {
-      const gapDays = Math.round((new Date(latest['Date']) - new Date(prev['Date'])) / 86400000);
+    if (baseline['Date']) {
+      const gapDays = Math.round((new Date() - new Date(baseline['Date'])) / 86400000);
       if (gapDays > 1) {
-        const sinceDate = new Date(prev['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
+        const sinceDate = new Date(baseline['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
         label = `เปลี่ยนแปลงตั้งแต่ ${sinceDate} (${gapDays} วัน)`;
       }
     }
@@ -1454,27 +1459,24 @@ function renderHero() {
     heroDailyEl.innerHTML = `${label} <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
 
     // มูลค่าเมื่อวาน (หรือวันล่าสุดที่มีบันทึกก่อนหน้า ถ้าข้ามวันหยุดตลาด)
-    if (prev && prev['มูลค่าพอร์ต'] != null) {
-      const gapDays = prev['Date'] ? Math.round((new Date(latest['Date']) - new Date(prev['Date'])) / 86400000) : 1;
-      document.getElementById('heroYesterdayLabel').textContent = gapDays > 1 ? `มูลค่า ${gapDays} วันก่อน` : 'เมื่อวาน';
-      document.getElementById('heroYesterdayValue').textContent = fmt(Number(prev['มูลค่าพอร์ต']));
-      yesterdaySmallEl.style.display = 'block';
-    } else {
-      yesterdaySmallEl.style.display = 'none';
-    }
+    const gapDays = baseline['Date'] ? Math.round((new Date() - new Date(baseline['Date'])) / 86400000) : 1;
+    document.getElementById('heroYesterdayLabel').textContent = gapDays > 1 ? `มูลค่า ${gapDays} วันก่อน` : 'เมื่อวาน';
+    document.getElementById('heroYesterdayValue').textContent = fmt(baselineValue);
+    yesterdaySmallEl.style.display = 'block';
   } else {
     heroDailyEl.style.display = 'none';
     yesterdaySmallEl.style.display = 'none';
   }
 
-  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) พร้อมเปลี่ยนแปลงของมูลค่าหุ้นจากวันก่อนหน้า
+  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) พร้อมเปลี่ยนแปลงของมูลค่าหุ้น (สด ณ ตอนนี้) จากวันก่อนหน้า
   const footCostSubEl = document.getElementById('footCostSub');
   if (footCostSubEl) {
-    const stockHistoryData = state.history.filter(h => h['Date'] && h['มูลค่าหุ้น'] != null);
+    const priorStockEntries = state.history
+      .filter(h => h['Date'] && h['มูลค่าหุ้น'] != null && new Date(h['Date']).toDateString() !== todayStr)
+      .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
     let changeHtml = '';
-    if (stockHistoryData.length > 1) {
-      const prevS = stockHistoryData[stockHistoryData.length - 2];
-      const prevStockVal = Number(prevS['มูลค่าหุ้น']) || 0;
+    if (priorStockEntries.length > 0) {
+      const prevStockVal = Number(priorStockEntries[priorStockEntries.length - 1]['มูลค่าหุ้น']) || 0;
       if (prevStockVal) {
         const diff = marketValue - prevStockVal;
         const diffPct = diff / prevStockVal;
