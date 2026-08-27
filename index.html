@@ -928,9 +928,9 @@
       </div>
       <div class="hero-foot">
         <div class="hero-foot-item">
-          <div class="hero-foot-label">มูลค่าที่ซื้อ</div>
-          <div class="hero-foot-value" id="footCost">—</div>
-          <div class="hero-foot-sub" id="footStockValue" style="display:none"></div>
+          <div class="hero-foot-label">มูลค่าหุ้น</div>
+          <div class="hero-foot-value" id="footStockValue">—</div>
+          <div class="hero-foot-sub" id="footCostSub">—</div>
         </div>
         <div class="hero-foot-item">
           <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน</div>
@@ -938,7 +938,7 @@
         </div>
       </div>
       <div class="hero-cash-row" id="heroCashRow" style="display:none">
-        <div class="hero-cash-label"><i class="ti ti-cash" aria-hidden="true"></i>เงินสดคงเหลือ (USD)</div>
+        <div class="hero-cash-label"><i class="ti ti-cash" aria-hidden="true"></i>Cash (USD)</div>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="hero-cash-value" id="heroCashValue">—</div>
           <button type="button" id="editCashBtn" title="แก้ไขยอดเงินสดจริง" style="background:none;border:none;cursor:pointer;color:var(--hero-text-dim);padding:2px;display:flex;align-items:center">
@@ -955,7 +955,7 @@
         <div class="hero-cash-value" id="heroPrincipalValue">—</div>
       </div>
       <div class="hero-cash-row" id="heroOverallPLRow" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--hero-border)">
-        <div class="hero-cash-label"><i class="ti ti-scale" aria-hidden="true"></i>กำไร/ขาดทุนรวม (มูลค่ารวม − เงินต้น)</div>
+        <div class="hero-cash-label"><i class="ti ti-scale" aria-hidden="true"></i>กำไร/ขาดทุน</div>
         <div class="hero-cash-value" id="heroOverallPLValue">—</div>
       </div>
     </div>
@@ -1038,7 +1038,7 @@
       </div>
 
       <div class="field">
-        <label class="field-label">วันที่</label>
+        <label class="field-label">Date</label>
         <input type="date" id="fDate">
       </div>
 
@@ -1374,8 +1374,10 @@ function renderHero() {
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
     `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
-  // Cost Basis ต้องมาจากต้นทุนหุ้นจริง (costValue) ไม่ใช่เงินสด USD ที่เหลือในพอร์ต
-  document.getElementById('footCost').textContent = `$${fmt(costValue)}`;
+  // มูลค่าหุ้น (ตัวใหญ่) สีเขียว/แดงตามกำไรขาดทุนเทียบกับต้นทุน
+  const stockGain = marketValue - costValue;
+  document.getElementById('footStockValue').textContent = `$${fmt(marketValue)}`;
+  document.getElementById('footStockValue').style.color = stockGain >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
 
   // เงินสดคงเหลือ (USD) แสดงแยกต่างหาก ไม่ปนกับ Cost Basis / กำไรขาดทุน
   // เช็คว่าข้อมูลโหลดแล้วหรือยัง (state.summary) แทนการเช็คค่าตรงๆ เพราะถ้าเงินสด = 0 พอดี
@@ -1465,9 +1467,9 @@ function renderHero() {
     yesterdaySmallEl.style.display = 'none';
   }
 
-  // มูลค่าพอร์ตจริงที่ไม่รวมเงินสด (เฉพาะหุ้น) แสดงใกล้ๆ "มูลค่าที่ซื้อ" พร้อมเปลี่ยนแปลงจากวันก่อนหน้า
-  const footStockValueEl = document.getElementById('footStockValue');
-  if (footStockValueEl) {
+  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) พร้อมเปลี่ยนแปลงของมูลค่าหุ้นจากวันก่อนหน้า
+  const footCostSubEl = document.getElementById('footCostSub');
+  if (footCostSubEl) {
     const stockHistoryData = state.history.filter(h => h['Date'] && h['มูลค่าหุ้น'] != null);
     let changeHtml = '';
     if (stockHistoryData.length > 1) {
@@ -1477,11 +1479,10 @@ function renderHero() {
         const diff = marketValue - prevStockVal;
         const diffPct = diff / prevStockVal;
         const up = diff >= 0;
-        changeHtml = ` <span class="foot-stock-change ${up?'up':'down'}">${up?'▲':'▼'} ${fmtPct(Math.abs(diffPct))}</span>`;
+        changeHtml = ` <span class="foot-stock-change ${up?'up':'down'}">${fmtPct(diffPct)}</span>`;
       }
     }
-    footStockValueEl.innerHTML = `มูลค่าหุ้นจริง (ไม่รวมเงินสด) $${fmt(marketValue)}${changeHtml}`;
-    footStockValueEl.style.display = 'block';
+    footCostSubEl.innerHTML = `ต้นทุน $${fmt(costValue)}${changeHtml}`;
   }
 }
 
