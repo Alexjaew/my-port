@@ -276,6 +276,7 @@
   .hero-daily b { font-weight: 600; }
   .hero-daily.up b { color: var(--hero-gain-text); }
   .hero-daily.down b { color: var(--hero-loss-text); }
+  .hero-yesterday-inline { opacity: 0.75; margin-left: 4px; }
 
   .hero-yesterday-small {
     font-family: var(--mono);
@@ -1445,24 +1446,11 @@ function renderHero() {
     const dailyPct = baselineValue ? dailyChange / baselineValue : 0;
     const dailyUp = dailyChange >= 0;
 
-    let label = 'วันนี้';
-    if (baseline['Date']) {
-      const gapDays = Math.round((new Date() - new Date(baseline['Date'])) / 86400000);
-      if (gapDays > 1) {
-        const sinceDate = new Date(baseline['Date']).toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-        label = `เปลี่ยนแปลงตั้งแต่ ${sinceDate} (${gapDays} วัน)`;
-      }
-    }
-
     heroDailyEl.style.display = 'block';
     heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    heroDailyEl.innerHTML = `${label} <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b>`;
+    heroDailyEl.innerHTML = `Day Change <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b> <span class="hero-yesterday-inline">เมื่อวาน $${fmt(baselineValue)}</span>`;
 
-    // มูลค่าเมื่อวาน (หรือวันล่าสุดที่มีบันทึกก่อนหน้า ถ้าข้ามวันหยุดตลาด)
-    const gapDays = baseline['Date'] ? Math.round((new Date() - new Date(baseline['Date'])) / 86400000) : 1;
-    document.getElementById('heroYesterdayLabel').textContent = gapDays > 1 ? `มูลค่า ${gapDays} วันก่อน` : 'เมื่อวาน';
-    document.getElementById('heroYesterdayValue').textContent = fmt(baselineValue);
-    yesterdaySmallEl.style.display = 'block';
+    yesterdaySmallEl.style.display = 'none';
   } else {
     heroDailyEl.style.display = 'none';
     yesterdaySmallEl.style.display = 'none';
