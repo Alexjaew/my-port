@@ -309,6 +309,10 @@
   .hero-foot-item { flex: 1; min-width: 0; }
   .hero-foot-label { font-size: 10.5px; color: var(--hero-text-dim); margin-bottom: 3px; line-height: 1.4; } /* เอา nowrap ออก */
   .hero-foot-value { font-family: var(--mono); font-size: 14px; font-weight: 600; word-break: break-word; } /* เอา nowrap ออก */
+  .hero-foot-sub { font-family: var(--mono); font-size: 10.5px; color: var(--hero-text-dim); margin-top: 3px; line-height: 1.4; }
+  .foot-stock-change { font-weight: 600; }
+  .foot-stock-change.up { color: var(--hero-gain-text); }
+  .foot-stock-change.down { color: var(--hero-loss-text); }
 
   .hero-cash-row {
     display: flex; align-items: center; justify-content: space-between;
@@ -926,6 +930,7 @@
         <div class="hero-foot-item">
           <div class="hero-foot-label">มูลค่าที่ซื้อ</div>
           <div class="hero-foot-value" id="footCost">—</div>
+          <div class="hero-foot-sub" id="footStockValue" style="display:none"></div>
         </div>
         <div class="hero-foot-item">
           <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน</div>
@@ -1458,6 +1463,25 @@ function renderHero() {
   } else {
     heroDailyEl.style.display = 'none';
     yesterdaySmallEl.style.display = 'none';
+  }
+
+  // มูลค่าพอร์ตจริงที่ไม่รวมเงินสด (เฉพาะหุ้น) แสดงใกล้ๆ "มูลค่าที่ซื้อ" พร้อมเปลี่ยนแปลงจากวันก่อนหน้า
+  const footStockValueEl = document.getElementById('footStockValue');
+  if (footStockValueEl) {
+    const stockHistoryData = state.history.filter(h => h['Date'] && h['มูลค่าหุ้น'] != null);
+    let changeHtml = '';
+    if (stockHistoryData.length > 1) {
+      const prevS = stockHistoryData[stockHistoryData.length - 2];
+      const prevStockVal = Number(prevS['มูลค่าหุ้น']) || 0;
+      if (prevStockVal) {
+        const diff = marketValue - prevStockVal;
+        const diffPct = diff / prevStockVal;
+        const up = diff >= 0;
+        changeHtml = ` <span class="foot-stock-change ${up?'up':'down'}">${up?'▲':'▼'} ${fmtPct(Math.abs(diffPct))}</span>`;
+      }
+    }
+    footStockValueEl.innerHTML = `มูลค่าหุ้นจริง (ไม่รวมเงินสด) $${fmt(marketValue)}${changeHtml}`;
+    footStockValueEl.style.display = 'block';
   }
 }
 
