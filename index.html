@@ -1433,16 +1433,35 @@ function renderHero() {
 
   // เทียบ "มูลค่าสดตอนนี้" กับ "ค่าปิดของวันทำการก่อนหน้าล่าสุดที่บันทึกไว้" เสมอ
   // (ไม่ใช้ค่า Daily Change/% ที่ trigger บันทึกไว้ตรงๆ เพราะนิ่ง ไม่ใช่ราคา ณ ตอนที่เปิดดู)
-  const todayStr = new Date().toDateString();
-  const priorDayEntries = state.history
-    .filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null && new Date(h['Date']).toDateString() !== todayStr)
+  const now = new Date();
+  const isWeekend = now.getDay() === 0 || now.getDay() === 6; // 0 = อาทิตย์, 6 = เสาร์ (ตลาดปิด)
+  const todayStr = now.toDateString();
+
+  const allValueEntries = state.history
+    .filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null)
     .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
+
   const heroDailyEl = document.getElementById('heroDaily');
   const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
-  if (priorDayEntries.length > 0) {
-    const baseline = priorDayEntries[priorDayEntries.length - 1]; // วันทำการก่อนหน้าล่าสุดที่ไม่ใช่วันนี้
-    const baselineValue = Number(baseline['มูลค่าพอร์ต']) || 0;
-    const dailyChange = totalValueForHero - baselineValue;
+
+  let currentForDaily = null, baselineValue = null;
+  if (isWeekend) {
+    // เสาร์-อาทิตย์ ตลาดปิด: ค้างค่า Day Change ของวันศุกร์ (วันทำการล่าสุด) ไว้ ไม่คำนวณจากราคาสดที่อาจนิ่ง/คลาดเคลื่อนช่วงตลาดปิด
+    if (allValueEntries.length >= 2) {
+      currentForDaily = Number(allValueEntries[allValueEntries.length - 1]['มูลค่าพอร์ต']) || 0;
+      baselineValue = Number(allValueEntries[allValueEntries.length - 2]['มูลค่าพอร์ต']) || 0;
+    }
+  } else {
+    // วันทำการปกติ: เทียบมูลค่าสดตอนนี้กับวันทำการก่อนหน้าล่าสุดที่ไม่ใช่วันนี้
+    const priorDayEntries = allValueEntries.filter(h => new Date(h['Date']).toDateString() !== todayStr);
+    if (priorDayEntries.length > 0) {
+      currentForDaily = totalValueForHero;
+      baselineValue = Number(priorDayEntries[priorDayEntries.length - 1]['มูลค่าพอร์ต']) || 0;
+    }
+  }
+
+  if (currentForDaily !== null && baselineValue !== null) {
+    const dailyChange = currentForDaily - baselineValue;
     const dailyPct = baselineValue ? dailyChange / baselineValue : 0;
     const dailyUp = dailyChange >= 0;
 
@@ -1456,21 +1475,34 @@ function renderHero() {
     yesterdaySmallEl.style.display = 'none';
   }
 
-  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) พร้อมเปลี่ยนแปลงของมูลค่าหุ้น (สด ณ ตอนนี้) จากวันก่อนหน้า
+  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) พร้อมเปลี่ยนแปลงของมูลค่าหุ้นจากวันก่อนหน้า
+  // (เสาร์-อาทิตย์ ค้างค่าของวันศุกร์ไว้เหมือนกัน)
   const footCostSubEl = document.getElementById('footCostSub');
   if (footCostSubEl) {
-    const priorStockEntries = state.history
-      .filter(h => h['Date'] && h['มูลค่าหุ้น'] != null && new Date(h['Date']).toDateString() !== todayStr)
+    const allStockEntries = state.history
+      .filter(h => h['Date'] && h['มูลค่าหุ้น'] != null)
       .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
-    let changeHtml = '';
-    if (priorStockEntries.length > 0) {
-      const prevStockVal = Number(priorStockEntries[priorStockEntries.length - 1]['มูลค่าหุ้น']) || 0;
-      if (prevStockVal) {
-        const diff = marketValue - prevStockVal;
-        const diffPct = diff / prevStockVal;
-        const up = diff >= 0;
-        changeHtml = ` <span class="foot-stock-change ${up?'up':'down'}">${fmtPct(diffPct)}</span>`;
+
+    let currentStockForChange = null, prevStockVal = null;
+    if (isWeekend) {
+      if (allStockEntries.length >= 2) {
+        currentStockForChange = Number(allStockEntries[allStockEntries.length - 1]['มูลค่าหุ้น']) || 0;
+        prevStockVal = Number(allStockEntries[allStockEntries.length - 2]['มูลค่าหุ้น']) || 0;
       }
+    } else {
+      const priorStockEntries = allStockEntries.filter(h => new Date(h['Date']).toDateString() !== todayStr);
+      if (priorStockEntries.length > 0) {
+        currentStockForChange = marketValue;
+        prevStockVal = Number(priorStockEntries[priorStockEntries.length - 1]['มูลค่าหุ้น']) || 0;
+      }
+    }
+
+    let changeHtml = '';
+    if (currentStockForChange !== null && prevStockVal) {
+      const diff = currentStockForChange - prevStockVal;
+      const diffPct = diff / prevStockVal;
+      const up = diff >= 0;
+      changeHtml = ` <span class="foot-stock-change ${up?'up':'down'}">${fmtPct(diffPct)}</span>`;
     }
     footCostSubEl.innerHTML = `ต้นทุน $${fmt(costValue)}${changeHtml}`;
   }
