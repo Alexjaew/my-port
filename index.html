@@ -1599,7 +1599,8 @@ async function renderDonutChart() {
   // สีเดิม: เขียวถ้ากำไร แดงถ้าขาดทุน (ไม่ไล่เฉด) ยกเว้นเงินสดใช้สีขาว
   const gainColor = '#1B7A4D';
   const lossColor = '#B23B2E';
-  const colors = items.map(it => it.isCash ? '#FFFFFF' : (it.plPct >= 0 ? gainColor : lossColor));
+  const goldColor = '#D4AF37';
+  const colors = items.map(it => it.isCash ? '#FFFFFF' : (it.ticker === 'XAU' ? goldColor : (it.plPct >= 0 ? gainColor : lossColor)));
 
   card.innerHTML = `<div style="position:relative;height:340px;">
     <canvas id="donutCanvas" role="img"
@@ -1697,8 +1698,10 @@ function renderPLChart() {
   const axisColor = '#8B92A0';
   const gainColor = '#3DBE7C';
   const lossColor = '#E8645A';
+  const goldColor = '#D4AF37';
   const gainSoft = '#145e34';
   const lossSoft = '#a82713';
+  const goldSoft = '#B8860B';
 
 
   card.innerHTML = `<div style="position:relative;height:230px;">
@@ -1716,7 +1719,7 @@ function renderPLChart() {
       labels: tickers,
       datasets: [{
         data: values,
-        backgroundColor: plPcts.map(p => p >= 0 ? gainSoft : lossSoft),
+        backgroundColor: tickers.map((t,i) => t === 'XAU' ? goldSoft : (plPcts[i] >= 0 ? gainSoft : lossSoft)),
         borderRadius: 4,
         borderSkipped: false,
         barThickness: 20
@@ -1764,7 +1767,7 @@ function renderPLChart() {
           const capHeight = Math.min(barHeight * 0.4, Math.max(6, Math.abs(pct) * 1.4));
           const radius = 4;
           c.save();
-          c.fillStyle = pct >= 0 ? gainColor : lossColor;
+          c.fillStyle = tickers[i] === 'XAU' ? goldColor : (pct >= 0 ? gainColor : lossColor);
           c.beginPath();
           if (pct >= 0) {
             c.roundRect(barLeft, barTop, bar.width, capHeight, [radius, radius, 0, 0]);
