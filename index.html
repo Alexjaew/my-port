@@ -1475,36 +1475,10 @@ function renderHero() {
     yesterdaySmallEl.style.display = 'none';
   }
 
-  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) พร้อมเปลี่ยนแปลงของมูลค่าหุ้นจากวันก่อนหน้า
-  // (เสาร์-อาทิตย์ ค้างค่าของวันศุกร์ไว้เหมือนกัน)
+  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) — ไม่ต้องโชว์ % เปลี่ยนแปลงแล้ว เพราะดูจาก Day Change ในการ์ดใหญ่ด้านบนได้อยู่แล้ว
   const footCostSubEl = document.getElementById('footCostSub');
   if (footCostSubEl) {
-    const allStockEntries = state.history
-      .filter(h => h['Date'] && h['มูลค่าหุ้น'] != null)
-      .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
-
-    let currentStockForChange = null, prevStockVal = null;
-    if (isWeekend) {
-      if (allStockEntries.length >= 2) {
-        currentStockForChange = Number(allStockEntries[allStockEntries.length - 1]['มูลค่าหุ้น']) || 0;
-        prevStockVal = Number(allStockEntries[allStockEntries.length - 2]['มูลค่าหุ้น']) || 0;
-      }
-    } else {
-      const priorStockEntries = allStockEntries.filter(h => new Date(h['Date']).toDateString() !== todayStr);
-      if (priorStockEntries.length > 0) {
-        currentStockForChange = marketValue;
-        prevStockVal = Number(priorStockEntries[priorStockEntries.length - 1]['มูลค่าหุ้น']) || 0;
-      }
-    }
-
-    let changeHtml = '';
-    if (currentStockForChange !== null && prevStockVal) {
-      const diff = currentStockForChange - prevStockVal;
-      const diffPct = diff / prevStockVal;
-      const up = diff >= 0;
-      changeHtml = ` <span class="foot-stock-change ${up?'up':'down'}">${fmtPct(diffPct)}</span>`;
-    }
-    footCostSubEl.innerHTML = `ต้นทุน $${fmt(costValue)}${changeHtml}`;
+    footCostSubEl.innerHTML = `ต้นทุน $${fmt(costValue)}`;
   }
 }
 
