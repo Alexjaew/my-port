@@ -934,7 +934,7 @@
           <div class="hero-foot-sub" id="footCostSub">—</div>
         </div>
         <div class="hero-foot-item">
-          <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน</div>
+          <div class="hero-foot-label" id="footProfitLabel">กำไร/ขาดทุน (หุ้นที่ถืออยู่)</div>
           <div class="hero-foot-value" id="footProfit">—</div>
         </div>
       </div>
@@ -956,7 +956,7 @@
         <div class="hero-cash-value" id="heroPrincipalValue">—</div>
       </div>
       <div class="hero-cash-row" id="heroOverallPLRow" style="display:none;margin-top:8px;padding-top:8px;border-top:1px solid var(--hero-border)">
-        <div class="hero-cash-label"><i class="ti ti-scale" aria-hidden="true"></i>กำไร/ขาดทุน</div>
+        <div class="hero-cash-label"><i class="ti ti-scale" aria-hidden="true"></i>กำไร/ขาดทุนสะสมทั้งพอร์ต</div>
         <div class="hero-cash-value" id="heroOverallPLValue">—</div>
       </div>
     </div>
@@ -1425,7 +1425,7 @@ function renderHero() {
   // กำไร/ขาดทุน = มูลค่าตลาด - ต้นทุน (costValue) เสมอ ไม่ว่าจะสลับโหมดแสดงผลเป็นราคาตลาดหรือต้นทุนก็ตาม
   const profit = marketValue - costValue;
   const profitPct = costValue ? profit / costValue : 0;
-  document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน';
+  document.getElementById('footProfitLabel').textContent = 'Unrealized P/L · กำไร/ขาดทุน (หุ้นที่ถืออยู่)';
   document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
   document.getElementById('footProfit').style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
   deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
