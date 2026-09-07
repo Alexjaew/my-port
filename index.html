@@ -959,6 +959,10 @@
         <div class="hero-cash-label"><i class="ti ti-scale" aria-hidden="true"></i>กำไร/ขาดทุนสะสมทั้งพอร์ต</div>
         <div class="hero-cash-value" id="heroOverallPLValue">—</div>
       </div>
+      <div class="hero-cash-row" id="heroWithdrawnRow" style="display:none;margin-top:8px;padding-top:8px;border-top:none">
+        <div class="hero-cash-label"><i class="ti ti-arrow-down-circle" aria-hidden="true"></i>เงินที่ถอนออกจากพอร์ต (สะสม)</div>
+        <div class="hero-cash-value" id="heroWithdrawnValue">—</div>
+      </div>
     </div>
   </div>
 
@@ -1076,7 +1080,7 @@
   </div>
 
 <script>
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbzy7EZYEIbpmkSFaE8Pbagf45TcY3vMuw8lsihra6S9ODh0liI9EIDHZCZjWnB1b7kR/exec';
+const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
 
 const urlParam = new URLSearchParams(window.location.search).get('api');
 if (urlParam) {
@@ -1357,6 +1361,14 @@ function getPrincipalBalance() {
     .reduce((sum, r) => sum + (Number(r['เงินต้นสะสม']) || 0), 0);
 }
 
+// ยอดเงินที่ถอนออกจากพอร์ตสะสมทั้งหมด (ผลรวมรายการ "ขาย USD" ทุกครั้งที่เคยบันทึกไว้)
+function getWithdrawnBalance() {
+  if (!state.summary) return 0;
+  return state.summary.rows
+    .filter(r => r['หุ้น'] === 'USD')
+    .reduce((sum, r) => sum + (Number(r['เงินถอนสะสม']) || 0), 0);
+}
+
 function renderHero() {
   const rows = getFilteredSummaryRows();
   let marketValue = 0, costValue = 0;
@@ -1407,8 +1419,9 @@ function renderHero() {
 
   // กำไร/ขาดทุนรวม = มูลค่ารวม (หุ้น+เงินสด) - เงินต้น
   const overallPLRowEl = document.getElementById('heroOverallPLRow');
+  let overallPL = null;
   if (state.summary && principalBalance) {
-    const overallPL = totalValueForHero - principalBalance;
+    overallPL = totalValueForHero - principalBalance;
     const overallPLPct = principalBalance ? overallPL / principalBalance : 0;
     overallPLRowEl.style.display = 'flex';
     const overallPLValueEl = document.getElementById('heroOverallPLValue');
@@ -1416,6 +1429,22 @@ function renderHero() {
     overallPLValueEl.style.color = overallPL >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
   } else {
     overallPLRowEl.style.display = 'none';
+  }
+
+  // เงินที่ถอนออกจากพอร์ตสะสม (ไม่ได้แยกว่าเป็นทุนหรือกำไร แค่ยอดรวมถอนทั้งหมด)
+  const withdrawnBalance = getWithdrawnBalance();
+  const withdrawnRowEl = document.getElementById('heroWithdrawnRow');
+  if (state.summary && withdrawnBalance) {
+    withdrawnRowEl.style.display = 'flex';
+    let note = '';
+    if (overallPL !== null) {
+      note = withdrawnBalance <= overallPL
+        ? ' <span style="opacity:0.7">(น้อยกว่ากำไรสะสม — น่าจะถอนแต่กำไร)</span>'
+        : ' <span style="opacity:0.7">(มากกว่ากำไรสะสม — น่าจะถอนไปแตะเงินต้นด้วย)</span>';
+    }
+    document.getElementById('heroWithdrawnValue').innerHTML = `$${fmt(withdrawnBalance)}${note}`;
+  } else {
+    withdrawnRowEl.style.display = 'none';
   }
 
   const deltaEl = document.getElementById('heroDelta');
