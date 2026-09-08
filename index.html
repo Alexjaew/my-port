@@ -1407,31 +1407,37 @@ function renderHero() {
   const totalRowEl = document.getElementById('heroTotalRow');
   if (totalRowEl) totalRowEl.style.display = 'none';
 
-  // สรุปผลตอบแทนทั้งพอร์ตแบบเข้าใจง่าย 3 บรรทัด: เงินต้น → ถอนออกไปแล้ว → กำไรที่ยังเหลือในพอร์ต
-  const principalBalance = getPrincipalBalance(); // เงินต้นที่ฝากเข้าทั้งหมด (ไม่หักยอดถอน)
+  // สรุปผลตอบแทนทั้งพอร์ตแบบเข้าใจง่าย 3 บรรทัด: เงินต้น (สุทธิหลังหักถอน) → ถอนออกไปแล้ว (เทียบกำไร) → กำไรที่ยังเหลือในพอร์ต
+  const grossDeposited = getPrincipalBalance(); // เงินต้นที่ฝากเข้าทั้งหมด (ไม่หักยอดถอน) — ใช้คำนวณกำไรที่เหลือให้ถูกต้อง
   const withdrawnBalance = getWithdrawnBalance();
+  const netPrincipal = grossDeposited - withdrawnBalance; // เงินต้นคงเหลือ = ฝากทั้งหมด - ถอนออกไปแล้ว
 
   const principalRowEl = document.getElementById('heroPrincipalRow');
   if (state.summary) {
     principalRowEl.style.display = 'flex';
-    document.getElementById('heroPrincipalValue').textContent = `$${fmt(principalBalance)}`;
+    document.getElementById('heroPrincipalValue').textContent = `$${fmt(netPrincipal)}`;
   } else {
     principalRowEl.style.display = 'none';
   }
 
+  // กำไรที่ยังเหลือในพอร์ต = มูลค่ารวมตอนนี้ (หุ้น+เงินสด) - เงินต้นที่ฝากเข้าทั้งหมด (ก่อนหักถอน)
+  const remainingProfit = totalValueForHero - grossDeposited;
+
   const withdrawnRowEl = document.getElementById('heroWithdrawnRow');
   if (state.summary && withdrawnBalance) {
     withdrawnRowEl.style.display = 'flex';
-    document.getElementById('heroWithdrawnValue').textContent = `-$${fmt(withdrawnBalance)}`;
+    // เทียบยอดถอนกับกำไรที่ยังเหลือ: ถ้ากำไรที่เหลือยังเป็นบวก แปลว่าถอนไปแล้วยังไม่แตะเงินต้น
+    const withdrawnNote = remainingProfit >= 0
+      ? ` <span style="color:var(--hero-gain-text)">(กำไรยังเหลือ +$${fmt(remainingProfit)})</span>`
+      : ` <span style="color:var(--hero-loss-text)">(กำไรติดลบ $-${fmt(Math.abs(remainingProfit))})</span>`;
+    document.getElementById('heroWithdrawnValue').innerHTML = `-$${fmt(withdrawnBalance)}${withdrawnNote}`;
   } else {
     withdrawnRowEl.style.display = 'none';
   }
 
-  // กำไรที่ยังเหลือในพอร์ต = มูลค่ารวมตอนนี้ (หุ้น+เงินสด) - เงินต้นที่ฝากเข้าทั้งหมด
   const remainingProfitRowEl = document.getElementById('heroRemainingProfitRow');
-  if (state.summary && principalBalance) {
-    const remainingProfit = totalValueForHero - principalBalance;
-    const remainingProfitPct = principalBalance ? remainingProfit / principalBalance : 0;
+  if (state.summary && grossDeposited) {
+    const remainingProfitPct = grossDeposited ? remainingProfit / grossDeposited : 0;
     remainingProfitRowEl.style.display = 'flex';
     const remainingProfitValueEl = document.getElementById('heroRemainingProfitValue');
     remainingProfitValueEl.textContent = `${remainingProfit >= 0 ? '+' : ''}$${fmt(remainingProfit)} (${fmtPct(remainingProfitPct)})`;
