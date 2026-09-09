@@ -638,6 +638,9 @@
     border-radius: 10px;
   }
   @keyframes shimmer { 0% { background-position: 100% 0; } 100% { background-position: 0 0; } }
+  @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+  #refreshBtn.spinning i { display: inline-block; animation: spin 0.7s linear infinite; }
+  #refreshBtn:disabled { opacity: 0.6; cursor: default; }
 
   .fab {
     position: fixed;
@@ -901,6 +904,7 @@
     <div class="topbar-row">
       <div class="brand">My Port<span class="dot">.</span></div>
       <div class="topbar-actions">
+        <button id="refreshBtn" title="รีเฟรชข้อมูล" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-refresh"></i></button>
         <button id="themeToggleBtn" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-moon"></i></button>
         <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-settings"></i></button>
       </div>
@@ -1155,6 +1159,19 @@ function showSetupBanner(errorMsg) {
 }
 
 document.getElementById('settingsBtn').onclick = () => showSetupBanner();
+
+document.getElementById('refreshBtn').addEventListener('click', async () => {
+  const btn = document.getElementById('refreshBtn');
+  if (btn.disabled) return;
+  btn.disabled = true;
+  btn.classList.add('spinning');
+  try {
+    await loadAll();
+  } finally {
+    btn.classList.remove('spinning');
+    btn.disabled = false;
+  }
+});
 
 document.getElementById('themeToggleBtn').onclick = () => {
   const current = document.documentElement.getAttribute('data-theme');
