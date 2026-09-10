@@ -1347,10 +1347,20 @@ function rerenderForBasisOrPort() {
   renderBarChart();
 }
 
+const THAI_PORT = 'set100'; // ชื่อพอร์ตหุ้นไทย ใช้สกุลเงินบาท (฿) แยกจากพอร์ตอื่นที่เป็น USD ทั้งหมด
+
+function isThaiPortSelected() {
+  return state.port === THAI_PORT;
+}
+
+function currencySymbol() {
+  return isThaiPortSelected() ? '฿' : '$';
+}
+
 function getFilteredSummaryRows() {
   if (!state.summary) return [];
   const rows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
-  if (state.port === 'ALL') return rows;
+  if (state.port === 'ALL') return rows.filter(r => r['ชื่อ port'] !== THAI_PORT); // ตัดพอร์ตไทยออกจากยอดรวม เพราะสกุลเงินคนละหน่วยกัน (บาท vs ดอลลาร์) รวมกันไม่ได้
   return rows.filter(r => r['ชื่อ port'] === state.port);
 }
 
@@ -1380,6 +1390,8 @@ function getWithdrawnBalance() {
 
 function renderHero() {
   const rows = getFilteredSummaryRows();
+  const isThai = isThaiPortSelected();
+  const sym = currencySymbol();
   let marketValue = 0, costValue = 0;
 
   rows.forEach(r => {
@@ -1387,25 +1399,29 @@ function renderHero() {
     costValue += Number(r['ทุน  FIFO']) || 0;
   });
 
-  const cashBalance = getCashBalance();
+  // เงินสด/เงินต้น เป็น USD เสมอ (คนละสกุลกับพอร์ตหุ้นไทย) จะไม่รวมเข้ากับมูลค่าพอร์ตไทยเลย
+  const cashBalance = isThai ? 0 : getCashBalance();
 
-  document.getElementById('heroLabel').textContent = 'Current Value · มูลค่าปัจจุบัน';
+  document.getElementById('heroLabel').textContent = isThai
+    ? 'Current Value (THB) · มูลค่าปัจจุบัน (บาท)'
+    : 'Current Value · มูลค่าปัจจุบัน';
 
   const totalValueForHero = marketValue + cashBalance;
   const valStr = fmt(totalValueForHero, 2);
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
-    `$${intPart}<span class="cents">.${decPart || '00'}</span>`;
+    `${sym}${intPart}<span class="cents">.${decPart || '00'}</span>`;
   // มูลค่าหุ้น (ตัวใหญ่) สีเขียว/แดงตามกำไรขาดทุนเทียบกับต้นทุน
   const stockGain = marketValue - costValue;
-  document.getElementById('footStockValue').textContent = `$${fmt(marketValue)}`;
+  document.getElementById('footStockValue').textContent = `${sym}${fmt(marketValue)}`;
   document.getElementById('footStockValue').style.color = stockGain >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
 
   // เงินสดคงเหลือ (USD) แสดงแยกต่างหาก ไม่ปนกับ Cost Basis / กำไรขาดทุน
   // เช็คว่าข้อมูลโหลดแล้วหรือยัง (state.summary) แทนการเช็คค่าตรงๆ เพราะถ้าเงินสด = 0 พอดี
   // การเช็คแบบ if (cashBalance) จะถือว่า 0 เป็น falsy แล้วซ่อนแถวไปเลย ทำให้ดูเหมือนข้อมูลหาย
+  // ซ่อนแถวนี้ไปเลยตอนดูพอร์ตไทย เพราะเงินสดเป็น USD คนละสกุลกับพอร์ตไทย ไม่เกี่ยวข้องกัน
   const cashRowEl = document.getElementById('heroCashRow');
-  if (state.summary) {
+  if (state.summary && !isThai) {
     cashRowEl.style.display = 'flex';
     document.getElementById('heroCashValue').textContent = `$${fmt(cashBalance)}`;
   } else {
@@ -1416,13 +1432,13 @@ function renderHero() {
   const totalRowEl = document.getElementById('heroTotalRow');
   if (totalRowEl) totalRowEl.style.display = 'none';
 
-  // เงินต้น (สุทธิ) = เงินฝากทั้งหมด - เงินที่ถอนออกไปแล้ว
+  // เงินต้น (สุทธิ) = เงินฝากทั้งหมด - เงินที่ถอนออกไปแล้ว (เป็น USD เสมอ ซ่อนไปเลยตอนดูพอร์ตไทย)
   const grossDeposited = getPrincipalBalance();
   const withdrawnBalance = getWithdrawnBalance();
   const netPrincipal = grossDeposited - withdrawnBalance;
 
   const principalRowEl = document.getElementById('heroPrincipalRow');
-  if (state.summary) {
+  if (state.summary && !isThai) {
     principalRowEl.style.display = 'flex';
     document.getElementById('heroPrincipalValue').textContent = `$${fmt(netPrincipal)}`;
   } else {
@@ -1437,7 +1453,7 @@ function renderHero() {
   const profit = marketValue - costValue;
   const profitPct = costValue ? profit / costValue : 0;
   document.getElementById('footProfitLabel').textContent = 'Unrealized P/L';
-  document.getElementById('footProfit').textContent = `${profit>=0?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})`;
+  document.getElementById('footProfit').textContent = `${profit>=0?'+':''}${sym}${fmt(profit)} (${fmtPct(profitPct)})`;
   document.getElementById('footProfit').style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
   deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
   deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
@@ -1456,7 +1472,9 @@ function renderHero() {
   const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
 
   let currentForDaily = null, baselineValue = null;
-  if (isWeekend) {
+  if (isThai) {
+    // History (มูลค่าพอร์ต/มูลค่าหุ้น) เป็น USD เท่านั้น เทียบกับพอร์ตไทย (บาท) ไม่ได้ ซ่อน Day Change ไปเลย
+  } else if (isWeekend) {
     // เสาร์-อาทิตย์ ตลาดปิด: ค้างค่า Day Change ของวันศุกร์ (วันทำการล่าสุด) ไว้ ไม่คำนวณจากราคาสดที่อาจนิ่ง/คลาดเคลื่อนช่วงตลาดปิด
     if (allValueEntries.length >= 2) {
       currentForDaily = Number(allValueEntries[allValueEntries.length - 1]['มูลค่าพอร์ต']) || 0;
@@ -1478,7 +1496,7 @@ function renderHero() {
 
     heroDailyEl.style.display = 'block';
     heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    heroDailyEl.innerHTML = `Day Change <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}$${fmt(dailyChange)} (${fmtPct(dailyPct)})</b> <span class="hero-yesterday-inline">$${fmt(baselineValue)}</span>`;
+    heroDailyEl.innerHTML = `Day Change <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}${sym}${fmt(dailyChange)} (${fmtPct(dailyPct)})</b> <span class="hero-yesterday-inline">${sym}${fmt(baselineValue)}</span>`;
 
     yesterdaySmallEl.style.display = 'none';
   } else {
@@ -1489,7 +1507,7 @@ function renderHero() {
   // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) — ไม่ต้องโชว์ % เปลี่ยนแปลงแล้ว เพราะดูจาก Day Change ในการ์ดใหญ่ด้านบนได้อยู่แล้ว
   const footCostSubEl = document.getElementById('footCostSub');
   if (footCostSubEl) {
-    footCostSubEl.innerHTML = `ต้นทุน $${fmt(costValue)}`;
+    footCostSubEl.innerHTML = `ต้นทุน ${sym}${fmt(costValue)}`;
   }
 }
 
@@ -1565,7 +1583,8 @@ async function renderDonutChart() {
 
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   const stockTotal = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0);
-  const cashBalance = getCashBalance();
+  const isThai = isThaiPortSelected();
+  const cashBalance = isThai ? 0 : getCashBalance(); // เงินสดเป็น USD เสมอ ไม่รวมเข้าสัดส่วนตอนดูพอร์ตไทย (คนละสกุลเงิน)
 
   // รวมเงินสดเข้าไปเป็นอีกชิ้นหนึ่งของสัดส่วนด้วย
   const items = sorted.map(r => ({
@@ -1663,6 +1682,7 @@ function renderPLChart() {
     return;
   }
   const basis = state.basis;
+  const sym = currencySymbol();
 
   const withData = rows.map(r => ({
     ticker: r['หุ้น'],
@@ -1691,7 +1711,7 @@ function renderPLChart() {
 
   card.innerHTML = `<div style="position:relative;height:230px;">
     <canvas id="plCanvas" role="img"
-      aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} $${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
+      aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} ${sym}${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
   </div>`;
 
   if (_plInstance) { _plInstance.destroy(); _plInstance = null; }
@@ -1717,7 +1737,7 @@ function renderPLChart() {
         legend: { display: false },
         tooltip: {
           callbacks: {
-            label: ctx => ` $${fmt(ctx.raw)} · ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}%`
+            label: ctx => ` ${sym}${fmt(ctx.raw)} · ${plPcts[ctx.dataIndex] >= 0 ? '+' : ''}${plPcts[ctx.dataIndex]}%`
           }
         }
       },
@@ -1863,6 +1883,7 @@ function renderAllocList() {
     return;
   }
   const basis = state.basis;
+  const sym = currencySymbol();
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
 
@@ -1890,10 +1911,10 @@ function renderAllocList() {
         </button>
         <div class="dca-calc" id="targetPriceCalc-${ticker}" style="display:none">
           <div class="dca-calc-input-row">
-            <span class="dca-calc-label">ราคาเป้าหมาย $</span>
+            <span class="dca-calc-label">ราคาเป้าหมาย ${sym}</span>
             <input type="number" class="target-price-input" data-ticker="${ticker}" placeholder="${currentPrice ? fmt(currentPrice) : '0'}" inputmode="decimal" value="${targetPriceInputVal}">
           </div>
-          <div class="dca-calc-result" id="targetPriceResult-${ticker}">${renderTargetPriceResultHtml(r, targetPriceInputVal)}</div>
+          <div class="dca-calc-result" id="targetPriceResult-${ticker}">${renderTargetPriceResultHtml(r, targetPriceInputVal, sym)}</div>
         </div>
 
         <div class="alloc-row">
@@ -1905,14 +1926,14 @@ function renderAllocList() {
           <div class="alloc-mid">
             <div class="alloc-ticker-row">
               <div class="alloc-ticker">${ticker}</div>
-              <div class="alloc-current-price">$${fmt(currentPrice)}</div>
+              <div class="alloc-current-price">${sym}${fmt(currentPrice)}</div>
             </div>
-            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">ต้นทุน $${fmt(avgCostPerShare)}/หุ้น</div>
+            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">ต้นทุน ${sym}${fmt(avgCostPerShare)}/หุ้น</div>
           </div>
           <div class="alloc-right">
-            <div class="alloc-value">$${fmt(value)}</div>
-            <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}$${fmt(profit)} (${fmtPct(profitPct)})</div>
-            <div class="alloc-cost-total">ทุนรวม $${fmt(totalCostBasis)}</div>
+            <div class="alloc-value">${sym}${fmt(value)}</div>
+            <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}${sym}${fmt(profit)} (${fmtPct(profitPct)})</div>
+            <div class="alloc-cost-total">ทุนรวม ${sym}${fmt(totalCostBasis)}</div>
           </div>
         </div>
 
@@ -1945,10 +1966,10 @@ function renderAllocList() {
         </button>
         <div class="dca-calc" id="dcaCalc-${ticker}" style="display:none">
           <div class="dca-calc-input-row">
-            <span class="dca-calc-label">DCA ลงเพิ่ม $</span>
+            <span class="dca-calc-label">DCA ลงเพิ่ม ${sym}</span>
             <input type="number" class="dca-calc-input" data-ticker="${ticker}" placeholder="0" inputmode="decimal" value="${inputVal}">
           </div>
-          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal, total)}</div>
+          <div class="dca-calc-result" id="dcaResult-${ticker}">${renderDcaResultHtml(r, inputVal, total, sym)}</div>
         </div>
       </div>`;
   }).join('');
@@ -2004,7 +2025,7 @@ function renderAllocList() {
       state.targetPriceInputs[ticker] = val;
       const row = sorted.find(r => r['หุ้น'] === ticker);
       const resultEl = document.getElementById(`targetPriceResult-${ticker}`);
-      if (resultEl && row) resultEl.innerHTML = renderTargetPriceResultHtml(row, val);
+      if (resultEl && row) resultEl.innerHTML = renderTargetPriceResultHtml(row, val, sym);
     });
   });
 
@@ -2015,7 +2036,7 @@ function renderAllocList() {
       state.dcaInputs[ticker] = val;
       const row = sorted.find(r => r['หุ้น'] === ticker);
       const resultEl = document.getElementById(`dcaResult-${ticker}`);
-      if (resultEl && row) resultEl.innerHTML = renderDcaResultHtml(row, val, total);
+      if (resultEl && row) resultEl.innerHTML = renderDcaResultHtml(row, val, total, sym);
     });
   });
 
@@ -2108,14 +2129,15 @@ function renderTargetCompareHtml(actualPct, targetPct) {
   return `<span class="alloc-target-compare under">ต่ำกว่าเป้า ${fmt(diff,1)}%</span>`;
 }
 
-function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
+function renderDcaResultHtml(row, amountStr, totalPortfolioValue, sym) {
+  sym = sym || '$';
   const currentPrice = Number(row['price']) || 0;
   const currentShares = Number(row['จำนวนหุ้น']) || 0;
   const currentAvgCost = Number(row['ราคา FIFO']) || 0;
   const currentValue = Number(row['มูลค่าปัจจุบัน']) || 0;
   const ticker = row['หุ้น'];
   const targetVal = state.allocTargets[ticker];
-  const currentLine = `<div class="dca-current">ราคาที่ได้ปัจจุบัน: <b>$${fmt(currentAvgCost)}</b></div>`;
+  const currentLine = `<div class="dca-current">ราคาที่ได้ปัจจุบัน: <b>${sym}${fmt(currentAvgCost)}</b></div>`;
 
   const amount = Number(amountStr);
   if (!amountStr || isNaN(amount) || amount <= 0) {
@@ -2146,19 +2168,20 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue) {
 
   return `
     ${currentLine}
-    ต้นทุนเฉลี่ยใหม่: <b>$${fmt(newAvgCost)}</b>
+    ต้นทุนเฉลี่ยใหม่: <b>${sym}${fmt(newAvgCost)}</b>
     <span class="dca-calc-drop ${isDrop?'down':'up'}">
-      ${isDrop ? '↓ ลดลง' : '↑ เพิ่มขึ้น'} $${fmt(Math.abs(diff))} (${fmtPct(Math.abs(diffPct))})
+      ${isDrop ? '↓ ลดลง' : '↑ เพิ่มขึ้น'} ${sym}${fmt(Math.abs(diff))} (${fmtPct(Math.abs(diffPct))})
     </span>
     ${allocLine}
   `;
 }
 
-function renderTargetPriceResultHtml(row, priceStr) {
+function renderTargetPriceResultHtml(row, priceStr, sym) {
+  sym = sym || '$';
   const currentPrice = Number(row['price']) || 0;
   const currentShares = Number(row['จำนวนหุ้น']) || 0;
   const currentAvgCost = Number(row['ราคา FIFO']) || 0;
-  const currentLine = `<div class="dca-current">ต้นทุนเฉลี่ยปัจจุบัน: <b>$${fmt(currentAvgCost)}</b> · ถืออยู่ <b>${fmt(currentShares,4)}</b> หุ้น</div>`;
+  const currentLine = `<div class="dca-current">ต้นทุนเฉลี่ยปัจจุบัน: <b>${sym}${fmt(currentAvgCost)}</b> · ถืออยู่ <b>${fmt(currentShares,4)}</b> หุ้น</div>`;
 
   const targetPrice = Number(priceStr);
   if (!priceStr || isNaN(targetPrice) || targetPrice <= 0) {
@@ -2179,12 +2202,12 @@ function renderTargetPriceResultHtml(row, priceStr) {
 
   return `
     ${currentLine}
-    ถ้าขายที่ <b>$${fmt(targetPrice)}</b> จะได้:
+    ถ้าขายที่ <b>${sym}${fmt(targetPrice)}</b> จะได้:
     <span class="dca-calc-drop ${isGain?'gain':'loss'}">
-      ${isGain ? '↑ กำไร' : '↓ ขาดทุน'} $${fmt(Math.abs(estProfit))} (${fmtPct(Math.abs(estProfitPct))})
+      ${isGain ? '↑ กำไร' : '↓ ขาดทุน'} ${sym}${fmt(Math.abs(estProfit))} (${fmtPct(Math.abs(estProfitPct))})
     </span>
     <div class="dca-alloc-projection">
-      ราคาต้อง${moveDirection} ${fmtPct(Math.abs(moveNeeded))} จากราคาปัจจุบัน ($${fmt(currentPrice)})
+      ราคาต้อง${moveDirection} ${fmtPct(Math.abs(moveNeeded))} จากราคาปัจจุบัน (${sym}${fmt(currentPrice)})
     </div>
   `;
 }
@@ -2224,8 +2247,9 @@ function renderTransactions() {
         ? parsedDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
         : 'ไม่ระบุวันที่';
       const fifoPL = Number(t['FIFO P/L']) || 0;
+      const txnSym = t['Port'] === THAI_PORT ? '฿' : '$';
       const plHtml = fifoPL !== 0
-        ? `<div class="txn-pl ${fifoPL >= 0 ? 'gain' : 'loss'}">${fifoPL >= 0 ? '+' : ''}$${fmt(fifoPL)}</div>`
+        ? `<div class="txn-pl ${fifoPL >= 0 ? 'gain' : 'loss'}">${fifoPL >= 0 ? '+' : ''}${txnSym}${fmt(fifoPL)}</div>`
         : '';
       return `
         <div class="txn-row">
@@ -2235,8 +2259,8 @@ function renderTransactions() {
             <div class="txn-date">${shortDate} · ${t['Port']}</div>
           </div>
           <div class="txn-right">
-            <div class="txn-amount">$${fmt(t['รวม $'])}</div>
-            <div class="txn-shares">@ $${fmt(t['ราคา'])}</div>
+            <div class="txn-amount">${txnSym}${fmt(t['รวม $'])}</div>
+            <div class="txn-shares">@ ${txnSym}${fmt(t['ราคา'])}</div>
             ${plHtml}
           </div>
           <button class="txn-edit" data-row="${t['_row']}" title="แก้ไขรายการนี้"><i class="ti ti-pencil"></i></button>
