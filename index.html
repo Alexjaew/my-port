@@ -1349,8 +1349,13 @@ function rerenderForBasisOrPort() {
 
 const THAI_PORT = 'set100'; // ชื่อพอร์ตหุ้นไทย ใช้สกุลเงินบาท (฿) แยกจากพอร์ตอื่นที่เป็น USD ทั้งหมด
 
+// เทียบชื่อพอร์ตแบบไม่สนตัวพิมพ์เล็ก-ใหญ่ (กัน "SET100" vs "set100" ไม่ตรงกันจนกรองไม่ออก)
+function isThaiPortName(portName) {
+  return String(portName || '').trim().toLowerCase() === THAI_PORT.toLowerCase();
+}
+
 function isThaiPortSelected() {
-  return state.port === THAI_PORT;
+  return isThaiPortName(state.port);
 }
 
 function currencySymbol() {
@@ -1360,7 +1365,7 @@ function currencySymbol() {
 function getFilteredSummaryRows() {
   if (!state.summary) return [];
   const rows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
-  if (state.port === 'ALL') return rows.filter(r => r['ชื่อ port'] !== THAI_PORT); // ตัดพอร์ตไทยออกจากยอดรวม เพราะสกุลเงินคนละหน่วยกัน (บาท vs ดอลลาร์) รวมกันไม่ได้
+  if (state.port === 'ALL') return rows.filter(r => !isThaiPortName(r['ชื่อ port'])); // ตัดพอร์ตไทยออกจากยอดรวม เพราะสกุลเงินคนละหน่วยกัน (บาท vs ดอลลาร์) รวมกันไม่ได้
   return rows.filter(r => r['ชื่อ port'] === state.port);
 }
 
@@ -2247,7 +2252,7 @@ function renderTransactions() {
         ? parsedDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
         : 'ไม่ระบุวันที่';
       const fifoPL = Number(t['FIFO P/L']) || 0;
-      const txnSym = t['Port'] === THAI_PORT ? '฿' : '$';
+      const txnSym = isThaiPortName(t['Port']) ? '฿' : '$';
       const plHtml = fifoPL !== 0
         ? `<div class="txn-pl ${fifoPL >= 0 ? 'gain' : 'loss'}">${fifoPL >= 0 ? '+' : ''}${txnSym}${fmt(fifoPL)}</div>`
         : '';
