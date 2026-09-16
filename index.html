@@ -1413,10 +1413,26 @@ function currencySymbol() {
   return isThaiPortSelected() ? '฿' : '$';
 }
 
+// ฟิลด์ที่เป็น "จำนวนเงิน" (ต้องแปลงสกุลเงิน) ต่างจาก % หรือจำนวนหุ้นที่ไม่ต้องแปลง
+const CURRENCY_FIELDS = ['price', 'มูลค่าปัจจุบัน', 'ทุน  FIFO', 'ราคา FIFO', 'กำไร AVG', 'กำไร FIFO'];
+
 function getFilteredSummaryRows() {
   if (!state.summary) return [];
   const rows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
-  if (state.port === 'ALL') return rows.filter(r => !isThaiPortName(r['ชื่อ port'])); // ตัดพอร์ตไทยออกจากยอดรวม เพราะสกุลเงินคนละหน่วยกัน (บาท vs ดอลลาร์) รวมกันไม่ได้
+  if (state.port === 'ALL') {
+    const usdRow = state.summary.rows.find(r => r['หุ้น'] === 'USD');
+    const thbRate = usdRow ? Number(usdRow['thbUsdRate']) || 0 : 0;
+    if (!thbRate) return rows.filter(r => !isThaiPortName(r['ชื่อ port'])); // ไม่มีอัตราแลกเปลี่ยน (API ล่ม) กันไว้ก่อน ตัดพอร์ตไทยออกเหมือนเดิม
+    // แปลงค่าเงินบาท -> ดอลลาร์ (ประมาณการ) เฉพาะตอนดูโหมด "ทั้งหมด" เท่านั้น ไม่กระทบตัวเลขจริงตอนดูพอร์ต SET100 เดี่ยวๆ เลย
+    return rows.map(r => {
+      if (!isThaiPortName(r['ชื่อ port'])) return r;
+      const converted = { ...r };
+      CURRENCY_FIELDS.forEach(f => {
+        if (converted[f] != null && converted[f] !== '') converted[f] = Number(converted[f]) * thbRate;
+      });
+      return converted;
+    });
+  }
   return rows.filter(r => r['ชื่อ port'] === state.port);
 }
 
@@ -3173,8 +3189,6 @@ function renderLookupCard(d) {
   });
 }
 
-
-  
 updateThemeIcon();
 renderFromSnapshot(); // แสดงข้อมูลล่าสุดที่แคชไว้ทันที ไม่ต้องรอ network ก่อน
 loadAll();
