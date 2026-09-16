@@ -223,6 +223,47 @@
   }
   .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
 
+.overview-native-row {
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+  margin-bottom: 16px;
+}
+.overview-native-card {
+  flex: 0 0 auto; min-width: 130px;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
+  padding: 10px 12px;
+}
+.overview-native-dot { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; }
+.overview-native-label { font-size: 11px; color: var(--ink-soft); margin-bottom: 3px; }
+.overview-native-value { font-family: var(--mono); font-size: 15px; font-weight: 700; }
+.overview-native-pl { font-family: var(--mono); font-size: 11px; font-weight: 600; margin-top: 2px; }
+.overview-native-pl.up { color: var(--gain); }
+.overview-native-pl.down { color: var(--loss); }
+.overview-combined-block { border-top: 1px solid var(--line); padding-top: 14px; }
+
+.overview-card {
+  background: var(--paper-raised);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 18px;
+  box-shadow: var(--shadow-sm);
+}
+.overview-total-value {
+  font-family: var(--mono); font-size: 30px; font-weight: 700;
+  color: var(--ink);
+}
+.overview-total-label { font-size: 11.5px; color: var(--ink-soft); margin-bottom: 4px; }
+.overview-chart-row { display: flex; gap: 18px; align-items: center; margin-top: 14px; }
+.overview-donut-wrap { position: relative; width: 92px; height: 92px; flex-shrink: 0; }
+.overview-breakdown { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
+.overview-breakdown-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+.overview-breakdown-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.overview-breakdown-label { color: var(--ink-soft); flex: 1; }
+.overview-breakdown-value { font-family: var(--mono); font-weight: 600; }
+.overview-disclaimer {
+  margin-top: 14px; font-size: 10.5px; color: var(--ink-soft); opacity: 0.75;
+  border-top: 1px solid var(--line); padding-top: 8px; line-height: 1.4;
+}
+
 .hero-card {
     /* ลบ radial-gradient ออก หรือปรับค่า alpha (0.35, 0.12) ให้เป็น 0 เพื่อยกเลิกความจาง */
     background: var(--hero-bg); /* ปรับตามธีมสว่าง/มืด */
@@ -919,6 +960,12 @@
   <div id="portView">
   <div id="setupBanner"></div>
 
+  <!-- 0. ภาพรวมทุกสินทรัพย์ (รวม US/Gold/BTC/Thai เป็นตัวเลขเดียว แบบประมาณการ) -->
+  <div class="section" id="overviewSection" style="display:none">
+    <div class="section-label">Overview · ภาพรวมทุกสินทรัพย์ (ประมาณการ)</div>
+    <div class="overview-card" id="overviewCard"></div>
+  </div>
+
   <!-- 1. Portfolio Value -->
   <div class="section">
     <div class="section-label">Portfolio Value · มูลค่าพอร์ต</div>
@@ -1034,7 +1081,10 @@
         </div>
         <div class="field">
           <label class="field-label">จำนวนหุ้น</label>
-          <input type="number" id="fShares" placeholder="0.000000" inputmode="decimal">
+          <div style="display:flex;gap:6px;align-items:center">
+            <input type="number" id="fShares" placeholder="0.000000" inputmode="decimal" style="flex:1;min-width:0">
+            <button type="button" id="sellAllBtn" style="display:none;flex:0 0 auto;padding:8px 10px;border-radius:8px;border:1px solid var(--loss);background:var(--loss-soft);color:var(--loss);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">ขายทั้งหมด</button>
+          </div>
         </div>
       </div>
 
@@ -1236,6 +1286,7 @@ async function loadOverview() {
       renderHero();
       renderBarChart();
       renderAllocList();
+      renderOverviewCard();
       populatePortSelect();
       cacheSnapshot();
       return true;
@@ -1574,6 +1625,127 @@ function renderBarChart() {
   }
   renderDonutChart();
   renderPLChart();
+}
+
+// ภาพรวมทุกสินทรัพย์ (US Stocks / Gold / BTC / Thai Stocks) รวมเป็นตัวเลขเดียว (ประมาณการ)
+// แปลง THB -> USD เฉพาะตอนคำนวณการ์ดนี้เท่านั้น ไม่กระทบตัวเลขจริงในพอร์ต SET100 เลย
+let _overviewDonutInstance = null;
+function renderOverviewCard() {
+  const section = document.getElementById('overviewSection');
+  const card = document.getElementById('overviewCard');
+  if (!section || !card || !state.summary) { if (section) section.style.display = 'none'; return; }
+
+  const usdRow = state.summary.rows.find(r => r['หุ้น'] === 'USD');
+  const thbRate = usdRow ? Number(usdRow['thbUsdRate']) || 0 : 0;
+
+  const stockRows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
+  if (!stockRows.length) { section.style.display = 'none'; return; }
+
+  const categories = {
+    'US Stocks': { value: 0, color: '#1B7A4D', rawValue: 0, rawCost: 0, sym: '$' },
+    'Gold': { value: 0, color: '#D4AF37', rawValue: 0, rawCost: 0, sym: '$' },
+    'BTC': { value: 0, color: '#F7931A', rawValue: 0, rawCost: 0, sym: '$' },
+    'Thai Stocks': { value: 0, color: '#A51931', rawValue: 0, rawCost: 0, sym: '฿' }
+  };
+
+  let hasThai = false, thaiRawTotal = 0;
+  stockRows.forEach(r => {
+    const ticker = r['หุ้น'];
+    const isThaiRow = isThaiPortName(r['ชื่อ port']);
+    const raw = Number(r['มูลค่าปัจจุบัน']) || 0;
+    const cost = Number(r['ทุน  FIFO']) || 0;
+    let cat;
+    if (isThaiRow) {
+      hasThai = true;
+      thaiRawTotal += raw;
+      cat = categories['Thai Stocks'];
+      cat.value += thbRate ? raw * thbRate : 0;
+    } else if (ticker === 'XAU') {
+      cat = categories['Gold'];
+    } else if (ticker === 'BTC') {
+      cat = categories['BTC'];
+    } else {
+      cat = categories['US Stocks'];
+    }
+    if (!isThaiRow) cat.value += raw;
+    cat.rawValue += raw;
+    cat.rawCost += cost;
+  });
+
+  // ถ้าไม่มีพอร์ตไทยเลย หรือมีแต่ไม่มีอัตราแลกเปลี่ยน (API ล่ม) ก็ไม่ต้องโชว์การ์ดนี้ ไม่มีประโยชน์ที่จะรวม
+  if (hasThai && !thbRate) { section.style.display = 'none'; return; }
+
+  const activeCats = Object.entries(categories).filter(([, c]) => c.value > 0.01);
+  if (activeCats.length < 2) { section.style.display = 'none'; return; } // มีแค่หมวดเดียวไม่มีประโยชน์ที่จะรวมภาพรวม
+
+  const grandTotal = activeCats.reduce((s, [, c]) => s + c.value, 0);
+  const cashBalance = getCashBalance();
+  const totalWithCash = grandTotal + cashBalance;
+
+  section.style.display = 'block';
+
+  const breakdownHtml = activeCats.map(([name, c]) => `
+    <div class="overview-breakdown-row">
+      <div class="overview-breakdown-dot" style="background:${c.color}"></div>
+      <div class="overview-breakdown-label">${name}</div>
+      <div class="overview-breakdown-value">$${fmt(c.value)}</div>
+    </div>
+  `).join('');
+
+  // แบบ A: บล็อกแยกสกุลเงินตามจริง ไม่แปลงค่า ดูตัวเลขแม่นๆ ของแต่ละหมวดพร้อมกัน
+  const nativeCardsHtml = activeCats.map(([name, c]) => {
+    const pl = c.rawValue - c.rawCost;
+    const plPct = c.rawCost ? pl / c.rawCost : 0;
+    const up = pl >= 0;
+    return `
+      <div class="overview-native-card">
+        <div class="overview-native-dot" style="background:${c.color}"></div>
+        <div class="overview-native-label">${name}</div>
+        <div class="overview-native-value">${c.sym}${fmt(c.rawValue)}</div>
+        <div class="overview-native-pl ${up?'up':'down'}">${up?'+':''}${c.sym}${fmt(pl)} (${fmtPct(plPct)})</div>
+      </div>
+    `;
+  }).join('');
+
+  card.innerHTML = `
+    <div class="overview-native-row">${nativeCardsHtml}</div>
+
+    <div class="overview-combined-block">
+      <div class="overview-total-label">มูลค่ารวมทุกสินทรัพย์ (ประมาณการ)</div>
+      <div class="overview-total-value">$${fmt(totalWithCash)}</div>
+      <div class="overview-chart-row">
+        <div class="overview-donut-wrap"><canvas id="overviewDonutCanvas"></canvas></div>
+        <div class="overview-breakdown">${breakdownHtml}</div>
+      </div>
+    </div>
+    <div class="overview-disclaimer">
+      * ยอด Thai Stocks แปลงจากบาทเป็นดอลลาร์ตามอัตราแลกเปลี่ยนปัจจุบัน (${thbRate ? '1 USD ≈ ' + fmt(1/thbRate,2) + ' บาท' : 'ไม่มีอัตรา'}) เพื่อประมาณการภาพรวมเท่านั้น
+      ตัวเลขจริงในพอร์ต SET100 ยังคงเป็นบาทตามปกติ ไม่ได้ถูกแปลง — ตัวเลขบล็อกด้านบน (แยกสกุลเงิน) คือค่าจริงเป๊ะ ไม่มีการแปลงใดๆ
+    </div>
+  `;
+
+  if (_overviewDonutInstance) { _overviewDonutInstance.destroy(); _overviewDonutInstance = null; }
+  const ctx = document.getElementById('overviewDonutCanvas');
+  if (!ctx || typeof Chart === 'undefined') return;
+
+  _overviewDonutInstance = new Chart(ctx.getContext('2d'), {
+    type: 'doughnut',
+    data: {
+      labels: activeCats.map(([name]) => name),
+      datasets: [{
+        data: activeCats.map(([, c]) => c.value),
+        backgroundColor: activeCats.map(([, c]) => c.color),
+        borderColor: document.documentElement.getAttribute('data-theme') === 'dark' ? '#14161A' : '#fff',
+        borderWidth: 2
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      cutout: '62%',
+      plugins: { legend: { display: false }, tooltip: { callbacks: { label: c => ` ${c.label}: $${fmt(c.raw)}` } } }
+    }
+  });
 }
 
 async function renderDonutChart() {
@@ -2383,6 +2555,7 @@ function openSheet() {
   document.getElementById('fNote').value = '';
   selectedAction = 'ซื้อ';
   document.querySelectorAll('.action-btn').forEach(b => b.classList.toggle('active', b.dataset.action === 'ซื้อ'));
+  document.getElementById('sellAllBtn').style.display = 'none';
   const portSel = document.getElementById('fPort');
   if ([...portSel.options].some(o => o.value === '1 St')) portSel.value = '1 St';
   sheet.classList.add('open');
@@ -2399,6 +2572,7 @@ function openEditSheet(t) {
 
   selectedAction = t['action'] === 'ขาย' ? 'ขาย' : 'ซื้อ';
   document.querySelectorAll('.action-btn').forEach(b => b.classList.toggle('active', b.dataset.action === selectedAction));
+  document.getElementById('sellAllBtn').style.display = selectedAction === 'ขาย' ? 'block' : 'none';
 
   document.getElementById('fStock').value = t['รายการ'] || '';
   document.getElementById('fAmount').value = Number(t['รวม $']) || '';
@@ -2435,6 +2609,25 @@ document.querySelector('.action-toggle').addEventListener('click', (e) => {
   document.querySelectorAll('.action-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   selectedAction = btn.dataset.action;
+  document.getElementById('sellAllBtn').style.display = selectedAction === 'ขาย' ? 'block' : 'none';
+});
+
+document.getElementById('sellAllBtn').addEventListener('click', () => {
+  const port = document.getElementById('fPort').value;
+  const stock = document.getElementById('fStock').value.trim().toUpperCase();
+  if (!stock) { alert('กรุณาใส่ชื่อหุ้นก่อน'); return; }
+
+  const row = (state.summary?.rows || []).find(r => r['หุ้น'] === stock && r['ชื่อ port'] === port);
+  if (!row) { alert(`ไม่พบหุ้น "${stock}" ที่ถืออยู่ในพอร์ต "${port}"`); return; }
+
+  const sharesHeld = Number(row['จำนวนหุ้น']) || 0;
+  const currentPrice = Number(row['price']) || 0;
+  if (sharesHeld <= 0) { alert(`ไม่มีหุ้น "${stock}" เหลืออยู่ในพอร์ต "${port}"`); return; }
+
+  document.getElementById('fShares').value = sharesHeld;
+  if (currentPrice) {
+    document.getElementById('fAmount').value = (sharesHeld * currentPrice).toFixed(2);
+  }
 });
 
 document.getElementById('submitBtn').onclick = async () => {
