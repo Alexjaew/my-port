@@ -1661,8 +1661,15 @@ function renderOverviewCard() {
     'US Stocks': { value: 0, color: '#1B7A4D', rawValue: 0, rawCost: 0, sym: '$' },
     'Gold': { value: 0, color: '#D4AF37', rawValue: 0, rawCost: 0, sym: '$' },
     'BTC': { value: 0, color: '#F7931A', rawValue: 0, rawCost: 0, sym: '$' },
-    'Thai Stocks': { value: 0, color: '#A51931', rawValue: 0, rawCost: 0, sym: '฿' }
+    'Thai Stocks': { value: 0, color: '#A51931', rawValue: 0, rawCost: 0, sym: '฿' },
+    'Cash': { value: 0, color: '#64748B', rawValue: 0, rawCost: 0, sym: '$', noPL: true }
   };
+
+  const cashBalance = getCashBalance();
+  if (cashBalance > 0) {
+    categories['Cash'].value = cashBalance;
+    categories['Cash'].rawValue = cashBalance;
+  }
 
   let hasThai = false, thaiRawTotal = 0;
   stockRows.forEach(r => {
@@ -1695,8 +1702,7 @@ function renderOverviewCard() {
   if (activeCats.length < 2) { section.style.display = 'none'; return; } // มีแค่หมวดเดียวไม่มีประโยชน์ที่จะรวมภาพรวม
 
   const grandTotal = activeCats.reduce((s, [, c]) => s + c.value, 0);
-  const cashBalance = getCashBalance();
-  const totalWithCash = grandTotal + cashBalance;
+  const totalWithCash = grandTotal; // เงินสดรวมอยู่ใน grandTotal แล้ว (เป็นอีกหมวดหนึ่ง)
 
   section.style.display = 'block';
 
@@ -1710,6 +1716,15 @@ function renderOverviewCard() {
 
   // แบบ A: บล็อกแยกสกุลเงินตามจริง ไม่แปลงค่า ดูตัวเลขแม่นๆ ของแต่ละหมวดพร้อมกัน
   const nativeCardsHtml = activeCats.map(([name, c]) => {
+    if (c.noPL) {
+      return `
+        <div class="overview-native-card">
+          <div class="overview-native-dot" style="background:${c.color}"></div>
+          <div class="overview-native-label">${name}</div>
+          <div class="overview-native-value">${c.sym}${fmt(c.rawValue)}</div>
+        </div>
+      `;
+    }
     const pl = c.rawValue - c.rawCost;
     const plPct = c.rawCost ? pl / c.rawCost : 0;
     const up = pl >= 0;
