@@ -232,7 +232,7 @@
   background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
   padding: 10px 12px;
 }
-.overview-native-dot { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; }
+.overview-native-dot { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; border: 1px solid var(--line); }
 .overview-native-label { font-size: 11px; color: var(--ink-soft); margin-bottom: 3px; }
 .overview-native-value { font-family: var(--mono); font-size: 15px; font-weight: 700; }
 .overview-native-pl { font-family: var(--mono); font-size: 11px; font-weight: 600; margin-top: 2px; }
@@ -256,7 +256,7 @@
 .overview-donut-wrap { position: relative; width: 92px; height: 92px; flex-shrink: 0; }
 .overview-breakdown { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 8px; }
 .overview-breakdown-row { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
-.overview-breakdown-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+.overview-breakdown-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; border: 1px solid var(--line); }
 .overview-breakdown-label { color: var(--ink-soft); flex: 1; }
 .overview-breakdown-value { font-family: var(--mono); font-weight: 600; }
 .overview-disclaimer {
@@ -1662,7 +1662,7 @@ function renderOverviewCard() {
     'Gold': { value: 0, color: '#D4AF37', rawValue: 0, rawCost: 0, sym: '$' },
     'BTC': { value: 0, color: '#F7931A', rawValue: 0, rawCost: 0, sym: '$' },
     'Thai Stocks': { value: 0, color: '#A51931', rawValue: 0, rawCost: 0, sym: '฿' },
-    'Cash': { value: 0, color: '#64748B', rawValue: 0, rawCost: 0, sym: '$', noPL: true }
+    'Cash': { value: 0, color: '#FFFFFF', rawValue: 0, rawCost: 0, sym: '$', noPL: true }
   };
 
   const cashBalance = getCashBalance();
