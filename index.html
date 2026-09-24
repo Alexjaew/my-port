@@ -1286,7 +1286,7 @@ async function loadOverview() {
       renderHero();
       renderBarChart();
       renderAllocList();
-      renderOverviewCard();
+      ();
       populatePortSelect();
       cacheSnapshot();
       return true;
@@ -1661,7 +1661,7 @@ function renderOverviewCard() {
   'US Stocks': { value: 0, color: '#1B7A4D', rawValue: 0, rawCost: 0, sym: '$' },
   'Gold': { value: 0, color: '#D4AF37', rawValue: 0, rawCost: 0, sym: '$' },
   'Crypto': { value: 0, color: '#e8f71a', rawValue: 0, rawCost: 0, sym: '$' },   // เปลี่ยนจาก 'BTC'
-  'Thai Stocks': { value: 0, color: '#A51931', rawValue: 0, rawCost: 0, sym: '฿' },
+  'Thai Stocks': { value: 0, color: '#1933a5', rawValue: 0, rawCost: 0, sym: '฿' },
   'Cash': { value: 0, color: '#FFFFFF', rawValue: 0, rawCost: 0, sym: '$', noPL: true }
 };
 
