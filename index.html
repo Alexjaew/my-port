@@ -1078,7 +1078,7 @@
 
   /* ===== v4: รายการหุ้นที่ถือแบบการ์ดกะทัดรัด ===== */
   .tcard{padding:16px}
-  .hlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+  .hlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(min(320px,100%),1fr));gap:10px}
   .hrow{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:16px;cursor:pointer;transition:border-color .15s}
   .hrow:hover{border-color:var(--accent)}
   .hrow .ht-logo{width:46px;height:46px}
@@ -1091,6 +1091,40 @@
   .hr-val{font:700 15px var(--mono)}
   .hr-pct{font:600 13px var(--mono);margin-top:3px}
   .hr-pct.up{color:var(--gain)}.hr-pct.down{color:var(--loss)}
+
+  /* ===== v5: ปรับสำหรับมือถือ ===== */
+  @media (max-width:899px){
+    .topbar{padding:max(12px,env(safe-area-inset-top)) 16px 10px}
+    .brand{font-size:20px}
+    .port-switch{margin-top:10px}
+    .section{padding:16px 14px 0}
+    .hero-card{padding:22px 16px 18px}
+    .hero-value{font-size:32px}
+    .hero-foot-item{padding:0 12px}
+    .hero-foot-label{font-size:11px}
+    .hero-foot-value{font-size:14px}
+    .tcard{padding:12px}
+    .tcard-head{flex-wrap:wrap;gap:8px}
+    .tcard-title{font-size:14px;flex:1 1 auto}
+    #holdingsAddBtn{display:none}
+    .hlist{grid-template-columns:1fr;gap:8px}
+    .hrow{padding:11px 12px;gap:11px;border-radius:14px}
+    .hrow .ht-logo{width:44px;height:44px}
+    .hr-top b{font-size:16px}
+    .hr-w{font-size:12px}
+    .hr-sub{font-size:12px}
+    .hr-val{font-size:16px}
+    .hr-pct{font-size:13px}
+    .drawer{width:100%}
+    .drawer-body{padding:14px 14px 28px}
+    .dr-price{font-size:24px}
+    .dr-v{font-size:13.5px}
+    .chart-card,.overview-card{border-radius:16px}
+  }
+  @media (max-width:360px){
+    .hero-value{font-size:28px}
+    .hr-sub{font-size:11px}
+  }
 </style>
 </head>
 <body>
