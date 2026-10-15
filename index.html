@@ -1075,6 +1075,22 @@
     .hero-value{font-size:42px}
     .hero-foot-value{font-size:17px}
   }
+
+  /* ===== v4: รายการหุ้นที่ถือแบบการ์ดกะทัดรัด ===== */
+  .tcard{padding:16px}
+  .hlist{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:10px}
+  .hrow{display:flex;align-items:center;gap:12px;padding:12px 14px;background:var(--paper);border:1px solid var(--line);border-radius:16px;cursor:pointer;transition:border-color .15s}
+  .hrow:hover{border-color:var(--accent)}
+  .hrow .ht-logo{width:46px;height:46px}
+  .hr-mid{flex:1;min-width:0}
+  .hr-top{display:flex;align-items:center;gap:8px}
+  .hr-top b{font:700 15px var(--mono)}
+  .hr-w{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font:600 12px var(--mono)}
+  .hr-sub{color:var(--ink-soft);font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .hr-right{text-align:right}
+  .hr-val{font:700 15px var(--mono)}
+  .hr-pct{font:600 13px var(--mono);margin-top:3px}
+  .hr-pct.up{color:var(--gain)}.hr-pct.down{color:var(--loss)}
 </style>
 </head>
 <body>
@@ -2857,37 +2873,25 @@ function renderHoldingsTable() {
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   holdingsSorted = sorted;
   const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
-  let sumVal = 0, sumCost = 0, sumProfit = 0;
-  const body = sorted.map((r, i) => {
+  box.innerHTML = '<div class="hlist">' + sorted.map((r, i) => {
     const t = r['หุ้น'];
     const val = Number(r['มูลค่าปัจจุบัน']) || 0;
-    const profit = Number(basis === 'AVG' ? r['กำไร AVG'] : r['กำไร FIFO']) || 0;
     const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
-    const cost = Number(r['ทุน  FIFO']) || 0;
-    sumVal += val; sumCost += cost; sumProfit += profit;
-    const up = profit >= 0;
     const shares = Number(r['จำนวนหุ้น']) || 0;
     const color = CHART_COLORS[i % CHART_COLORS.length];
-    const portTag = state.port === 'ALL' && r['ชื่อ port'] ? `<small>${r['ชื่อ port']}</small>` : '';
-    return `<tr class="ht-row" data-i="${i}">
-      <td><div class="ht-sym">
-        <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
-        <div><b>${t}</b>${portTag}</div></div></td>
-      <td>${shares.toLocaleString('en-US',{maximumFractionDigits:6})}</td>
-      <td>${sym}${fmt(Number(r['ราคา FIFO'])||0)}</td>
-      <td>${sym}${fmt(Number(r['price'])||0)}</td>
-      <td><b>${sym}${fmt(val)}</b></td>
-      <td class="${up?'up':'down'}">${up?'+':''}${sym}${fmt(profit)}<small>(${fmtPct(pp)})</small></td>
-      <td>${(val/total*100).toFixed(1)}%</td>
-      <td class="ht-act"><button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">ซื้อ</button><button class="mini-btn" data-trade="ขาย" data-ticker="${t}">ขาย</button></td>
-    </tr>`;
-  }).join('');
-  const tp = sumCost ? sumProfit / sumCost : 0, tup = sumProfit >= 0;
-  box.innerHTML = `<table class="ht">
-    <thead><tr><th>หุ้น</th><th>จำนวน</th><th>ทุนเฉลี่ย</th><th>ราคาล่าสุด</th><th>มูลค่า</th><th>กำไร (${basis})</th><th>สัดส่วน</th><th></th></tr></thead>
-    <tbody>${body}</tbody>
-    <tfoot><tr><td>รวมหุ้นทั้งหมด</td><td></td><td></td><td></td><td>${sym}${fmt(sumVal)}</td><td class="${tup?'up':'down'}">${tup?'+':''}${sym}${fmt(sumProfit)}<small>(${fmtPct(tp)})</small></td><td>100%</td><td></td></tr></tfoot>
-  </table>`;
+    const portTag = state.port === 'ALL' && r['ชื่อ port'] ? ` · ${r['ชื่อ port']}` : '';
+    return `<div class="hrow ht-row" data-i="${i}">
+      <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
+      <div class="hr-mid">
+        <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${(val/total*100).toFixed(1)}%</span></div>
+        <div class="hr-sub">${shares.toLocaleString('en-US',{maximumFractionDigits:4})} หุ้น · avg ${sym}${fmt(Number(r['ราคา FIFO'])||0)}${portTag}</div>
+      </div>
+      <div class="hr-right">
+        <div class="hr-val">${sym}${Math.round(val).toLocaleString('en-US')}</div>
+        <div class="hr-pct ${pp>=0?'up':'down'}">${fmtPct(pp)}</div>
+      </div>
+    </div>`;
+  }).join('') + '</div>';
 }
 function quickTrade(ticker, action) {
   closeStockDrawer();
