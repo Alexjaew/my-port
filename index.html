@@ -7,6 +7,7 @@
 <title>My Port — Portfolio Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="preconnect" href="https://script.google.com">
 <link rel="preconnect" href="https://script.googleusercontent.com">
 <link rel="preconnect" href="https://eodhd.com">
@@ -937,9 +938,115 @@
     display:flex; align-items:center; justify-content:center; gap:6px; }
   .lookup-mark-btn.interested.active { background:var(--gain-soft); border-color:var(--gain); color:var(--gain); }
   .lookup-mark-btn.ignored.active { background:var(--loss-soft); border-color:var(--loss); color:var(--loss); }
-</style>
+
+  /* ===== Rocket-style redesign v2: ocean-blue palette, sidebar, holdings table ===== */
+  :root{
+    --sans:'Noto Sans Thai','Inter',-apple-system,system-ui,sans-serif;--serif:var(--sans);
+    --paper:#F3F6FB;--paper-raised:#FFFFFF;--line:#E1E7F0;--ink:#0F172A;--ink-soft:#64748B;
+    --gain:#059669;--gain-soft:#DDF5EA;--loss:#DC2626;--loss-soft:#FDE6E6;
+    --accent:#0284C7;--accent-soft:#E0F2FE;--accent-text:#075985;--accent-border:#B6DDF3;
+    --accent-dark:#0284C7;--accent-dark-text:#FFFFFF;
+    --hero-bg:#FFFFFF;--hero-text:#0F172A;--hero-text-dim:#64748B;--hero-border:#E1E7F0;
+    --hero-chip-bg:#EEF2F8;--hero-chip-border:#E1E7F0;--hero-chip-active-bg:#0284C7;--hero-chip-active-text:#fff;
+    --hero-gain-text:#059669;--hero-loss-text:#DC2626;--hero-gain-bg:#DDF5EA;--hero-loss-bg:#FDE6E6;
+    --skel-shine:#E8EDF5;--on-accent:#FFFFFF;
+    --radius-sm:10px;--radius-md:14px;--radius-lg:18px;
+  }
+  @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+      --paper:#0A0F1A;--paper-raised:#111827;--line:#1E293B;--ink:#F1F5F9;--ink-soft:#8A99AF;
+      --gain:#34D399;--gain-soft:rgba(52,211,153,.14);--loss:#F87171;--loss-soft:rgba(248,113,113,.14);
+      --accent:#38BDF8;--accent-soft:rgba(56,189,248,.14);--accent-text:#7DD3FC;--accent-border:#1E4A66;
+      --accent-dark:#38BDF8;--accent-dark-text:#06121D;
+      --hero-bg:#111827;--hero-text:#F1F5F9;--hero-text-dim:#8A99AF;--hero-border:#1E293B;
+      --hero-chip-bg:#162033;--hero-chip-border:#1E293B;--hero-chip-active-bg:#38BDF8;--hero-chip-active-text:#06121D;
+      --hero-gain-text:#34D399;--hero-loss-text:#F87171;--hero-gain-bg:rgba(52,211,153,.16);--hero-loss-bg:rgba(248,113,113,.16);
+      --skel-shine:#1E293B;--on-accent:#06121D;}}
+  :root[data-theme="dark"]{
+      --paper:#0A0F1A;--paper-raised:#111827;--line:#1E293B;--ink:#F1F5F9;--ink-soft:#8A99AF;
+      --gain:#34D399;--gain-soft:rgba(52,211,153,.14);--loss:#F87171;--loss-soft:rgba(248,113,113,.14);
+      --accent:#38BDF8;--accent-soft:rgba(56,189,248,.14);--accent-text:#7DD3FC;--accent-border:#1E4A66;
+      --accent-dark:#38BDF8;--accent-dark-text:#06121D;
+      --hero-bg:#111827;--hero-text:#F1F5F9;--hero-text-dim:#8A99AF;--hero-border:#1E293B;
+      --hero-chip-bg:#162033;--hero-chip-border:#1E293B;--hero-chip-active-bg:#38BDF8;--hero-chip-active-text:#06121D;
+      --hero-gain-text:#34D399;--hero-loss-text:#F87171;--hero-gain-bg:rgba(52,211,153,.16);--hero-loss-bg:rgba(248,113,113,.16);
+      --skel-shine:#1E293B;--on-accent:#06121D;}
+  body{font-family:var(--sans)}
+  .brand{font-weight:700;letter-spacing:-.01em}
+  .brand::before{content:"◆";color:var(--accent);margin-right:8px;font-size:.8em}
+  .port-chip.active{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+  .section-label{text-transform:none;letter-spacing:0;font-size:13px;font-weight:700;color:var(--ink)}
+  .hero-card{text-align:center;padding:28px 22px 22px;box-shadow:none;border-radius:var(--radius-lg)}
+  .hero-label{text-transform:none;letter-spacing:0;font-size:13px}
+  .hero-value{font-size:44px;font-weight:700}
+  .hero-foot{display:grid;grid-template-columns:repeat(2,1fr);gap:0;text-align:left}
+  .hero-foot-item{padding:0 18px;border-left:1px solid var(--hero-border)}
+  .hero-foot-item:first-child{border-left:0;padding-left:0}
+  .hero-foot-label{font-size:12px}
+  .hero-foot-value{font-size:18px;font-weight:700}
+  .chart-card,.overview-card,.alloc-row-wrap{border-radius:var(--radius-lg);box-shadow:none}
+  .fab{background:var(--accent);color:var(--on-accent);box-shadow:0 8px 24px -6px color-mix(in srgb,var(--accent) 55%,transparent)}
+  .submit-btn{background:var(--accent);color:var(--on-accent)}
+
+  /* holdings table */
+  .tcard{background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-lg);padding:18px 18px 8px}
+  .tcard-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+  .tcard-title{font-weight:700;font-size:15px}
+  .pill-btn{background:var(--accent);color:var(--on-accent);border:0;border-radius:999px;padding:8px 16px;font:600 13px var(--sans);cursor:pointer;display:inline-flex;align-items:center;gap:6px}
+  .tscroll{overflow-x:auto}
+  table.ht{width:100%;border-collapse:collapse;min-width:680px;font-size:13.5px}
+  .ht th{color:var(--ink-soft);font-weight:600;font-size:12px;text-align:right;padding:10px 12px;white-space:nowrap}
+  .ht td{text-align:right;padding:14px 12px;border-top:1px solid var(--line);font-family:var(--mono);font-size:13px;white-space:nowrap}
+  .ht th:first-child,.ht td:first-child{text-align:left}
+  .ht small{display:block;color:var(--ink-soft);font-size:11px;font-weight:500}
+  .ht td.up{color:var(--gain)}.ht td.down{color:var(--loss)}
+  .ht td.up small,.ht td.down small{color:inherit;opacity:.85}
+  .ht-sym{display:flex;align-items:center;gap:10px;font-family:var(--sans)}
+  .ht-sym b{font-family:var(--mono);font-size:14px}
+  .ht-logo{width:32px;height:32px;border-radius:50%;background:var(--paper);border:1px solid var(--line);display:grid;place-items:center;overflow:hidden;flex:0 0 auto}
+  .ht-logo img{width:100%;height:100%;object-fit:cover}
+  .ht-fb{width:100%;height:100%;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:12px}
+  .ht-act{display:flex;gap:6px;justify-content:flex-end}
+  .mini-btn{border:1px solid var(--line);background:var(--paper);color:var(--ink);border-radius:7px;padding:3px 11px;font:600 12px var(--sans);cursor:pointer}
+  .mini-btn:hover{border-color:var(--accent);color:var(--accent)}
+  .ht tfoot td{border-top:2px solid var(--line);font-weight:700;background:color-mix(in srgb,var(--accent) 5%,transparent)}
+
+  /* sidebar (desktop) */
+  .sidebar{display:none}
+  .sb-logo{font-size:22px;color:var(--accent);margin:4px 0 14px}
+  .sb-item{width:60px;border:0;background:none;color:var(--ink-soft);border-radius:12px;padding:9px 0;display:flex;flex-direction:column;align-items:center;gap:2px;font:600 10.5px var(--sans);cursor:pointer}
+  .sb-item i{font-size:20px}
+  .sb-item:hover{background:var(--paper)}
+  .sb-item.active{background:var(--accent-soft);color:var(--accent)}
+
+  @media (min-width:900px){
+    .sidebar{display:flex;position:fixed;left:0;top:0;bottom:0;width:76px;flex-direction:column;align-items:center;gap:4px;padding:16px 0;background:var(--paper-raised);border-right:1px solid var(--line);z-index:30}
+    body{padding-left:76px;padding-bottom:40px}
+    .topbar{display:flex;align-items:center;gap:18px;padding:12px 28px}
+    .topbar-row{display:contents}
+    .port-switch{order:1;flex:1;margin:0}
+    .topbar-actions{order:2}
+    #portView{display:grid;grid-template-columns:1fr 1fr;column-gap:20px;max-width:1200px;margin:0 auto;padding:0 28px}
+    #portView>*{grid-column:1/-1}
+    #portView>.section.half{grid-column:auto}
+    .section{padding:22px 0 0}
+    .hero-value{font-size:56px}
+    .hero-foot-value{font-size:22px}
+    html{scroll-padding-top:90px}
+  }
+  </style>
 </head>
 <body>
+
+<aside class="sidebar" id="sidebar">
+  <div class="sb-logo">◆</div>
+  <button class="sb-item active" data-go="top"><i class="ti ti-wallet"></i><span>พอร์ต</span></button>
+  <button class="sb-item" data-go="holdingsSection"><i class="ti ti-table"></i><span>หุ้นที่ถือ</span></button>
+  <button class="sb-item" data-go="chartsAnchor"><i class="ti ti-chart-pie"></i><span>สัดส่วน</span></button>
+  <button class="sb-item" data-go="toolsAnchor"><i class="ti ti-target-arrow"></i><span>เป้าหมาย</span></button>
+  <button class="sb-item" data-go="txnAnchor"><i class="ti ti-history"></i><span>ประวัติ</span></button>
+  <div style="flex:1"></div>
+  <button class="sb-item" data-go="settings"><i class="ti ti-settings"></i><span>ตั้งค่า</span></button>
+</aside>
 
   <div class="topbar">
     <div class="topbar-row">
@@ -951,10 +1058,6 @@
       </div>
     </div>
     <div class="port-switch" id="portSwitch"></div>
-    <div class="view-switch">
-      <div class="view-chip active" data-view="portView">พอร์ต</div>
-      <div class="view-chip" data-view="lookupView">ค้นหาหุ้น</div>
-    </div>
   </div>
 
   <div id="portView">
@@ -1009,8 +1112,18 @@
     </div>
   </div>
 
+  <div class="section" id="holdingsSection">
+    <div class="tcard">
+      <div class="tcard-head">
+        <div class="tcard-title" id="holdingsTitle">หุ้นที่ถือ</div>
+        <button class="pill-btn" id="holdingsAddBtn"><i class="ti ti-plus"></i> บันทึกซื้อ/ขาย</button>
+      </div>
+      <div class="tscroll" id="holdingsTable"></div>
+    </div>
+  </div>
+
   <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
-  <div class="section">
+  <div class="section half" id="chartsAnchor">
     <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
     <div class="chart-card" id="barChartCard">
       <div class="skel" style="height:200px;"></div>
@@ -1018,7 +1131,7 @@
   </div>
 
   <!-- 3. กราฟวงกลมสัดส่วนหุ้น -->
-  <div class="section">
+  <div class="section half">
     <div class="section-label">Allocation · สัดส่วนหุ้น</div>
     <div class="chart-card" id="donutChartCard">
       <div class="skel" style="height:180px;"></div>
@@ -1026,9 +1139,9 @@
   </div>
 
   <!-- 4. สัดส่วนการลงทุนรายตัว -->
-  <div class="section">
+  <div class="section" id="toolsAnchor">
     <div class="section-label-row">
-      <div class="section-label">Investment Mix · สัดส่วนการลงทุน</div>
+      <div class="section-label">เครื่องมือรายตัว · เป้าหมายสัดส่วน / DCA / ราคาเป้าหมาย</div>
       <div class="basis-toggle-inline" id="basisToggle">
         <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
         <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
@@ -1041,7 +1154,7 @@
     </div>
   </div>
 
-  <div class="section">
+  <div class="section" id="txnAnchor">
     <div class="section-label">Recent Activity · รายการล่าสุด</div>
     <div id="txnList" style="background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-md);padding:4px 14px;box-shadow:var(--shadow-sm);">
       <div class="skel" style="height:50px;margin:10px 0;"></div>
@@ -1103,27 +1216,6 @@
     </div>
   </div>
   </div><!-- /#portView -->
-
-  <div id="lookupView" style="display:none; padding:22px 20px 0;">
-    <div class="lookup-controls">
-      <input type="text" id="tickerInput" placeholder="เช่น EOSE">
-      <button id="lookupSearchBtn">ค้นหา</button>
-    </div>
-    <div id="lookupStatus" class="lookup-status"></div>
-
-    <div class="watchlist-section">
-      <div class="watchlist-col">
-        <div class="watchlist-title"><i class="ti ti-star"></i> My Port</div>
-        <div id="interestedList" class="watchlist-list"></div>
-      </div>
-      <div class="watchlist-col">
-        <div class="watchlist-title"><i class="ti ti-lock"></i> Watchlists</div>
-        <div id="ignoredList" class="watchlist-list"></div>
-      </div>
-    </div>
-
-    <div id="lookupCardHolder"></div>
-  </div>
 
 <script>
 const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
@@ -1628,7 +1720,7 @@ function renderHeroBgChart() {
 }
 
 
-const CHART_COLORS = ['#D9A655','#378ADD','#7F77DD','#5DCAA5','#D85A30','#ED93B1','#888780','#3DBE7C','#F5A623','#9B59B6'];
+const CHART_COLORS = ['#38BDF8','#34D399','#FBBF24','#FB7185','#2DD4BF','#F97316','#94A3B8','#60A5FA','#A3E635','#F472B6'];
 
 let _donutInstance = null;
 let _plInstance = null;
@@ -2083,6 +2175,7 @@ function updateAllocTargetSumBar() {
 }
 
 function renderAllocList() {
+  try { renderHoldingsTable(); } catch (err) { console.error(err); }
   const el = document.getElementById('allocList');
   const rows = getFilteredSummaryRows();
   if (!rows.length) {
@@ -2709,500 +2802,70 @@ document.getElementById('submitBtn').onclick = async () => {
   }
 };
 
-/* ==================== แท็บ "ค้นหาหุ้น" (Lookup) ==================== */
 
-// สลับมุมมอง พอร์ต / ค้นหาหุ้น
-document.querySelectorAll('.view-chip').forEach(chip => {
-  chip.addEventListener('click', () => {
-    document.querySelectorAll('.view-chip').forEach(c => c.classList.remove('active'));
-    chip.classList.add('active');
-    document.getElementById('portView').style.display = chip.dataset.view === 'portView' ? '' : 'none';
-    document.getElementById('lookupView').style.display = chip.dataset.view === 'lookupView' ? '' : 'none';
-  });
+/* ==================== ตารางหุ้นที่ถือ (แบบ Rocket) ==================== */
+function renderHoldingsTable() {
+  const box = document.getElementById('holdingsTable');
+  if (!box) return;
+  const rows = getFilteredSummaryRows();
+  const titleEl = document.getElementById('holdingsTitle');
+  if (titleEl) titleEl.textContent = `หุ้นที่ถือ (${rows.length} ตัว)`;
+  if (!rows.length) { box.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>'; return; }
+  const basis = state.basis, sym = currencySymbol();
+  const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
+  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
+  let sumVal = 0, sumCost = 0, sumProfit = 0;
+  const body = sorted.map((r, i) => {
+    const t = r['หุ้น'];
+    const val = Number(r['มูลค่าปัจจุบัน']) || 0;
+    const profit = Number(basis === 'AVG' ? r['กำไร AVG'] : r['กำไร FIFO']) || 0;
+    const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
+    const cost = Number(r['ทุน  FIFO']) || 0;
+    sumVal += val; sumCost += cost; sumProfit += profit;
+    const up = profit >= 0;
+    const shares = Number(r['จำนวนหุ้น']) || 0;
+    const color = CHART_COLORS[i % CHART_COLORS.length];
+    const portTag = state.port === 'ALL' && r['ชื่อ port'] ? `<small>${r['ชื่อ port']}</small>` : '';
+    return `<tr>
+      <td><div class="ht-sym">
+        <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
+        <div><b>${t}</b>${portTag}</div></div></td>
+      <td>${shares.toLocaleString('en-US',{maximumFractionDigits:6})}</td>
+      <td>${sym}${fmt(Number(r['ราคา FIFO'])||0)}</td>
+      <td>${sym}${fmt(Number(r['price'])||0)}</td>
+      <td><b>${sym}${fmt(val)}</b></td>
+      <td class="${up?'up':'down'}">${up?'+':''}${sym}${fmt(profit)}<small>(${fmtPct(pp)})</small></td>
+      <td>${(val/total*100).toFixed(1)}%</td>
+      <td class="ht-act"><button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">ซื้อ</button><button class="mini-btn" data-trade="ขาย" data-ticker="${t}">ขาย</button></td>
+    </tr>`;
+  }).join('');
+  const tp = sumCost ? sumProfit / sumCost : 0, tup = sumProfit >= 0;
+  box.innerHTML = `<table class="ht">
+    <thead><tr><th>หุ้น</th><th>จำนวน</th><th>ทุนเฉลี่ย</th><th>ราคาล่าสุด</th><th>มูลค่า</th><th>กำไร (${basis})</th><th>สัดส่วน</th><th></th></tr></thead>
+    <tbody>${body}</tbody>
+    <tfoot><tr><td>รวมหุ้นทั้งหมด</td><td></td><td></td><td></td><td>${sym}${fmt(sumVal)}</td><td class="${tup?'up':'down'}">${tup?'+':''}${sym}${fmt(sumProfit)}<small>(${fmtPct(tp)})</small></td><td>100%</td><td></td></tr></tfoot>
+  </table>`;
+}
+function quickTrade(ticker, action) {
+  openSheet();
+  const a = document.querySelector('.action-btn[data-action="' + action + '"]');
+  if (a) a.click();
+  const f = document.getElementById('fStock');
+  if (f) { f.value = ticker; f.dispatchEvent(new Event('input', { bubbles: true })); }
+}
+document.getElementById('holdingsTable').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-trade]');
+  if (b) quickTrade(b.dataset.ticker, b.dataset.trade);
 });
-
-document.getElementById('lookupSearchBtn').addEventListener('click', () => runLookup());
-document.getElementById('tickerInput').addEventListener('keydown', e => { if (e.key === 'Enter') runLookup(); });
-
-// ---------- Watchlist ที่คงอยู่หน้าเดียวกัน: My Port / Watchlists ----------
-function loadWatchlist() { return JSON.parse(localStorage.getItem('lookup_watchlist') || '{}'); }
-function saveWatchlist(wl) { localStorage.setItem('lookup_watchlist', JSON.stringify(wl)); }
-
-function setMark(ticker, status, meta) {
-  const wl = loadWatchlist();
-  if (wl[ticker] && wl[ticker].status === status) {
-    delete wl[ticker];
-  } else {
-    wl[ticker] = { status, ...meta };
-  }
-  saveWatchlist(wl);
-  renderWatchlistSection();
-}
-
-function watchlistRowHtml(entry) {
-  return `<div class="watchlist-row" data-ticker="${entry.ticker}">
-    <span class="wl-ticker">${entry.ticker}</span>
-    <span class="wl-price">${fmtPrice(entry.price)}</span>
-    <span class="wl-trend ${entry.trendClass}">${entry.trendLabel}</span>
-    <button class="wl-remove" title="ลบออกจากรายการ"><i class="ti ti-x"></i></button>
-  </div>`;
-}
-
-function renderWatchlistSection() {
-  const wl = loadWatchlist();
-  const interested = Object.values(wl).filter(x => x.status === 'interested');
-  const ignored = Object.values(wl).filter(x => x.status === 'ignored');
-
-  document.getElementById('interestedList').innerHTML = interested.length
-    ? interested.map(watchlistRowHtml).join('')
-    : `<div class="watchlist-empty">ยังไม่มีหุ้นใน My Port</div>`;
-  document.getElementById('ignoredList').innerHTML = ignored.length
-    ? ignored.map(watchlistRowHtml).join('')
-    : `<div class="watchlist-empty">ยังไม่มีหุ้นใน Watchlists</div>`;
-
-  document.querySelectorAll('.watchlist-row').forEach(row => {
-    const ticker = row.dataset.ticker;
-    row.addEventListener('click', () => {
-      document.getElementById('tickerInput').value = ticker;
-      runLookup();
-    });
-    row.querySelector('.wl-remove').addEventListener('click', e => {
-      e.stopPropagation();
-      const wl2 = loadWatchlist();
-      delete wl2[ticker];
-      saveWatchlist(wl2);
-      renderWatchlistSection();
-    });
-  });
-}
-renderWatchlistSection();
-
-// ---------- ดึงข้อมูล + คำนวณ + แสดงผล ----------
-async function runLookup() {
-  const raw = document.getElementById('tickerInput').value.trim().toUpperCase();
-  const statusEl = document.getElementById('lookupStatus');
-  const holder = document.getElementById('lookupCardHolder');
-  if (!raw) return;
-  if (!API_URL) { statusEl.textContent = 'ยังไม่ได้ตั้งค่า API URL (ไปที่ตั้งค่า ⚙️ ก่อน)'; return; }
-
-  statusEl.textContent = `กำลังดึงข้อมูลรายสัปดาห์ของ ${raw} ...`;
-  holder.innerHTML = '';
-
-  try {
-    // ใช้ api() ตัวเดียวกับที่หน้าพอร์ตใช้อยู่ — เรียกผ่าน Apps Script (action=weekly_lookup)
-    const payload = await api('weekly_lookup', { ticker: raw });
-    if (payload.error) throw new Error(payload.error);
-
-    const { quote, weekly } = payload;
-    if (!Array.isArray(weekly) || weekly.length < 60) throw new Error('ข้อมูลย้อนหลังไม่พอสำหรับคำนวณ EMA/HA');
-
-    const closes = weekly.map(w => w.close);
-    const ema50  = computeEMA(closes, 50);
-    const ema100 = computeEMA(closes, 100);
-    const ema200 = computeEMA(closes, 200);
-
-    const ha = computeHeikinAshi(weekly);
-    const streaks = computeStreaks(ha);
-
-    renderLookupCard({
-      ticker: raw,
-      price: quote.close ?? quote.previousClose ?? closes.at(-1),
-      priceDate: quote.timestamp ? new Date(quote.timestamp * 1000).toISOString().slice(0,10) : weekly.at(-1).date,
-      ema50, ema100, ema200,
-      lastClose: closes.at(-1),
-      streaks,
-      weekly
-    });
-    statusEl.textContent = '';
-  } catch (err) {
-    statusEl.textContent = `เกิดข้อผิดพลาด: ${err.message}`;
-  }
-}
-
-function computeEMA(closes, period) {
-  if (closes.length < period) return null;
-  const k = 2 / (period + 1);
-  let ema = closes.slice(0, period).reduce((a,b) => a+b, 0) / period;
-  for (let i = period; i < closes.length; i++) ema = closes[i] * k + ema * (1 - k);
-  return ema;
-}
-
-function computeHeikinAshi(bars) {
-  const ha = [];
-  let prevHaOpen = null, prevHaClose = null;
-  bars.forEach((b, i) => {
-    const haClose = (b.open + b.high + b.low + b.close) / 4;
-    const haOpen = i === 0 ? (b.open + b.close) / 2 : (prevHaOpen + prevHaClose) / 2;
-    ha.push({ date: b.date, open: haOpen, close: haClose, isGreen: haClose >= haOpen });
-    prevHaOpen = haOpen; prevHaClose = haClose;
-  });
-  return ha;
-}
-
-function computeStreaks(ha) {
-  let greenStreak = 0, redStreak = 0;
-  const lastColor = ha.at(-1).isGreen;
-  for (let i = ha.length - 1; i >= 0; i--) {
-    if (ha[i].isGreen === lastColor) { lastColor ? greenStreak++ : redStreak++; }
-    else break;
-  }
-  return { green: lastColor ? greenStreak : 0, red: !lastColor ? redStreak : 0 };
-}
-
-function pct(current, base) { return ((current - base) / base) * 100; }
-function lkFmtPct(p) { return `${p >= 0 ? '+' : ''}${p.toFixed(2)}%`; }
-function fmtPrice(p) { return `$${p.toFixed(2)}`; }
-
-// กฎ WEEK TREND:
-// 1) ราคาแกว่งใกล้ EMA50 มากๆ (±5%) = จุดเปลี่ยนโมเมนตัมระยะสั้นกำลังเกิดขึ้นจริง ชนะทุกเงื่อนไขอื่น
-// 2) EMA พอ (≥2 เส้น) แต่ไม่ใกล้ EMA50: ไปทางเดียวกันหมด + extreme(≥30%ทุกเส้น) = เต็มตัว! / ไม่ extreme = ธรรมดา
-// 3) ผสม: หาว่าเส้นไหนแหวก — EMA50 แหวกเส้นเดียว = ลุ้นเปลี่ยนเทรนด์ / EMA100 หรือ EMA200 แหวก = วัดใจเข้าสู่ขาลง/ขึ้น
-// 4) EMA ไม่พอ (หุ้นใหม่) = fallback ไปใช้ HA streak แทน
-function getTrendInfo(d) {
-  const pct50  = d.ema50  != null ? pct(d.lastClose, d.ema50)  : null;
-  const pct100 = d.ema100 != null ? pct(d.lastClose, d.ema100) : null;
-  const pct200 = d.ema200 != null ? pct(d.lastClose, d.ema200) : null;
-  const pcts = [pct50, pct100, pct200].filter(p => p != null);
-
-  if (pct50 != null && Math.abs(pct50) <= 5) {
-    return { label: 'สับเปลี่ยนเทรนด์', cls: 'trend-watch' };
-  }
-
-  if (pcts.length < 2) {
-    if (d.streaks.red >= 4)   return { label: 'ขาลง', cls: 'trend-loss-plain' };
-    if (d.streaks.green >= 4) return { label: 'ขาขึ้น', cls: 'trend-gain-plain' };
-    return { label: 'ยังไม่ชัดเจน', cls: 'trend-neutral' };
-  }
-
-  const allBelow = pcts.every(p => p < 0);
-  const allAbove = pcts.every(p => p > 0);
-
-  if (allBelow) {
-    const extreme = pcts.every(p => p <= -30);
-    return extreme ? { label: 'ขาลงเต็มตัว!', cls: 'trend-loss' } : { label: 'ขาลง', cls: 'trend-loss-plain' };
-  }
-  if (allAbove) {
-    const extreme = pcts.every(p => p >= 30);
-    return extreme ? { label: 'ขาขึ้นเต็มตัว!', cls: 'trend-gain' } : { label: 'ขาขึ้น', cls: 'trend-gain-plain' };
-  }
-
-  if (pct50 != null && pct100 != null && pct200 != null) {
-    const isBelow50 = pct50 < 0, isBelow100 = pct100 < 0, isBelow200 = pct200 < 0;
-    const belowCount = [isBelow50, isBelow100, isBelow200].filter(Boolean).length;
-    const minorityIsBelow = belowCount === 1;
-    const oddOneOut = minorityIsBelow
-      ? (isBelow50 ? '50' : isBelow100 ? '100' : '200')
-      : (!isBelow50 ? '50' : !isBelow100 ? '100' : '200');
-
-    if (oddOneOut === '50') {
-      return { label: 'ลุ้นเปลี่ยนเทรนด์', cls: 'trend-watch' };
-    }
-    return { label: isBelow50 ? 'วัดใจเข้าสู่ขาลง' : 'วัดใจเข้าสู่ขาขึ้น', cls: 'trend-watch' };
-  }
-
-  const fallbackBelow = pct50 != null ? pct50 < 0 : pct100 < 0;
-  return { label: fallbackBelow ? 'วัดใจเข้าสู่ขาลง' : 'วัดใจเข้าสู่ขาขึ้น', cls: 'trend-watch' };
-}
-
-function findSupportZones(weekly) {
-  const bars = weekly.slice(-150);
-  const pivots = [];
-  for (let i = 3; i < bars.length - 3; i++) {
-    const windowVals = bars.slice(i - 3, i + 4).map(x => x.low);
-    if (bars[i].low === Math.min(...windowVals)) pivots.push(bars[i].low);
-  }
-  const zones = [];
-  pivots.sort((a, b) => a - b).forEach(p => {
-    const zone = zones.find(z => Math.abs(p - z.level) / z.level <= 0.03);
-    if (zone) { zone.level = (zone.level * zone.touches + p) / (zone.touches + 1); zone.touches++; }
-    else zones.push({ level: p, touches: 1 });
-  });
-  return zones.filter(z => z.touches >= 2);
-}
-
-function findBrokenSupport(weekly, lastClose) {
-  const zones = findSupportZones(weekly);
-  const broken = zones.filter(z => z.level > lastClose).sort((a, b) => a.level - b.level)[0];
-  if (!broken) return null;
-  const belowPct = ((broken.level - lastClose) / broken.level) * 100;
-  if (belowPct < 1) return null;
-  return { level: broken.level, belowPct, touches: broken.touches };
-}
-
-function findTestingSupport(weekly, lastClose) {
-  const zones = findSupportZones(weekly);
-  const candidates = zones
-    .map(z => ({ ...z, distPct: ((lastClose - z.level) / z.level) * 100 }))
-    .filter(z => Math.abs(z.distPct) <= 2);
-  candidates.sort((a, b) => Math.abs(a.distPct) - Math.abs(b.distPct));
-  return candidates[0] || null;
-}
-
-function computeEMASeries(closes, period) {
-  const series = new Array(closes.length).fill(null);
-  if (closes.length < period) return series;
-  const k = 2 / (period + 1);
-  let ema = closes.slice(0, period).reduce((a, b) => a + b, 0) / period;
-  series[period - 1] = ema;
-  for (let i = period; i < closes.length; i++) { ema = closes[i] * k + ema * (1 - k); series[i] = ema; }
-  return series;
-}
-
-function findEma200FirstTouch(weekly, minGapBars = 52) {
-  const closes = weekly.map(w => w.close);
-  const ema200Series = computeEMASeries(closes, 200);
-  const n = weekly.length;
-  const touchIdx = [];
-  for (let i = 0; i < n; i++) {
-    if (ema200Series[i] == null) continue;
-    if (weekly[i].low <= ema200Series[i] && ema200Series[i] <= weekly[i].high) touchIdx.push(i);
-  }
-  if (!touchIdx.length) return null;
-
-  const lastTouch = touchIdx[touchIdx.length - 1];
-  const barsAgo = n - 1 - lastTouch;
-  if (barsAgo > 5) return null;
-
-  const priorNearby = touchIdx.filter(i => i < lastTouch && lastTouch - i <= minGapBars);
-  if (priorNearby.length) return null;
-
-  const prevAny = touchIdx.filter(i => i < lastTouch);
-  const gapBars = prevAny.length ? (lastTouch - prevAny[prevAny.length - 1]) : lastTouch;
-  const beforeIdx = Math.max(0, lastTouch - 1);
-  const approachedFromAbove = closes[beforeIdx] > ema200Series[beforeIdx];
-
-  return { ema200: ema200Series[lastTouch], date: weekly[lastTouch].date, barsAgo, gapBars, approachedFromAbove };
-}
-
-function computeRSISeries(closes, period = 14) {
-  const rsi = new Array(closes.length).fill(null);
-  if (closes.length < period + 1) return rsi;
-  let gains = 0, losses = 0;
-  for (let i = 1; i <= period; i++) {
-    const change = closes[i] - closes[i - 1];
-    if (change >= 0) gains += change; else losses -= change;
-  }
-  let avgGain = gains / period, avgLoss = losses / period;
-  rsi[period] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
-  for (let i = period + 1; i < closes.length; i++) {
-    const change = closes[i] - closes[i - 1];
-    const gain = change > 0 ? change : 0;
-    const loss = change < 0 ? -change : 0;
-    avgGain = (avgGain * (period - 1) + gain) / period;
-    avgLoss = (avgLoss * (period - 1) + loss) / period;
-    rsi[i] = avgLoss === 0 ? 100 : 100 - (100 / (1 + avgGain / avgLoss));
-  }
-  return rsi;
-}
-
-function findPivotHighs(weekly, lookback = 3) {
-  const idxs = [];
-  for (let i = lookback; i < weekly.length - lookback; i++) {
-    const windowHighs = weekly.slice(i - lookback, i + lookback + 1).map(w => w.high);
-    if (weekly[i].high === Math.max(...windowHighs)) idxs.push(i);
-  }
-  return idxs;
-}
-
-function findRsiBearishDivergence(weekly) {
-  const closes = weekly.map(w => w.close);
-  const rsiSeries = computeRSISeries(closes, 14);
-  const pivotIdx = findPivotHighs(weekly, 3).filter(i => rsiSeries[i] != null);
-  if (pivotIdx.length < 2) return null;
-
-  const i2 = pivotIdx[pivotIdx.length - 1];
-  const i1 = pivotIdx[pivotIdx.length - 2];
-  const price1 = weekly[i1].high, price2 = weekly[i2].high;
-  const rsi1 = rsiSeries[i1], rsi2 = rsiSeries[i2];
-
-  if (!(price2 > price1 && rsi2 < rsi1)) return null;
-
-  const barsAgoSinceHigh2 = weekly.length - 1 - i2;
-  if (barsAgoSinceHigh2 > 8) return null;
-
-  const between = weekly.slice(i1, i2 + 1);
-  const swingLow = Math.min(...between.map(w => w.low));
-  const currentRsi = rsiSeries[rsiSeries.length - 1];
-  const lastClose = closes.at(-1);
-  const confirmed = lastClose < swingLow && currentRsi < 50;
-
-  return { price1, price2, rsi1, rsi2, swingLow, currentRsi, confirmed };
-}
-
-// ลำดับความสำคัญของ insight (บนสุดชนะ แสดงได้ทีละกล่อง):
-// 1) CHASE RISK  2) เพิ่งสัมผัส EMA200 ครั้งแรก  3) RSI Bearish Divergence  4) ราคาใกล้ EMA50
-// 5) จังหวะลงทุน (แดง)  6) โมเมนตัมขาขึ้น (เขียว, เกณฑ์สูงกว่า)  7) กำลังทดสอบแนวรับ  8) หลุดแนวรับ  9) ไม่มีสัญญาณ
-function determineInsight(d) {
-  if (d.ema200 != null) {
-    const ema200Pct = pct(d.lastClose, d.ema200);
-    if (ema200Pct >= 100) return { type: 'chase-risk', ema200Pct };
-  }
-
-  const touch = findEma200FirstTouch(d.weekly);
-  if (touch) return { type: 'ema200-touch', ...touch };
-
-  const divergence = findRsiBearishDivergence(d.weekly);
-  if (divergence) return { type: 'rsi-divergence', ...divergence };
-
-  if (d.ema50 != null) {
-    const pct50 = pct(d.lastClose, d.ema50);
-    if (Math.abs(pct50) <= 3) return { type: 'near-ema50', pct50 };
-  }
-
-  if (d.streaks.red >= 4) return { type: 'buy-opportunity', redStreak: d.streaks.red };
-  if (d.streaks.green >= 8) return { type: 'momentum-up', greenStreak: d.streaks.green };
-
-  const testing = findTestingSupport(d.weekly, d.lastClose);
-  if (testing) return { type: 'support-test', ...testing };
-
-  const broken = findBrokenSupport(d.weekly, d.lastClose);
-  if (broken) return { type: 'support-break', ...broken };
-
-  return { type: 'none' };
-}
-
-function renderLookupCard(d) {
-  const emaRows = [
-    { label: 'EMA 50',  val: d.ema50  },
-    { label: 'EMA 100', val: d.ema100 },
-    { label: 'EMA 200', val: d.ema200 },
-  ];
-
-  const redStreak = d.streaks.red, greenStreak = d.streaks.green;
-  const trend = getTrendInfo(d);
-  const trendLabel = trend.label, trendClass = trend.cls;
-
-  const insight = determineInsight(d);
-  let insightHtml = '';
-  let showNoSignal = true;
-
-  if (insight.type === 'chase-risk') {
-    insightHtml = `
-      <div class="lookup-insight-box chase-risk">
-        <div class="ieyebrow">CHASE RISK • เตือนความเสี่ยง</div>
-        <div class="istat">เหนือ Week EMA 200<br>${lkFmtPct(insight.ema200Pct)}</div>
-        <div class="ititle" style="margin-top:8px;">ห้ามไล่ราคา</div>
-        <div class="itext">ราคาห่างจาก Week EMA 200 มากแล้ว นักลงทุนที่ยังไม่ได้ซื้อมาก่อน รอราคาย่อก่อน</div>
-      </div>`;
-  } else if (insight.type === 'ema200-touch') {
-    insightHtml = `
-      <div class="lookup-insight-box ema200-touch">
-        <div class="ititle">เพิ่งสัมผัส EMA200 ครั้งแรก</div>
-        <div class="itext">
-          ไม่แตะเส้นนี้มาอย่างน้อย ${insight.gapBars} แท่ง<br>
-          ${insight.approachedFromAbove ? 'ลงมาจากด้านบน และปิดหลุดลงมา' : 'ขึ้นมาจากด้านล่าง และปิดทะลุขึ้นไป'}<br>
-          EMA200 ${fmtPrice(insight.ema200)} • เกิดเมื่อ ${insight.date} (${insight.barsAgo} แท่งก่อน)
-        </div>
-      </div>`;
-    showNoSignal = false;
-  } else if (insight.type === 'rsi-divergence') {
-    insightHtml = `
-      <div class="lookup-insight-box rsi-div">
-        <div class="ititle">RSI Bearish Divergence</div>
-        <div class="itext">
-          เฝ้าระวังกลับลง<br>
-          ราคาทำ High สูงขึ้น ${fmtPrice(insight.price1)} → ${fmtPrice(insight.price2)}<br>
-          แต่ RSI 14 ลด High ${insight.rsi1.toFixed(1)} → ${insight.rsi2.toFixed(1)}<br>
-          ${insight.confirmed
-            ? 'Swing ยืนยันแล้ว • สัญญาณกลับตัวยืนยันสมบูรณ์'
-            : `Swing ยืนยันแล้ว • รอราคาปิดต่ำกว่า ${fmtPrice(insight.swingLow)} และ RSI ต่ำกว่า 50`}
-        </div>
-      </div>`;
-    showNoSignal = false;
-  } else if (insight.type === 'near-ema50') {
-    insightHtml = `<div class="lookup-info-line">ราคาใกล้ EMA 50</div>`;
-    showNoSignal = false;
-  } else if (insight.type === 'buy-opportunity') {
-    insightHtml = `
-      <div class="lookup-insight-box">
-        <div class="ititle"><i class="ti ti-bulb"></i> จังหวะลงทุนเริ่มน่าสนใจ</div>
-        <div class="itext">HA แดงต่อเนื่อง ${insight.redStreak} แท่งแล้ว • เริ่มเฝ้าระวัง High-Wave/Doji หรือแท่งเปลี่ยนสี</div>
-      </div>`;
-  } else if (insight.type === 'momentum-up') {
-    insightHtml = `
-      <div class="lookup-insight-box">
-        <div class="ititle"><i class="ti ti-bulb"></i> โมเมนตัมขาขึ้นแข็งแรง</div>
-        <div class="itext">HA เขียวต่อเนื่อง ${insight.greenStreak} แท่งแล้ว • ระวังแรงขายทำกำไรระยะสั้น</div>
-      </div>`;
-  } else if (insight.type === 'support-test') {
-    insightHtml = `
-      <div class="lookup-insight-box support-test">
-        <div class="ititle">กำลังทดสอบแนวรับสำคัญ</div>
-        <div class="itext">กำลังต้านแรงรับบริเวณ ${fmtPrice(insight.level)}<br>เคยเกิดปฏิกิริยาบริเวณนี้ ${insight.touches} ครั้ง</div>
-      </div>`;
-    showNoSignal = false;
-  } else if (insight.type === 'support-break') {
-    insightHtml = `
-      <div class="lookup-insight-box support-break">
-        <div class="ititle">หลุดแนวรับสำคัญ</div>
-        <div class="itext">ปิดต่ำกว่าโซน ${fmtPrice(insight.level)} ${insight.belowPct.toFixed(1)}%<br>เคยเกิดปฏิกิริยาที่แนวนี้ ${insight.touches} ครั้ง</div>
-      </div>`;
-    showNoSignal = false;
-  }
-
-  const noSignalHtml = showNoSignal ? `<div class="lookup-no-signal">ยังไม่พบสัญญาณสำคัญใน Timeframe นี้</div>` : '';
-
-  const wl = loadWatchlist();
-  const currentStatus = wl[d.ticker]?.status || null;
-
-  document.getElementById('lookupCardHolder').innerHTML = `
-    <div class="lookup-card">
-      <div class="lookup-card-head">
-        <div>
-          <div class="lookup-eyebrow">Live Lookup</div>
-          <div class="lookup-ticker-row">
-            <img class="lookup-ticker-logo" src="https://eodhd.com/img/logos/US/${d.ticker}.png"
-                 onerror="this.style.display='none'" alt="${d.ticker}">
-            <div class="lookup-ticker-name">${d.ticker}</div>
-          </div>
-          <div class="lookup-price-line">${fmtPrice(d.price)} • ราคา ${d.priceDate}</div>
-        </div>
-        <div class="trend-badge ${trendClass}">
-          <div class="tlabel">WEEK TREND</div>
-          <div class="tvalue">${trendLabel}</div>
-        </div>
-      </div>
-
-      <div class="lookup-ema-grid">
-        ${emaRows.map(r => {
-          if (r.val == null) return `<div class="lookup-ema-box"><div class="elabel">${r.label}</div><div class="eprice">ไม่มีข้อมูลพอ</div></div>`;
-          const p = pct(d.lastClose, r.val);
-          return `<div class="lookup-ema-box">
-            <div class="elabel">${r.label}</div>
-            <div class="epct ${p>=0?'lookup-up':'lookup-down'}">${lkFmtPct(p)}</div>
-            <div class="eprice">${fmtPrice(r.val)}</div>
-          </div>`;
-        }).join('')}
-      </div>
-
-      <div class="lookup-ha-row">
-        <div class="lookup-ha-pill ${greenStreak>0?'active-green':''}">HA เขียวต่อเนื่อง ${greenStreak}</div>
-        <div class="lookup-ha-pill ${redStreak>0?'active-red':''}">HA แดงต่อเนื่อง ${redStreak}</div>
-      </div>
-
-      ${insightHtml}
-      ${noSignalHtml}
-
-      <div class="lookup-mark-row">
-        <button class="lookup-mark-btn interested ${currentStatus==='interested'?'active':''}" id="markInterestedBtn">
-          <i class="ti ti-star"></i> เพิ่มเข้าพอร์ต
-        </button>
-        <button class="lookup-mark-btn ignored ${currentStatus==='ignored'?'active':''}" id="markIgnoredBtn">
-          <i class="ti ti-lock"></i> เพิ่มใน Watchlist
-        </button>
-      </div>
-    </div>`;
-
-  const marks = { ticker: d.ticker, price: d.price, priceDate: d.priceDate, trendLabel, trendClass };
-  document.getElementById('markInterestedBtn').addEventListener('click', () => {
-    setMark(d.ticker, 'interested', marks);
-    renderLookupCard(d);
-  });
-  document.getElementById('markIgnoredBtn').addEventListener('click', () => {
-    setMark(d.ticker, 'ignored', marks);
-    renderLookupCard(d);
-  });
-}
+document.getElementById('holdingsAddBtn').addEventListener('click', () => openSheet());
+document.getElementById('sidebar').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-go]'); if (!b) return;
+  const go = b.dataset.go;
+  if (go === 'settings') { document.getElementById('settingsBtn').click(); return; }
+  document.querySelectorAll('.sb-item').forEach(x => x.classList.toggle('active', x === b));
+  if (go === 'top') window.scrollTo({ top: 0, behavior: 'smooth' });
+  else document.getElementById(go).scrollIntoView({ behavior: 'smooth', block: 'start' });
+});
 
 updateThemeIcon();
 renderFromSnapshot(); // แสดงข้อมูลล่าสุดที่แคชไว้ทันที ไม่ต้องรอ network ก่อน
