@@ -2926,7 +2926,7 @@ function renderHoldingsTable() {
       <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
         <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${(val/total*100).toFixed(1)}%</span></div>
-        <div class="hr-sub">${shares.toLocaleString('en-US',{maximumFractionDigits:4})} หุ้น · avg ${sym}${fmt(Number(r['ราคา FIFO'])||0)}${portTag}</div>
+        <div class="hr-sub">${sym}${fmt(Number(r['price'])||0)} · avg ${sym}${fmt(Number(r['ราคา FIFO'])||0)}${portTag}</div>
       </div>
       <div class="hr-right">
         <div class="hr-val">${sym}${Math.round(val).toLocaleString('en-US')}</div>
