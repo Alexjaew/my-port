@@ -1125,6 +1125,8 @@
     .hero-value{font-size:28px}
     .hr-sub{font-size:11px}
   }
+  .hrow-cash{cursor:default}
+  .hrow-cash:hover{border-color:var(--line)}
 </style>
 </head>
 <body>
@@ -2896,6 +2898,11 @@ document.getElementById('submitBtn').onclick = async () => {
 
 
 /* ==================== ตารางหุ้นที่ถือ (แบบ Rocket) ==================== */
+function getShareBase(rows) {
+  const stock = rows.reduce((a, r) => a + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
+  const cash = isThaiPortSelected() ? 0 : (Number(getCashBalance()) || 0);
+  return { stock, cash: cash > 0 ? cash : 0, total: (stock + (cash > 0 ? cash : 0)) || 1 };
+}
 function renderHoldingsTable() {
   const box = document.getElementById('holdingsTable');
   if (!box) return;
@@ -2906,7 +2913,8 @@ function renderHoldingsTable() {
   const basis = state.basis, sym = currencySymbol();
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   holdingsSorted = sorted;
-  const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
+  const base = getShareBase(sorted), total = base.total;
+  const cashRow = base.cash > 0 ? `<div class="hrow hrow-cash"><span class="ht-logo"><span class="ht-fb" style="display:flex;background:#64748B">$</span></span><div class="hr-mid"><div class="hr-top"><b>เงินสด</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${(base.cash/total*100).toFixed(1)}%</span></div><div class="hr-sub">Cash</div></div><div class="hr-right"><div class="hr-val">${sym}${Math.round(base.cash).toLocaleString('en-US')}</div></div></div>` : '';
   box.innerHTML = '<div class="hlist">' + sorted.map((r, i) => {
     const t = r['หุ้น'];
     const val = Number(r['มูลค่าปัจจุบัน']) || 0;
@@ -2925,7 +2933,7 @@ function renderHoldingsTable() {
         <div class="hr-pct ${pp>=0?'up':'down'}">${fmtPct(pp)}</div>
       </div>
     </div>`;
-  }).join('') + '</div>';
+  }).join('') + cashRow + '</div>';
 }
 function quickTrade(ticker, action) {
   closeStockDrawer();
@@ -2940,7 +2948,7 @@ function renderDrawerSummary(r) {
   const basis = state.basis, sym = currencySymbol();
   const t = r['หุ้น'];
   const val = Number(r['มูลค่าปัจจุบัน']) || 0;
-  const total = holdingsSorted.reduce((a, x) => a + (Number(x['มูลค่าปัจจุบัน']) || 0), 0) || 1;
+  const total = getShareBase(holdingsSorted).total;
   const profit = Number(basis === 'AVG' ? r['กำไร AVG'] : r['กำไร FIFO']) || 0;
   const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
   const up = profit >= 0;
