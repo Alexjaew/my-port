@@ -1033,7 +1033,49 @@
     .hero-foot-value{font-size:22px}
     html{scroll-padding-top:90px}
   }
-  </style>
+  
+  /* ===== v3: drawer รายละเอียดหุ้น + ตัวเลขเล็กลง ===== */
+  .ht-row{cursor:pointer}
+  .ht-row:hover td{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+  .drawer-backdrop{position:fixed;inset:0;background:rgba(2,8,20,.5);opacity:0;pointer-events:none;transition:opacity .2s;z-index:70}
+  .drawer-backdrop.open{opacity:1;pointer-events:auto}
+  .drawer{position:fixed;top:0;right:0;bottom:0;width:min(460px,100%);background:var(--paper);border-left:1px solid var(--line);transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);z-index:80;display:flex;flex-direction:column;padding-bottom:env(safe-area-inset-bottom,0px)}
+  .drawer.open{transform:none}
+  .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:max(16px,env(safe-area-inset-top)) 20px 14px;border-bottom:1px solid var(--line);background:var(--paper-raised)}
+  .drawer-title{font:700 18px var(--mono)}
+  .drawer-close{border:0;background:var(--paper);color:var(--ink-soft);width:32px;height:32px;border-radius:50%;cursor:pointer;font-size:14px}
+  .drawer-body{flex:1;overflow-y:auto;padding:18px 20px 30px}
+  .drawer-sub{font-size:12px;font-weight:700;color:var(--ink-soft);margin:22px 0 10px}
+  .dr-hero{margin-bottom:14px}
+  .dr-price{font:700 26px var(--mono);letter-spacing:-.02em}
+  .dr-profit{font:600 13px var(--mono);margin-top:2px}
+  .dr-profit small{opacity:.85;font-size:12px}
+  .dr-profit.up,.dr-v.up{color:var(--gain)}.dr-profit.down,.dr-v.down{color:var(--loss)}
+  .dr-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .dr-tile{background:var(--paper-raised);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
+  .dr-l{font-size:11px;color:var(--ink-soft)}
+  .dr-v{font:600 14px var(--mono);margin-top:2px}
+  .dr-actions{display:flex;gap:8px;margin-top:12px}
+  .dr-actions .mini-btn{flex:1;padding:8px 0;font-size:13px}
+  /* ในลิ้นชักโชว์เฉพาะการ์ดของหุ้นที่เลือก */
+  #allocList .alloc-row-wrap{display:none}
+  #allocList .alloc-row-wrap.sel{display:block}
+  #allocList .alloc-row .alloc-icon,#allocList .alloc-row .alloc-right{display:none}
+  /* ตัวเลขเล็กลง */
+  .hero-value{font-size:34px}
+  .hero-value .cents{font-size:18px}
+  .hero-foot-value{font-size:15px}
+  .hero-daily,.hero-delta{font-size:12px}
+  .ht td{font-size:12px;padding:12px 10px}
+  .ht td b,.ht-sym b{font-size:13px}
+  .ht th{font-size:11.5px}
+  .ht small{font-size:10.5px}
+  .tcard-title{font-size:14px}
+  @media (min-width:900px){
+    .hero-value{font-size:42px}
+    .hero-foot-value{font-size:17px}
+  }
+</style>
 </head>
 <body>
 
@@ -1042,7 +1084,6 @@
   <button class="sb-item active" data-go="top"><i class="ti ti-wallet"></i><span>พอร์ต</span></button>
   <button class="sb-item" data-go="holdingsSection"><i class="ti ti-table"></i><span>หุ้นที่ถือ</span></button>
   <button class="sb-item" data-go="chartsAnchor"><i class="ti ti-chart-pie"></i><span>สัดส่วน</span></button>
-  <button class="sb-item" data-go="toolsAnchor"><i class="ti ti-target-arrow"></i><span>เป้าหมาย</span></button>
   <button class="sb-item" data-go="txnAnchor"><i class="ti ti-history"></i><span>ประวัติ</span></button>
   <div style="flex:1"></div>
   <button class="sb-item" data-go="settings"><i class="ti ti-settings"></i><span>ตั้งค่า</span></button>
@@ -1116,6 +1157,10 @@
     <div class="tcard">
       <div class="tcard-head">
         <div class="tcard-title" id="holdingsTitle">หุ้นที่ถือ</div>
+        <div class="basis-toggle-inline" id="basisToggle" style="margin-left:auto">
+          <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
+          <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
+        </div>
         <button class="pill-btn" id="holdingsAddBtn"><i class="ti ti-plus"></i> บันทึกซื้อ/ขาย</button>
       </div>
       <div class="tscroll" id="holdingsTable"></div>
@@ -1139,28 +1184,25 @@
   </div>
 
   <!-- 4. สัดส่วนการลงทุนรายตัว -->
-  <div class="section" id="toolsAnchor">
-    <div class="section-label-row">
-      <div class="section-label">เครื่องมือรายตัว · เป้าหมายสัดส่วน / DCA / ราคาเป้าหมาย</div>
-      <div class="basis-toggle-inline" id="basisToggle">
-        <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
-        <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
-      </div>
-    </div>
-    <div id="allocList">
-      <div class="skel" style="height:64px;margin-bottom:8px"></div>
-      <div class="skel" style="height:64px;margin-bottom:8px"></div>
-      <div class="skel" style="height:64px"></div>
-    </div>
-  </div>
-
-  <div class="section" id="txnAnchor">
+<div class="section" id="txnAnchor">
     <div class="section-label">Recent Activity · รายการล่าสุด</div>
     <div id="txnList" style="background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-md);padding:4px 14px;box-shadow:var(--shadow-sm);">
       <div class="skel" style="height:50px;margin:10px 0;"></div>
       <div class="skel" style="height:50px;margin:10px 0;"></div>
     </div>
   </div>
+
+  <div class="drawer-backdrop" id="drawerBackdrop"></div>
+  <aside class="drawer" id="stockDrawer" aria-hidden="true">
+    <div class="drawer-head"><div class="drawer-title" id="drawerTitle">รายละเอียดหุ้น</div><button class="drawer-close" id="drawerClose" aria-label="ปิด">✕</button></div>
+    <div class="drawer-body">
+      <div id="drawerSummary"></div>
+      <div class="drawer-sub">เครื่องมือ · เป้าหมายสัดส่วน / DCA / ราคาเป้าหมาย</div>
+      <div id="allocList">
+        <div class="skel" style="height:64px;margin-bottom:8px"></div>
+      </div>
+    </div>
+  </aside>
 
   <button class="fab" id="fabAdd"><i class="ti ti-plus"></i></button>
 
@@ -2205,7 +2247,7 @@ function renderAllocList() {
     const hasTarget = targetVal !== undefined;
 
     return `
-      <div class="alloc-row-wrap">
+      <div class="alloc-row-wrap${state.detailTicker === ticker ? ' sel' : ''}">
         <button class="target-price-toggle-btn target-price-toggle-btn-top" data-ticker="${ticker}">
           <i class="ti ti-target-arrow"></i> เป้าหมายราคา · คาดกำไร/ขาดทุน
           <i class="ti ti-chevron-down dca-toggle-chevron"></i>
@@ -2813,6 +2855,7 @@ function renderHoldingsTable() {
   if (!rows.length) { box.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>'; return; }
   const basis = state.basis, sym = currencySymbol();
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
+  holdingsSorted = sorted;
   const total = sorted.reduce((s,r) => s + (Number(r['มูลค่าปัจจุบัน'])||0), 0) || 1;
   let sumVal = 0, sumCost = 0, sumProfit = 0;
   const body = sorted.map((r, i) => {
@@ -2826,7 +2869,7 @@ function renderHoldingsTable() {
     const shares = Number(r['จำนวนหุ้น']) || 0;
     const color = CHART_COLORS[i % CHART_COLORS.length];
     const portTag = state.port === 'ALL' && r['ชื่อ port'] ? `<small>${r['ชื่อ port']}</small>` : '';
-    return `<tr>
+    return `<tr class="ht-row" data-i="${i}">
       <td><div class="ht-sym">
         <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
         <div><b>${t}</b>${portTag}</div></div></td>
@@ -2847,16 +2890,71 @@ function renderHoldingsTable() {
   </table>`;
 }
 function quickTrade(ticker, action) {
+  closeStockDrawer();
   openSheet();
   const a = document.querySelector('.action-btn[data-action="' + action + '"]');
   if (a) a.click();
   const f = document.getElementById('fStock');
   if (f) { f.value = ticker; f.dispatchEvent(new Event('input', { bubbles: true })); }
 }
+let holdingsSorted = [];
+function renderDrawerSummary(r) {
+  const basis = state.basis, sym = currencySymbol();
+  const t = r['หุ้น'];
+  const val = Number(r['มูลค่าปัจจุบัน']) || 0;
+  const total = holdingsSorted.reduce((a, x) => a + (Number(x['มูลค่าปัจจุบัน']) || 0), 0) || 1;
+  const profit = Number(basis === 'AVG' ? r['กำไร AVG'] : r['กำไร FIFO']) || 0;
+  const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
+  const up = profit >= 0;
+  const tile = (l, v, c) => `<div class="dr-tile"><div class="dr-l">${l}</div><div class="dr-v ${c || ''}">${v}</div></div>`;
+  document.getElementById('drawerTitle').textContent = t;
+  document.getElementById('drawerSummary').innerHTML = `
+    <div class="dr-hero">
+      <div class="dr-price">${sym}${fmt(Number(r['price']) || 0)}</div>
+      <div class="dr-profit ${up ? 'up' : 'down'}">${up ? '+' : ''}${sym}${fmt(profit)} <small>(${fmtPct(pp)})</small></div>
+    </div>
+    <div class="dr-grid">
+      ${tile('มูลค่า', sym + fmt(val))}
+      ${tile('ทุนรวม', sym + fmt(Number(r['ทุน  FIFO']) || 0))}
+      ${tile('จำนวนหุ้น', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
+      ${tile('ทุนเฉลี่ย', sym + fmt(Number(r['ราคา FIFO']) || 0))}
+      ${tile('สัดส่วนพอร์ต', (val / total * 100).toFixed(1) + '%')}
+      ${tile('กำไร (' + basis + ')', fmtPct(pp), up ? 'up' : 'down')}
+    </div>
+    <div class="dr-actions">
+      <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">ซื้อเพิ่ม</button>
+      <button class="mini-btn" data-trade="ขาย" data-ticker="${t}">ขาย</button>
+    </div>`;
+}
+function openStockDrawer(i) {
+  const r = holdingsSorted[i]; if (!r) return;
+  state.detailTicker = r['หุ้น'];
+  renderDrawerSummary(r);
+  renderAllocList();
+  document.getElementById('stockDrawer').classList.add('open');
+  document.getElementById('drawerBackdrop').classList.add('open');
+  document.getElementById('stockDrawer').setAttribute('aria-hidden', 'false');
+  document.querySelector('#stockDrawer .drawer-body').scrollTop = 0;
+}
+function closeStockDrawer() {
+  state.detailTicker = null;
+  document.getElementById('stockDrawer').classList.remove('open');
+  document.getElementById('drawerBackdrop').classList.remove('open');
+  document.getElementById('stockDrawer').setAttribute('aria-hidden', 'true');
+}
 document.getElementById('holdingsTable').addEventListener('click', (e) => {
+  const b = e.target.closest('[data-trade]');
+  if (b) { quickTrade(b.dataset.ticker, b.dataset.trade); return; }
+  const row = e.target.closest('.ht-row');
+  if (row) openStockDrawer(Number(row.dataset.i));
+});
+document.getElementById('stockDrawer').addEventListener('click', (e) => {
   const b = e.target.closest('[data-trade]');
   if (b) quickTrade(b.dataset.ticker, b.dataset.trade);
 });
+document.getElementById('drawerClose').addEventListener('click', closeStockDrawer);
+document.getElementById('drawerBackdrop').addEventListener('click', closeStockDrawer);
+document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeStockDrawer(); });
 document.getElementById('holdingsAddBtn').addEventListener('click', () => openSheet());
 document.getElementById('sidebar').addEventListener('click', (e) => {
   const b = e.target.closest('[data-go]'); if (!b) return;
