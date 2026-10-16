@@ -1218,6 +1218,18 @@
     .drawer-grab{display:block;position:absolute;top:9px;left:50%;width:42px;height:5px;margin-left:-21px;border-radius:99px;background:var(--line)}
     .drawer-body{overscroll-behavior:contain}
   }
+
+  /* ===== v10: กราฟมูลค่า + สัดส่วน เฟรมเดียว เหนือหุ้นที่ถือ ===== */
+  .charts-frame{background:var(--paper-raised);border:1px solid var(--line);border-radius:20px;overflow:hidden;display:flex;flex-direction:column}
+  .cf-pane{padding:16px 16px 14px;min-width:0}
+  .cf-pane+.cf-pane{border-top:1px solid var(--line)}
+  .charts-frame .chart-card{background:transparent;border:0;border-radius:0;box-shadow:none;padding:0}
+  .charts-frame .section-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:12px}
+  @media (min-width:900px){
+    .charts-frame{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(0,1fr)}
+    .cf-pane{padding:20px 22px 18px}
+    .cf-pane+.cf-pane{border-top:0;border-left:1px solid var(--line)}
+  }
 </style>
 </head>
 <body>
@@ -1225,8 +1237,8 @@
 <aside class="sidebar" id="sidebar">
   <div class="sb-logo">◆</div>
   <button class="sb-item active" data-go="top"><i class="ti ti-wallet"></i><span>พอร์ต</span></button>
-  <button class="sb-item" data-go="holdingsSection"><i class="ti ti-table"></i><span>หุ้นที่ถือ</span></button>
   <button class="sb-item" data-go="chartsAnchor"><i class="ti ti-chart-pie"></i><span>สัดส่วน</span></button>
+  <button class="sb-item" data-go="holdingsSection"><i class="ti ti-table"></i><span>หุ้นที่ถือ</span></button>
   <button class="sb-item" data-go="txnAnchor"><i class="ti ti-history"></i><span>ประวัติ</span></button>
   <div style="flex:1"></div>
   <button class="sb-item" data-go="settings"><i class="ti ti-settings"></i><span>ตั้งค่า</span></button>
@@ -1301,6 +1313,24 @@
   </div>
   </div>
 
+  <!-- กราฟมูลค่า + สัดส่วน อยู่ในเฟรมเดียว -->
+  <div class="section" id="chartsAnchor">
+    <div class="charts-frame">
+      <div class="cf-pane">
+        <div class="section-label">มูลค่าปัจจุบัน <span class="sl-sub">พร้อม P/L%</span></div>
+        <div class="chart-card" id="barChartCard">
+          <div class="skel" style="height:200px;"></div>
+        </div>
+      </div>
+      <div class="cf-pane">
+        <div class="section-label">สัดส่วนหุ้น</div>
+        <div class="chart-card" id="donutChartCard">
+          <div class="skel" style="height:180px;"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <div class="section" id="holdingsSection">
     <div class="tcard">
       <div class="tcard-head">
@@ -1312,22 +1342,6 @@
         <button class="pill-btn" id="holdingsAddBtn"><i class="ti ti-plus"></i> บันทึกซื้อ/ขาย</button>
       </div>
       <div class="tscroll" id="holdingsTable"></div>
-    </div>
-  </div>
-
-  <!-- 2. กราฟแท่งมูลค่าปัจจุบัน -->
-  <div class="section half" id="chartsAnchor">
-    <div class="section-label">Market Value · มูลค่าปัจจุบัน (พร้อม P/L%)</div>
-    <div class="chart-card" id="barChartCard">
-      <div class="skel" style="height:200px;"></div>
-    </div>
-  </div>
-
-  <!-- 3. กราฟวงกลมสัดส่วนหุ้น -->
-  <div class="section half">
-    <div class="section-label">Allocation · สัดส่วนหุ้น</div>
-    <div class="chart-card" id="donutChartCard">
-      <div class="skel" style="height:180px;"></div>
     </div>
   </div>
 
