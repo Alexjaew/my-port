@@ -1206,6 +1206,18 @@
     .ov-toggle{padding:16px 26px}
     #overviewSection .overview-card{padding:0 26px 24px !important}
   }
+
+  /* ===== v9: ปิดแผงหุ้นด้วยการเลื่อนลง (ไม่มีปุ่ม X) ===== */
+  .drawer-head{position:relative;padding-top:max(22px,env(safe-area-inset-top))}
+  .drawer-grab{display:none}
+  .drawer-title{touch-action:none}
+  @media (max-width:899px){
+    .drawer{top:auto;left:0;right:0;bottom:0;width:100%;height:90vh;height:90dvh;border-left:0;border-top:1px solid var(--line);border-radius:22px 22px 0 0;transform:translateY(100%);overscroll-behavior:contain}
+    .drawer.open{transform:none}
+    .drawer-head{padding:26px 20px 12px;touch-action:none}
+    .drawer-grab{display:block;position:absolute;top:9px;left:50%;width:42px;height:5px;margin-left:-21px;border-radius:99px;background:var(--line)}
+    .drawer-body{overscroll-behavior:contain}
+  }
 </style>
 </head>
 <body>
@@ -1330,7 +1342,7 @@
 
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
   <aside class="drawer" id="stockDrawer" aria-hidden="true">
-    <div class="drawer-head"><div class="drawer-title" id="drawerTitle">รายละเอียดหุ้น</div><button class="drawer-close" id="drawerClose" aria-label="ปิด">✕</button></div>
+    <div class="drawer-head"><div class="drawer-grab"></div><div class="drawer-title" id="drawerTitle">รายละเอียดหุ้น</div></div>
     <div class="drawer-body">
       <div id="drawerSummary"></div>
       <div class="drawer-sub">เครื่องมือ · เป้าหมายสัดส่วน / DCA / ราคาเป้าหมาย</div>
@@ -3069,6 +3081,7 @@ function openStockDrawer(i) {
 }
 function closeStockDrawer() {
   state.detailTicker = null;
+  document.getElementById('stockDrawer').style.transform = '';
   document.getElementById('stockDrawer').classList.remove('open');
   document.getElementById('drawerBackdrop').classList.remove('open');
   document.getElementById('stockDrawer').setAttribute('aria-hidden', 'true');
@@ -3083,8 +3096,39 @@ document.getElementById('stockDrawer').addEventListener('click', (e) => {
   const b = e.target.closest('[data-trade]');
   if (b) quickTrade(b.dataset.ticker, b.dataset.trade);
 });
-document.getElementById('drawerClose').addEventListener('click', closeStockDrawer);
 document.getElementById('drawerBackdrop').addEventListener('click', closeStockDrawer);
+/* เลื่อนลงเพื่อปิดแผงรายละเอียดหุ้น (มือถือ) */
+(function () {
+  const dr = document.getElementById('stockDrawer');
+  const body = dr.querySelector('.drawer-body');
+  const mobile = () => window.matchMedia('(max-width:899px)').matches;
+  let sy = 0, dy = 0, t0 = 0, mode = false, fromHead = false;
+  dr.addEventListener('touchstart', (e) => {
+    if (!mobile()) return;
+    fromHead = !!e.target.closest('.drawer-head');
+    if (!fromHead && body.scrollTop > 0) { mode = false; return; }
+    sy = e.touches[0].clientY; dy = 0; t0 = Date.now(); mode = 'pending';
+  }, { passive: true });
+  dr.addEventListener('touchmove', (e) => {
+    if (!mode) return;
+    if (!fromHead && body.scrollTop > 0 && mode !== true) { mode = false; return; }
+    dy = e.touches[0].clientY - sy;
+    if (dy <= 0) { if (mode === true) { dr.style.transform = ''; mode = 'pending'; } return; }
+    mode = true;
+    dr.style.transition = 'none';
+    dr.style.transform = 'translateY(' + dy + 'px)';
+    e.preventDefault();
+  }, { passive: false });
+  dr.addEventListener('touchend', () => {
+    if (mode !== true) { mode = false; return; }
+    const v = dy / Math.max(1, Date.now() - t0);
+    dr.style.transition = '';
+    dr.style.transform = '';
+    mode = false;
+    if (dy > 110 || v > 0.6) closeStockDrawer();
+  });
+})();
+
 document.addEventListener('keydown', (e) => { if (e.key === 'Escape') closeStockDrawer(); });
 document.getElementById('holdingsAddBtn').addEventListener('click', () => openSheet());
 document.getElementById('sidebar').addEventListener('click', (e) => {
