@@ -2013,7 +2013,7 @@ function renderOverviewCard() {
   const thbRate = usdRow ? Number(usdRow['thbUsdRate']) || 0 : 0;
   let fxManual = 0;
   try { fxManual = Number(localStorage.getItem('fxThbPerUsd')) || 0; } catch (e) {}
-  const FX_OFFSET = -0.19;   // ปรับเรทอัตโนมัติให้ต่ำกว่าเรทมาตรฐาน (บาทต่อ 1 USD) ให้ใกล้เคียงแอพ Dime
+  const FX_OFFSET = -0.17;   // ปรับเรทอัตโนมัติให้ต่ำกว่าเรทมาตรฐาน (บาทต่อ 1 USD) ให้ใกล้เคียงแอพ Dime
   const fxAuto = thbRate ? (1 / thbRate) + FX_OFFSET : 0;
   const usdToThb = fxManual > 0 ? fxManual : fxAuto;   // บาทต่อ 1 ดอลลาร์ (ตั้งเองได้)
 
