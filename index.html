@@ -1281,6 +1281,11 @@
     #overviewSection .overview-card{padding:0 22px 16px !important}
     .overview-total-value{font-size:24px}
   }
+
+  /* ===== v13: แสดงค่าเงินบาทในภาพรวม ===== */
+  .overview-total-thb{font:500 13px var(--mono);color:var(--accent);margin-top:2px}
+  .overview-total-thb span{color:var(--ink-soft);font-size:10.5px;font-weight:400;margin-left:2px}
+  .overview-breakdown-value small{display:block;color:var(--ink-soft);font-size:10px;font-weight:400;line-height:1.25}
 </style>
 </head>
 <body>
@@ -2001,6 +2006,8 @@ function renderOverviewCard() {
 
   const usdRow = state.summary.rows.find(r => r['หุ้น'] === 'USD');
   const thbRate = usdRow ? Number(usdRow['thbUsdRate']) || 0 : 0;
+  const usdToThb = thbRate ? 1 / thbRate : 0;   // บาทต่อ 1 ดอลลาร์
+  const toThb = (usd) => usdToThb ? '฿' + fmt(usd * usdToThb, 0) : '';
 
   const stockRows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
   if (!stockRows.length) { section.style.display = 'none'; return; }
@@ -2061,7 +2068,7 @@ function renderOverviewCard() {
       <div class="overview-breakdown-dot" style="background:${c.color}"></div>
       <div class="overview-breakdown-label">${name}</div>
       <div class="overview-breakdown-pct">${(c.value / grandTotal * 100).toFixed(1)}%</div>
-      <div class="overview-breakdown-value">$${fmt(c.value)}</div>
+      <div class="overview-breakdown-value">$${fmt(c.value)}${usdToThb ? `<small>${toThb(c.value)}</small>` : ''}</div>
     </div>
   `).join('');
 
@@ -2092,6 +2099,7 @@ function renderOverviewCard() {
   card.innerHTML = `
     <div class="overview-total-label">มูลค่ารวมทุกสินทรัพย์</div>
     <div class="overview-total-value">$${fmt(totalWithCash)}</div>
+    ${usdToThb ? `<div class="overview-total-thb">≈ ${toThb(totalWithCash)} <span>· 1 USD ≈ ${fmt(usdToThb, 2)} บาท</span></div>` : ''}
     <div class="overview-chart-row">
       <div class="overview-donut-wrap"><canvas id="overviewDonutCanvas"></canvas></div>
       <div class="overview-breakdown">${breakdownHtml}</div>
