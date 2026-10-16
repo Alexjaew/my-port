@@ -2111,7 +2111,7 @@ function renderOverviewCard() {
   card.innerHTML = `
     <div class="overview-total-label">มูลค่ารวมทุกสินทรัพย์</div>
     <div class="overview-total-value">$${fmt(totalWithCash)}</div>
-    <div class="overview-total-thb">${usdToThb ? `≈ ${totalThb} ` : ''}<button type="button" class="fx-edit" id="fxEditBtn" title="ตั้งเรทให้ตรงกับแอพ Dime">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} บาท${fxManual > 0 ? ' (ตั้งเอง)' : ' (เรทกลาง −0.20)'}` : 'ตั้งเรทบาท'} ✎</button></div>
+    <div class="overview-total-thb">${usdToThb ? `≈ ${totalThb} ` : ''}<button type="button" class="fx-edit" id="fxEditBtn" title="ตั้งเรทให้ตรงกับแอพ Dime">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} บาท${fxManual > 0 ? ' (ตั้งเอง)' : ' (เรทกลาง −0.18)'}` : 'ตั้งเรทบาท'} ✎</button></div>
     <div class="overview-chart-row">
       <div class="overview-donut-wrap"><canvas id="overviewDonutCanvas"></canvas></div>
       <div class="overview-breakdown">${breakdownHtml}</div>
