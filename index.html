@@ -1167,6 +1167,24 @@
     .overview-native-row{grid-template-columns:1fr 1fr}
     .summary-grid .section{padding-top:16px}
   }
+
+  /* ===== v7: บล็อกเดียว — มูลค่าพอร์ต + ภาพรวมทุกสินทรัพย์ ===== */
+  .summary-grid{background:var(--paper-raised);border:1px solid var(--line);border-radius:20px;overflow:hidden;margin:18px 14px 0;display:flex;flex-direction:column}
+  .summary-grid>.section{padding:18px 18px 20px !important;min-width:0}
+  #heroSection{order:-1}
+  .summary-grid .section-label{font-size:12px;font-weight:600;color:var(--ink-soft);margin-bottom:12px}
+  .summary-grid .hero-card,.summary-grid .overview-card{background:transparent !important;border:0 !important;border-radius:0 !important;padding:0 !important;box-shadow:none !important}
+  .summary-grid .hero-card{text-align:left}
+  .summary-grid .hero-label{margin-bottom:4px}
+  .summary-grid .hero-foot{margin-top:16px;padding-top:14px;border-top:1px solid var(--line)}
+  .summary-grid>.section:not(#heroSection):not([style*="none"]){border-top:1px solid var(--line)}
+  @media (min-width:900px){
+    .summary-grid{margin:22px 0 0;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr)}
+    .summary-grid:has(> #overviewSection[style*="none"]){grid-template-columns:minmax(0,1fr)}
+    .summary-grid>.section{padding:24px 26px 26px !important}
+    .summary-grid>.section:not(#heroSection):not([style*="none"]){border-top:0;border-left:1px solid var(--line)}
+    .summary-grid .hero-value{font-size:44px}
+  }
 </style>
 </head>
 <body>
@@ -1204,7 +1222,7 @@
   </div>
 
   <!-- 1. Portfolio Value -->
-  <div class="section">
+  <div class="section" id="heroSection">
     <div class="section-label">มูลค่าพอร์ต <span class="sl-sub">พอร์ตที่เลือก</span></div>
     <div class="hero-card">
       <svg class="hero-bg-chart" id="heroBgChart" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
