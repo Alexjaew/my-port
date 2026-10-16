@@ -1230,6 +1230,13 @@
     .cf-pane{padding:20px 22px 18px}
     .cf-pane+.cf-pane{border-top:0;border-left:1px solid var(--line)}
   }
+
+  /* ===== v11: กราฟในเฟรมเล็กลง ===== */
+  .cf-pane{padding:14px 14px 12px}
+  .charts-frame .section-label{margin-bottom:8px}
+  @media (min-width:900px){
+    .cf-pane{padding:16px 20px 14px}
+  }
 </style>
 </head>
 <body>
@@ -2111,7 +2118,7 @@ async function renderDonutChart() {
   const goldColor = '#D4AF37';
   const colors = items.map(it => it.isCash ? '#FFFFFF' : (it.ticker === 'XAU' ? goldColor : (it.plPct >= 0 ? gainColor : lossColor)));
 
-  card.innerHTML = `<div style="position:relative;height:340px;">
+  card.innerHTML = `<div style="position:relative;height:200px;">
     <canvas id="donutCanvas" role="img"
       aria-label="Pie chart showing portfolio allocation: ${tickers.map((t,i)=>`${t} ${pcts[i]}%`).join(', ')}"></canvas>
   </div>`;
@@ -2147,7 +2154,7 @@ async function renderDonutChart() {
         },
         datalabels: { display: false }
       },
-      layout: { padding: 10 }
+      layout: { padding: 4 }
     },
     plugins: [{
       id: 'insideSliceLabels',
@@ -2163,14 +2170,14 @@ async function renderDonutChart() {
           const y = arc.y + Math.sin(angle) * r;
           ctx.save();
           ctx.fillStyle = colors[i] === '#FFFFFF' ? '#1A1A1A' : '#fff';
-          ctx.font = 'bold 12px -apple-system, sans-serif';
+          ctx.font = 'bold 10.5px -apple-system, sans-serif';
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
           ctx.shadowColor = colors[i] === '#FFFFFF' ? 'transparent' : 'rgba(0,0,0,0.35)';
           ctx.shadowBlur = 3;
-          ctx.fillText(tickers[i], x, y - 7);
-          ctx.font = '10.5px -apple-system, sans-serif';
-          ctx.fillText(`${pct}%`, x, y + 8);
+          ctx.fillText(tickers[i], x, y - 6);
+          ctx.font = '9.5px -apple-system, sans-serif';
+          ctx.fillText(`${pct}%`, x, y + 7);
           ctx.restore();
         });
       }
@@ -2214,7 +2221,7 @@ function renderPLChart() {
   const goldSoft = '#B8860B';
 
 
-  card.innerHTML = `<div style="position:relative;height:230px;">
+  card.innerHTML = `<div style="position:relative;height:170px;">
     <canvas id="plCanvas" role="img"
       aria-label="Bar chart of current market value per stock with P&L% label: ${tickers.map((t,i)=>`${t} ${sym}${values[i].toLocaleString()} ${plPcts[i]>=0?'+':''}${plPcts[i]}%`).join(', ')}"></canvas>
   </div>`;
@@ -2232,7 +2239,7 @@ function renderPLChart() {
         backgroundColor: tickers.map((t,i) => t === 'XAU' ? goldSoft : (plPcts[i] >= 0 ? gainSoft : lossSoft)),
         borderRadius: 4,
         borderSkipped: false,
-        barThickness: 20
+        barThickness: 16
       }]
     },
     options: {
