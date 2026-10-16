@@ -1286,6 +1286,11 @@
   .overview-total-thb{font:500 13px var(--mono);color:var(--accent);margin-top:2px}
   .overview-total-thb span{color:var(--ink-soft);font-size:10.5px;font-weight:400;margin-left:2px}
   .overview-breakdown-value small{display:block;color:var(--ink-soft);font-size:10px;font-weight:400;line-height:1.25}
+
+  /* ===== v14: ตั้งเรทบาทเองให้ตรงกับ Dime ===== */
+  .overview-total-thb{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap}
+  .fx-edit{background:none;border:0;padding:0;color:var(--ink-soft);font:400 10.5px var(--sans);cursor:pointer;text-decoration:underline dotted}
+  .fx-edit:hover{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -2006,8 +2011,11 @@ function renderOverviewCard() {
 
   const usdRow = state.summary.rows.find(r => r['หุ้น'] === 'USD');
   const thbRate = usdRow ? Number(usdRow['thbUsdRate']) || 0 : 0;
-  const usdToThb = thbRate ? 1 / thbRate : 0;   // บาทต่อ 1 ดอลลาร์
-  const toThb = (usd) => usdToThb ? '฿' + fmt(usd * usdToThb, 0) : '';
+  let fxManual = 0;
+  try { fxManual = Number(localStorage.getItem('fxThbPerUsd')) || 0; } catch (e) {}
+  const FX_OFFSET = -0.2;   // ปรับเรทอัตโนมัติให้ต่ำกว่าเรทมาตรฐาน (บาทต่อ 1 USD) ให้ใกล้เคียงแอพ Dime
+  const fxAuto = thbRate ? (1 / thbRate) + FX_OFFSET : 0;
+  const usdToThb = fxManual > 0 ? fxManual : fxAuto;   // บาทต่อ 1 ดอลลาร์ (ตั้งเองได้)
 
   const stockRows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
   if (!stockRows.length) { section.style.display = 'none'; return; }
@@ -2058,6 +2066,10 @@ function renderOverviewCard() {
 
   const grandTotal = activeCats.reduce((s, [, c]) => s + c.value, 0);
   const totalWithCash = grandTotal; // เงินสดรวมอยู่ใน grandTotal แล้ว (เป็นอีกหมวดหนึ่ง)
+  // บาท: หมวดไทยใช้ยอดบาทจริง ไม่แปลงวนไปมา / หมวดอื่นแปลงด้วยเรทที่ใช้
+  const thbNum = (name, c) => name === 'Thai Stocks' ? c.rawValue : c.value * usdToThb;
+  const thbOf = (name, c) => usdToThb ? '฿' + fmt(thbNum(name, c), 0) : '';
+  const totalThb = usdToThb ? '฿' + fmt(activeCats.reduce((a, [n, c]) => a + thbNum(n, c), 0), 0) : '';
 
   section.style.display = 'block';
   const ovHead = document.getElementById('ovHeadTotal');
@@ -2068,7 +2080,7 @@ function renderOverviewCard() {
       <div class="overview-breakdown-dot" style="background:${c.color}"></div>
       <div class="overview-breakdown-label">${name}</div>
       <div class="overview-breakdown-pct">${(c.value / grandTotal * 100).toFixed(1)}%</div>
-      <div class="overview-breakdown-value">$${fmt(c.value)}${usdToThb ? `<small>${toThb(c.value)}</small>` : ''}</div>
+      <div class="overview-breakdown-value">$${fmt(c.value)}${usdToThb ? `<small>${thbOf(name, c)}</small>` : ''}</div>
     </div>
   `).join('');
 
@@ -2099,7 +2111,7 @@ function renderOverviewCard() {
   card.innerHTML = `
     <div class="overview-total-label">มูลค่ารวมทุกสินทรัพย์</div>
     <div class="overview-total-value">$${fmt(totalWithCash)}</div>
-    ${usdToThb ? `<div class="overview-total-thb">≈ ${toThb(totalWithCash)} <span>· 1 USD ≈ ${fmt(usdToThb, 2)} บาท</span></div>` : ''}
+    <div class="overview-total-thb">${usdToThb ? `≈ ${totalThb} ` : ''}<button type="button" class="fx-edit" id="fxEditBtn" title="ตั้งเรทให้ตรงกับแอพ Dime">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} บาท${fxManual > 0 ? ' (ตั้งเอง)' : ' (เรทกลาง −0.20)'}` : 'ตั้งเรทบาท'} ✎</button></div>
     <div class="overview-chart-row">
       <div class="overview-donut-wrap"><canvas id="overviewDonutCanvas"></canvas></div>
       <div class="overview-breakdown">${breakdownHtml}</div>
@@ -2110,6 +2122,18 @@ function renderOverviewCard() {
       <div>ยอด Thai Stocks แปลงจากบาทเป็นดอลลาร์ตามอัตราแลกเปลี่ยนปัจจุบัน (${thbRate ? '1 USD ≈ ' + fmt(1/thbRate,2) + ' บาท' : 'ไม่มีอัตรา'}) เพื่อประมาณการภาพรวมเท่านั้น ตัวเลขจริงในพอร์ต SET100 ยังคงเป็นบาท ตัวเลขในช่องแยกสกุลเงินคือค่าจริงที่ไม่ผ่านการแปลง</div>
     </details>
   `;
+  const fxBtn = document.getElementById('fxEditBtn');
+  if (fxBtn) fxBtn.addEventListener('click', () => {
+    const v = prompt('ใส่เรทบาทต่อ 1 USD ตามที่แอพ Dime แสดง (เช่น 32.50)\nเว้นว่างเพื่อกลับไปใช้เรทอัตโนมัติ', fxManual > 0 ? String(fxManual) : '');
+    if (v === null) return;
+    const n = Number(String(v).replace(',', '.'));
+    try {
+      if (!v.trim()) localStorage.removeItem('fxThbPerUsd');
+      else if (n > 0 && n < 1000) localStorage.setItem('fxThbPerUsd', String(n));
+      else { alert('เรทไม่ถูกต้อง'); return; }
+    } catch (e) {}
+    renderOverviewCard();
+  });
 
   if (_overviewDonutInstance) { _overviewDonutInstance.destroy(); _overviewDonutInstance = null; }
   const ctx = document.getElementById('overviewDonutCanvas');
