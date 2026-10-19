@@ -1875,19 +1875,7 @@ function renderHero() {
   document.getElementById('heroTotalRow').style.display = 'none';
   document.getElementById('heroPrincipalRow').style.display = 'none';
 
-  // แถวเดิม: เหลือแค่ปุ่มแก้ยอดเงินสด (ซ่อนตัวเลข แต่ยังเก็บค่าไว้ให้ปุ่มดินสอใช้เป็นค่าเริ่มต้น)
-  const cashRowEl = document.getElementById('heroCashRow');
-  if (state.summary && !isThai) {
-    cashRowEl.style.display = 'flex';
-    cashRowEl.querySelector('.hero-cash-label').innerHTML = '<i class="ti ti-cash" aria-hidden="true"></i>แก้ยอดเงินสด';
-    const cv = document.getElementById('heroCashValue');
-    cv.textContent = `$${fmt(cashBalance)}`;
-    cv.style.display = 'none';
-  } else {
-    cashRowEl.style.display = 'none';
-  }
-  document.getElementById('heroTotalRow').style.display = 'none';
-  document.getElementById('heroPrincipalRow').style.display = 'none';
+
 
   // ===== Day Change (%) : ถ้าราคาไม่ขยับ ให้คงค่าที่ขยับล่าสุดไว้ =====
   const now = new Date();
@@ -3101,6 +3089,7 @@ function renderHoldingsTable() {
   if (!rows.length) { box.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>'; return; }
 
   const basis = state.basis;
+  const sym = currencySymbol();
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   holdingsSorted = sorted;
   const base = getShareBase(sorted), total = base.total;
@@ -3124,20 +3113,22 @@ function renderHoldingsTable() {
     const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
     const color = CHART_COLORS[i % CHART_COLORS.length];
     const weight = val / total * 100;
+    const price = Number(r['price']) || 0;
+    const avg = Number(r['ราคา FIFO']) || 0;
     const target = state.allocTargets[t];
-    let sub;
+    let sub = `${sym}${fmt(price)} · ต้นทุน ${sym}${fmt(avg)}`;
+    if (state.port === 'ALL' && r['ชื่อ port']) sub += ` · ${r['ชื่อ port']}`;
+    let targetLine = '';
     if (target !== undefined) {
       const diff = weight - target;
-      sub = `เป้า ${fmt(target, 0)}% · ${diff > 0 ? 'เกิน +' : 'เหลือ '}${fmt(Math.abs(diff), 1)}%`;
-    } else {
-      sub = 'ยังไม่ตั้งเป้าหมาย';
+      targetLine = `เป้า ${fmt(target, 0)}% · ${diff > 0 ? 'เกิน +' : 'เหลือ '}${fmt(Math.abs(diff), 1)}%`;
     }
-    if (state.port === 'ALL' && r['ชื่อ port']) sub += ` · ${r['ชื่อ port']}`;
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
         <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span></div>
         <div class="hr-sub">${sub}</div>
+        ${targetLine ? `<div class="hr-sub">${targetLine}</div>` : ''}
       </div>
       <div class="hr-right">
         <div class="hr-val" style="color:${pp >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
@@ -3160,6 +3151,7 @@ let holdingsSorted = [];
   
 function renderDrawerSummary(r) {
   const basis = state.basis;
+  const sym = currencySymbol();
   const t = r['หุ้น'];
   const val = Number(r['มูลค่าปัจจุบัน']) || 0;
   const total = getShareBase(holdingsSorted).total;
@@ -3180,6 +3172,8 @@ function renderDrawerSummary(r) {
       <div class="dr-profit" style="color:var(--ink-soft)">กำไร (${basis}) · สัดส่วน ${weight.toFixed(1)}% ของพอร์ต</div>
     </div>
     <div class="dr-grid">
+      ${tile('ราคาปัจจุบัน', sym + fmt(Number(r['price']) || 0))}
+      ${tile('ต้นทุนเฉลี่ย', sym + fmt(Number(r['ราคา FIFO']) || 0))}
       ${tile('สัดส่วนพอร์ต', weight.toFixed(1) + '%')}
       ${tile('เป้าหมาย', target !== undefined ? fmt(target, 1) + '%' : '—')}
       ${tile('ห่างจากเป้า', gap)}
