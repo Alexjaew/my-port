@@ -1840,15 +1840,13 @@ function renderHero() {
   const [intPart, decPart] = valStr.split('.');
   document.getElementById('heroValue').innerHTML =
     `${sym}${intPart}<span class="cents">.${decPart || '00'}</span>`;
-  // มูลค่าหุ้น (ตัวใหญ่) สีเขียว/แดงตามกำไรขาดทุนเทียบกับต้นทุน
+
+  // มูลค่าหุ้น สีเขียว/แดงตามกำไรขาดทุนเทียบกับต้นทุน
   const stockGain = marketValue - costValue;
   document.getElementById('footStockValue').textContent = `${sym}${fmt(marketValue)}`;
   document.getElementById('footStockValue').style.color = stockGain >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
 
-  // เงินสดคงเหลือ (USD) แสดงแยกต่างหาก ไม่ปนกับ Cost Basis / กำไรขาดทุน
-  // เช็คว่าข้อมูลโหลดแล้วหรือยัง (state.summary) แทนการเช็คค่าตรงๆ เพราะถ้าเงินสด = 0 พอดี
-  // การเช็คแบบ if (cashBalance) จะถือว่า 0 เป็น falsy แล้วซ่อนแถวไปเลย ทำให้ดูเหมือนข้อมูลหาย
-  // ซ่อนแถวนี้ไปเลยตอนดูพอร์ตไทย เพราะเงินสดเป็น USD คนละสกุลกับพอร์ตไทย ไม่เกี่ยวข้องกัน
+  // เงินสดคงเหลือ (USD) ซ่อนตอนดูพอร์ตไทย
   const cashRowEl = document.getElementById('heroCashRow');
   if (state.summary && !isThai) {
     cashRowEl.style.display = 'flex';
@@ -1857,11 +1855,10 @@ function renderHero() {
     cashRowEl.style.display = 'none';
   }
 
-  // แถว "มูลค่ารวม" เดิมถูกลบออก เพราะตอนนี้ตัวเลขใหญ่ด้านบน (heroValue) รวมเงินสดเข้าไปแล้วโดยตรง
   const totalRowEl = document.getElementById('heroTotalRow');
   if (totalRowEl) totalRowEl.style.display = 'none';
 
-  // เงินต้น (สุทธิ) = เงินฝากทั้งหมด - เงินที่ถอนออกไปแล้ว (เป็น USD เสมอ ซ่อนไปเลยตอนดูพอร์ตไทย)
+  // เงินต้น (สุทธิ) = เงินฝากทั้งหมด - เงินที่ถอนออกไปแล้ว
   const grossDeposited = getPrincipalBalance();
   const withdrawnBalance = getWithdrawnBalance();
   const netPrincipal = grossDeposited - withdrawnBalance;
@@ -1875,10 +1872,8 @@ function renderHero() {
   }
 
   const deltaEl = document.getElementById('heroDelta');
-  // นำการปรับแสดงผลเป็น inline-flex ออกเพื่อให้ซ่อนไว้ตาม CSS เริ่มต้น (display:none)
   deltaEl.style.display = 'none';
 
-  // กำไร/ขาดทุน = มูลค่าตลาด - ต้นทุน (costValue) เสมอ ไม่ว่าจะสลับโหมดแสดงผลเป็นราคาตลาดหรือต้นทุนก็ตาม
   const profit = marketValue - costValue;
   const profitPct = costValue ? profit / costValue : 0;
   document.getElementById('footProfitLabel').textContent = 'Unrealized P/L';
@@ -1887,10 +1882,10 @@ function renderHero() {
   deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
   deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
 
-  // เทียบ "มูลค่าสดตอนนี้" กับ "ค่าปิดของวันทำการก่อนหน้าล่าสุดที่บันทึกไว้" เสมอ
-  // (ไม่ใช้ค่า Daily Change/% ที่ trigger บันทึกไว้ตรงๆ เพราะนิ่ง ไม่ใช่ราคา ณ ตอนที่เปิดดู)
+  // ===== Day Change =====
+  // ถ้าราคาไม่ขยับ (เสาร์-อาทิตย์/วันหยุดตลาด) ให้คงค่าที่ขยับล่าสุดไว้ ไม่แสดง 0.00
   const now = new Date();
-  const isWeekend = now.getDay() === 0 || now.getDay() === 6; // 0 = อาทิตย์, 6 = เสาร์ (ตลาดปิด)
+  const isWeekend = now.getDay() === 0 || now.getDay() === 6;
   const todayStr = now.toDateString();
 
   const allValueEntries = state.history
@@ -1900,10 +1895,9 @@ function renderHero() {
   const heroDailyEl = document.getElementById('heroDaily');
   const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
 
-  // ===== Day Change: ถ้าราคาไม่ขยับ (เสาร์-อาทิตย์/วันหยุดตลาด) ให้คงค่าที่ขยับล่าสุดไว้ =====
   let dailyInfo = null; // { current, base, stale, date }
   if (!isThai) {
-    // สร้างลำดับมูลค่า เก่า -> ใหม่
+    // ลำดับมูลค่า เก่า -> ใหม่
     // วันทำการ: ตัดแถวของวันนี้ออก แล้วต่อด้วยมูลค่าสดตอนนี้
     // เสาร์-อาทิตย์: ใช้เฉพาะ History (ไม่ใช้ราคาสดที่อาจนิ่ง)
     const series = allValueEntries
@@ -1917,7 +1911,7 @@ function renderHero() {
         dailyInfo = {
           current: series[i].v,
           base: series[i - 1].v,
-          stale: i !== series.length - 1, // true = ไม่ใช่การขยับล่าสุดของวันนี้ (ตลาดปิด/ราคานิ่ง)
+          stale: i !== series.length - 1,
           date: series[i].date
         };
         break;
@@ -1947,37 +1941,13 @@ function renderHero() {
     heroDailyEl.style.display = 'none';
     yesterdaySmallEl.style.display = 'none';
   }
-  } else {
-    // วันทำการปกติ: เทียบมูลค่าสดตอนนี้กับวันทำการก่อนหน้าล่าสุดที่ไม่ใช่วันนี้
-    const priorDayEntries = allValueEntries.filter(h => new Date(h['Date']).toDateString() !== todayStr);
-    if (priorDayEntries.length > 0) {
-      currentForDaily = totalValueForHero;
-      baselineValue = Number(priorDayEntries[priorDayEntries.length - 1]['มูลค่าพอร์ต']) || 0;
-    }
-  }
 
-  if (currentForDaily !== null && baselineValue !== null) {
-    const dailyChange = currentForDaily - baselineValue;
-    const dailyPct = baselineValue ? dailyChange / baselineValue : 0;
-    const dailyUp = dailyChange >= 0;
-
-    heroDailyEl.style.display = 'block';
-    heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    heroDailyEl.innerHTML = `Day Change <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}${sym}${fmt(dailyChange)} (${fmtPct(dailyPct)})</b> <span class="hero-yesterday-inline">${sym}${fmt(baselineValue)}</span>`;
-
-    yesterdaySmallEl.style.display = 'none';
-  } else {
-    heroDailyEl.style.display = 'none';
-    yesterdaySmallEl.style.display = 'none';
-  }
-
-  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) — ไม่ต้องโชว์ % เปลี่ยนแปลงแล้ว เพราะดูจาก Day Change ในการ์ดใหญ่ด้านบนได้อยู่แล้ว
+  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น)
   const footCostSubEl = document.getElementById('footCostSub');
   if (footCostSubEl) {
     footCostSubEl.innerHTML = `ต้นทุน ${sym}${fmt(costValue)}`;
   }
 }
-
 function renderHeroBgChart() {
   const svg = document.getElementById('heroBgChart');
   if (!svg) return;
