@@ -1820,110 +1820,92 @@ function getWithdrawnBalance() {
 function renderHero() {
   const rows = getFilteredSummaryRows();
   const isThai = isThaiPortSelected();
-  const sym = currencySymbol();
   let marketValue = 0, costValue = 0;
-
   rows.forEach(r => {
     marketValue += Number(r['มูลค่าปัจจุบัน']) || 0;
     costValue += Number(r['ทุน  FIFO']) || 0;
   });
 
-  // เงินสด/เงินต้น เป็น USD เสมอ (คนละสกุลกับพอร์ตหุ้นไทย) จะไม่รวมเข้ากับมูลค่าพอร์ตไทยเลย
+  // เงินสดเป็น USD เสมอ ไม่รวมกับพอร์ตไทย
   const cashBalance = isThai ? 0 : getCashBalance();
+  const totalValue = marketValue + (cashBalance > 0 ? cashBalance : 0);
 
-  document.getElementById('heroLabel').textContent = isThai
-    ? 'Current Value (THB) · มูลค่าปัจจุบัน (บาท)'
-    : 'Current Value · มูลค่าปัจจุบัน';
+  // ===== ตัวใหญ่: ผลตอบแทนรวม % =====
+  const profit = marketValue - costValue;
+  const profitPct = costValue ? profit / costValue : 0;
+  document.getElementById('heroLabel').textContent = 'ผลตอบแทนรวม (Unrealized)';
+  const heroValEl = document.getElementById('heroValue');
+  heroValEl.textContent = fmtPct(profitPct);
+  heroValEl.style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
+  document.getElementById('heroDelta').style.display = 'none';
 
-  const totalValueForHero = marketValue + cashBalance;
-  const valStr = fmt(totalValueForHero, 2);
-  const [intPart, decPart] = valStr.split('.');
-  document.getElementById('heroValue').innerHTML =
-    `${sym}${intPart}<span class="cents">.${decPart || '00'}</span>`;
+  // ===== แถวล่าง: หุ้น % | เงินสด % · $ =====
+  const labels = document.querySelectorAll('#heroSection .hero-foot-label');
+  const stockPct = totalValue ? marketValue / totalValue * 100 : 0;
+  const cashPct = totalValue ? Math.max(cashBalance, 0) / totalValue * 100 : 0;
 
-  // มูลค่าหุ้น สีเขียว/แดงตามกำไรขาดทุนเทียบกับต้นทุน
-  const stockGain = marketValue - costValue;
-  document.getElementById('footStockValue').textContent = `${sym}${fmt(marketValue)}`;
-  document.getElementById('footStockValue').style.color = stockGain >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
+  if (labels[0]) labels[0].textContent = 'หุ้น';
+  const stockEl = document.getElementById('footStockValue');
+  stockEl.textContent = `${stockPct.toFixed(1)}%`;
+  stockEl.style.color = '';
+  const costSub = document.getElementById('footCostSub');
+  if (costSub) costSub.textContent = '';
 
-  // เงินสดคงเหลือ (USD) ซ่อนตอนดูพอร์ตไทย
+  const cashItem = document.getElementById('footProfit').closest('.hero-foot-item');
+  const footCash = document.getElementById('footProfit');
+  document.getElementById('footProfitLabel').textContent = 'เงินสด (Cash)';
+  if (state.summary && !isThai) {
+    cashItem.style.display = '';
+    footCash.style.color = '';
+    footCash.innerHTML = `${cashPct.toFixed(1)}% <span style="font-size:11px;font-weight:400;opacity:.65">· $${fmt(cashBalance)}</span>`;
+  } else {
+    cashItem.style.display = 'none';
+  }
+
+  // แถวเดิม: เหลือแค่ปุ่มแก้ยอดเงินสด (ซ่อนตัวเลข แต่ยังเก็บค่าไว้ให้ปุ่มดินสอใช้เป็นค่าเริ่มต้น)
   const cashRowEl = document.getElementById('heroCashRow');
   if (state.summary && !isThai) {
     cashRowEl.style.display = 'flex';
-    document.getElementById('heroCashValue').textContent = `$${fmt(cashBalance)}`;
+    cashRowEl.querySelector('.hero-cash-label').innerHTML = '<i class="ti ti-cash" aria-hidden="true"></i>แก้ยอดเงินสด';
+    const cv = document.getElementById('heroCashValue');
+    cv.textContent = `$${fmt(cashBalance)}`;
+    cv.style.display = 'none';
   } else {
     cashRowEl.style.display = 'none';
   }
+  document.getElementById('heroTotalRow').style.display = 'none';
+  document.getElementById('heroPrincipalRow').style.display = 'none';
 
-  const totalRowEl = document.getElementById('heroTotalRow');
-  if (totalRowEl) totalRowEl.style.display = 'none';
-
-  // เงินต้น (สุทธิ) = เงินฝากทั้งหมด - เงินที่ถอนออกไปแล้ว
-  const grossDeposited = getPrincipalBalance();
-  const withdrawnBalance = getWithdrawnBalance();
-  const netPrincipal = grossDeposited - withdrawnBalance;
-
-  const principalRowEl = document.getElementById('heroPrincipalRow');
-  if (state.summary && !isThai) {
-    principalRowEl.style.display = 'flex';
-    document.getElementById('heroPrincipalValue').textContent = `$${fmt(netPrincipal)}`;
-  } else {
-    principalRowEl.style.display = 'none';
-  }
-
-  const deltaEl = document.getElementById('heroDelta');
-  deltaEl.style.display = 'none';
-
-  const profit = marketValue - costValue;
-  const profitPct = costValue ? profit / costValue : 0;
-  document.getElementById('footProfitLabel').textContent = 'Unrealized P/L';
-  document.getElementById('footProfit').textContent = `${profit>=0?'+':''}${sym}${fmt(profit)} (${fmtPct(profitPct)})`;
-  document.getElementById('footProfit').style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
-  deltaEl.className = 'hero-delta ' + (profit >= 0 ? 'up' : 'down');
-  deltaEl.textContent = `${profit>=0?'▲':'▼'} ${fmtPct(profitPct)}`;
-
-  // ===== Day Change =====
-  // ถ้าราคาไม่ขยับ (เสาร์-อาทิตย์/วันหยุดตลาด) ให้คงค่าที่ขยับล่าสุดไว้ ไม่แสดง 0.00
+  // ===== Day Change (%) : ถ้าราคาไม่ขยับ ให้คงค่าที่ขยับล่าสุดไว้ =====
   const now = new Date();
   const isWeekend = now.getDay() === 0 || now.getDay() === 6;
   const todayStr = now.toDateString();
-
   const allValueEntries = state.history
     .filter(h => h['Date'] && h['มูลค่าพอร์ต'] != null)
     .sort((a, b) => new Date(a['Date']) - new Date(b['Date']));
 
   const heroDailyEl = document.getElementById('heroDaily');
   const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
+  yesterdaySmallEl.style.display = 'none';
 
-  let dailyInfo = null; // { current, base, stale, date }
+  let dailyInfo = null;
   if (!isThai) {
-    // ลำดับมูลค่า เก่า -> ใหม่
-    // วันทำการ: ตัดแถวของวันนี้ออก แล้วต่อด้วยมูลค่าสดตอนนี้
-    // เสาร์-อาทิตย์: ใช้เฉพาะ History (ไม่ใช้ราคาสดที่อาจนิ่ง)
     const series = allValueEntries
       .filter(h => isWeekend || new Date(h['Date']).toDateString() !== todayStr)
       .map(h => ({ v: Number(h['มูลค่าพอร์ต']) || 0, date: h['Date'] }));
-    if (!isWeekend) series.push({ v: totalValueForHero, date: null });
+    if (!isWeekend) series.push({ v: totalValue, date: null });
 
-    // ไล่ย้อนหาคู่ล่าสุดที่ค่า "ไม่เท่ากัน" (ข้ามช่วงที่ราคานิ่งไปเลย)
     for (let i = series.length - 1; i >= 1; i--) {
       if (Math.abs(series[i].v - series[i - 1].v) > 0.005) {
-        dailyInfo = {
-          current: series[i].v,
-          base: series[i - 1].v,
-          stale: i !== series.length - 1,
-          date: series[i].date
-        };
+        dailyInfo = { current: series[i].v, base: series[i - 1].v, stale: i !== series.length - 1, date: series[i].date };
         break;
       }
     }
   }
 
   if (dailyInfo) {
-    const dailyChange = dailyInfo.current - dailyInfo.base;
-    const dailyPct = dailyInfo.base ? dailyChange / dailyInfo.base : 0;
-    const dailyUp = dailyChange >= 0;
-
+    const dailyPct = dailyInfo.base ? (dailyInfo.current - dailyInfo.base) / dailyInfo.base : 0;
+    const dailyUp = dailyPct >= 0;
     let staleTag = '';
     if (dailyInfo.stale) {
       const d = dailyInfo.date ? new Date(dailyInfo.date) : null;
@@ -1932,20 +1914,11 @@ function renderHero() {
         : '';
       staleTag = ` <span class="hero-yesterday-inline">(${dLabel}ขยับล่าสุด)</span>`;
     }
-
     heroDailyEl.style.display = 'block';
     heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
-    heroDailyEl.innerHTML = `Day Change <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}${sym}${fmt(dailyChange)} (${fmtPct(dailyPct)})</b> <span class="hero-yesterday-inline">${sym}${fmt(dailyInfo.base)}</span>${staleTag}`;
-    yesterdaySmallEl.style.display = 'none';
+    heroDailyEl.innerHTML = `Day Change <b>${dailyUp ? '▲' : '▼'} ${fmtPct(dailyPct)}</b>${staleTag}`;
   } else {
     heroDailyEl.style.display = 'none';
-    yesterdaySmallEl.style.display = 'none';
-  }
-
-  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น)
-  const footCostSubEl = document.getElementById('footCostSub');
-  if (footCostSubEl) {
-    footCostSubEl.innerHTML = `ต้นทุน ${sym}${fmt(costValue)}`;
   }
 }
 function renderHeroBgChart() {
