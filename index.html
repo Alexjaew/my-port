@@ -3090,6 +3090,8 @@ function getShareBase(rows) {
   const cash = isThaiPortSelected() ? 0 : (Number(getCashBalance()) || 0);
   return { stock, cash: cash > 0 ? cash : 0, total: (stock + (cash > 0 ? cash : 0)) || 1 };
 }
+
+  
 function renderHoldingsTable() {
   const box = document.getElementById('holdingsTable');
   if (!box) return;
@@ -3097,31 +3099,54 @@ function renderHoldingsTable() {
   const titleEl = document.getElementById('holdingsTitle');
   if (titleEl) titleEl.textContent = `หุ้นที่ถือ (${rows.length} ตัว)`;
   if (!rows.length) { box.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>'; return; }
-  const basis = state.basis, sym = currencySymbol();
+
+  const basis = state.basis;
   const sorted = [...rows].sort((a,b) => (Number(b['มูลค่าปัจจุบัน'])||0) - (Number(a['มูลค่าปัจจุบัน'])||0));
   holdingsSorted = sorted;
   const base = getShareBase(sorted), total = base.total;
-  const cashRow = base.cash > 0 ? `<div class="hrow hrow-cash"><span class="ht-logo"><span class="ht-fb" style="display:flex;background:#64748B">$</span></span><div class="hr-mid"><div class="hr-top"><b>เงินสด</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${(base.cash/total*100).toFixed(1)}%</span></div><div class="hr-sub">Cash</div></div><div class="hr-right"><div class="hr-val">${sym}${Math.round(base.cash).toLocaleString('en-US')}</div></div></div>` : '';
+
+  const cashRow = base.cash > 0 ? `
+    <div class="hrow hrow-cash">
+      <span class="ht-logo"><span class="ht-fb" style="display:flex;background:#64748B">$</span></span>
+      <div class="hr-mid">
+        <div class="hr-top"><b>เงินสด</b></div>
+        <div class="hr-sub">ของพอร์ตทั้งหมด</div>
+      </div>
+      <div class="hr-right">
+        <div class="hr-val">${(base.cash/total*100).toFixed(1)}%</div>
+        <div style="font:500 11px var(--mono);color:var(--ink-soft);margin-top:3px">$${fmt(base.cash)}</div>
+      </div>
+    </div>` : '';
+
   box.innerHTML = '<div class="hlist">' + sorted.map((r, i) => {
     const t = r['หุ้น'];
     const val = Number(r['มูลค่าปัจจุบัน']) || 0;
     const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
-    const shares = Number(r['จำนวนหุ้น']) || 0;
     const color = CHART_COLORS[i % CHART_COLORS.length];
-    const portTag = state.port === 'ALL' && r['ชื่อ port'] ? ` · ${r['ชื่อ port']}` : '';
+    const weight = val / total * 100;
+    const target = state.allocTargets[t];
+    let sub;
+    if (target !== undefined) {
+      const diff = weight - target;
+      sub = `เป้า ${fmt(target, 0)}% · ${diff > 0 ? 'เกิน +' : 'เหลือ '}${fmt(Math.abs(diff), 1)}%`;
+    } else {
+      sub = 'ยังไม่ตั้งเป้าหมาย';
+    }
+    if (state.port === 'ALL' && r['ชื่อ port']) sub += ` · ${r['ชื่อ port']}`;
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
-        <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${(val/total*100).toFixed(1)}%</span></div>
-        <div class="hr-sub">${sym}${fmt(Number(r['price'])||0)} · avg ${sym}${fmt(Number(r['ราคา FIFO'])||0)}${portTag}</div>
+        <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span></div>
+        <div class="hr-sub">${sub}</div>
       </div>
       <div class="hr-right">
-        <div class="hr-val">${sym}${Math.round(val).toLocaleString('en-US')}</div>
-        <div class="hr-pct ${pp>=0?'up':'down'}">${fmtPct(pp)}</div>
+        <div class="hr-val" style="color:${pp >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
       </div>
     </div>`;
   }).join('') + cashRow + '</div>';
 }
+
+  
 function quickTrade(ticker, action) {
   closeStockDrawer();
   openSheet();
@@ -3131,33 +3156,42 @@ function quickTrade(ticker, action) {
   if (f) { f.value = ticker; f.dispatchEvent(new Event('input', { bubbles: true })); }
 }
 let holdingsSorted = [];
+
+  
 function renderDrawerSummary(r) {
-  const basis = state.basis, sym = currencySymbol();
+  const basis = state.basis;
   const t = r['หุ้น'];
   const val = Number(r['มูลค่าปัจจุบัน']) || 0;
   const total = getShareBase(holdingsSorted).total;
-  const profit = Number(basis === 'AVG' ? r['กำไร AVG'] : r['กำไร FIFO']) || 0;
-  const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
-  const up = profit >= 0;
+  const weight = val / total * 100;
+  const ppAvg = Number(r['กำไร% AVG']) || 0;
+  const ppFifo = Number(r['กำไร% FIFO']) || 0;
+  const pp = basis === 'AVG' ? ppAvg : ppFifo;
+  const up = pp >= 0;
+  const target = state.allocTargets[t];
   const tile = (l, v, c) => `<div class="dr-tile"><div class="dr-l">${l}</div><div class="dr-v ${c || ''}">${v}</div></div>`;
+  const gap = target !== undefined
+    ? `${weight - target >= 0 ? '+' : '−'}${fmt(Math.abs(weight - target), 1)}%`
+    : '—';
   document.getElementById('drawerTitle').textContent = t;
   document.getElementById('drawerSummary').innerHTML = `
     <div class="dr-hero">
-      <div class="dr-price">${sym}${fmt(Number(r['price']) || 0)}</div>
-      <div class="dr-profit ${up ? 'up' : 'down'}">${up ? '+' : ''}${sym}${fmt(profit)} <small>(${fmtPct(pp)})</small></div>
+      <div class="dr-price ${up ? 'up' : 'down'}" style="color:${up ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
+      <div class="dr-profit" style="color:var(--ink-soft)">กำไร (${basis}) · สัดส่วน ${weight.toFixed(1)}% ของพอร์ต</div>
     </div>
     <div class="dr-grid">
-      ${tile('มูลค่า', sym + fmt(val))}
-      ${tile('ทุนรวม', sym + fmt(Number(r['ทุน  FIFO']) || 0))}
+      ${tile('สัดส่วนพอร์ต', weight.toFixed(1) + '%')}
+      ${tile('เป้าหมาย', target !== undefined ? fmt(target, 1) + '%' : '—')}
+      ${tile('ห่างจากเป้า', gap)}
       ${tile('จำนวนหุ้น', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
-      ${tile('ทุนเฉลี่ย', sym + fmt(Number(r['ราคา FIFO']) || 0))}
-      ${tile('สัดส่วนพอร์ต', (val / total * 100).toFixed(1) + '%')}
-      ${tile('กำไร (' + basis + ')', fmtPct(pp), up ? 'up' : 'down')}
+      ${tile('กำไร AVG', fmtPct(ppAvg), ppAvg >= 0 ? 'up' : 'down')}
+      ${tile('กำไร FIFO', fmtPct(ppFifo), ppFifo >= 0 ? 'up' : 'down')}
     </div>
     <div class="dr-actions">
       <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">ซื้อเพิ่ม</button>
       <button class="mini-btn" data-trade="ขาย" data-ticker="${t}">ขาย</button>
     </div>`;
+
 }
 function openStockDrawer(i) {
   const r = holdingsSorted[i]; if (!r) return;
