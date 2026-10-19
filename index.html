@@ -1900,23 +1900,55 @@ function renderHero() {
   const heroDailyEl = document.getElementById('heroDaily');
   const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
 
-  let currentForDaily = null, baselineValue = null;
-  if (isThai) {
-    // History (มูลค่าพอร์ต/มูลค่าหุ้น) เป็น USD เท่านั้น เทียบกับพอร์ตไทย (บาท) ไม่ได้ ซ่อน Day Change ไปเลย
-  } else if (isWeekend) {
-    // เสาร์-อาทิตย์ ตลาดปิด: ค้างค่า Day Change ของวันศุกร์ (วันทำการล่าสุด) ไว้ ไม่คำนวณจากราคาสดที่อาจนิ่ง/คลาดเคลื่อนช่วงตลาดปิด
-    if (allValueEntries.length >= 2) {
-      currentForDaily = Number(allValueEntries[allValueEntries.length - 1]['มูลค่าพอร์ต']) || 0;
-      baselineValue = Number(allValueEntries[allValueEntries.length - 2]['มูลค่าพอร์ต']) || 0;
-    }
-  } else {
-    // วันทำการปกติ: เทียบมูลค่าสดตอนนี้กับวันทำการก่อนหน้าล่าสุดที่ไม่ใช่วันนี้
-    const priorDayEntries = allValueEntries.filter(h => new Date(h['Date']).toDateString() !== todayStr);
-    if (priorDayEntries.length > 0) {
-      currentForDaily = totalValueForHero;
-      baselineValue = Number(priorDayEntries[priorDayEntries.length - 1]['มูลค่าพอร์ต']) || 0;
+   // ===== Day Change: ถ้าราคาไม่ขยับ (เสาร์-อาทิตย์/วันหยุดตลาด) ให้คงค่าที่ขยับล่าสุดไว้ =====
+  let dailyInfo = null; // { current, base, stale, date }
+  if (!isThai) {
+    // สร้างลำดับมูลค่า เก่า -> ใหม่
+    // วันทำการ: ตัดแถวของวันนี้ออก แล้วต่อด้วยมูลค่าสดตอนนี้
+    // เสาร์-อาทิตย์: ใช้เฉพาะ History (ไม่ใช้ราคาสดที่อาจนิ่ง)
+    const series = allValueEntries
+      .filter(h => isWeekend || new Date(h['Date']).toDateString() !== todayStr)
+      .map(h => ({ v: Number(h['มูลค่าพอร์ต']) || 0, date: h['Date'] }));
+    if (!isWeekend) series.push({ v: totalValueForHero, date: null });
+
+    // ไล่ย้อนหาคู่ล่าสุดที่ค่า "ไม่เท่ากัน" (ข้ามช่วงที่ราคานิ่งไปเลย)
+    for (let i = series.length - 1; i >= 1; i--) {
+      if (Math.abs(series[i].v - series[i - 1].v) > 0.005) {
+        dailyInfo = {
+          current: series[i].v,
+          base: series[i - 1].v,
+          stale: i !== series.length - 1, // true = ไม่ใช่การขยับล่าสุดของวันนี้ (ตลาดปิด/ราคานิ่ง)
+          date: series[i].date
+        };
+        break;
+      }
     }
   }
+
+  if (dailyInfo) {
+    const dailyChange = dailyInfo.current - dailyInfo.base;
+    const dailyPct = dailyInfo.base ? dailyChange / dailyInfo.base : 0;
+    const dailyUp = dailyChange >= 0;
+
+    let staleTag = '';
+    if (dailyInfo.stale) {
+      const d = dailyInfo.date ? new Date(dailyInfo.date) : null;
+      const dLabel = d && !isNaN(d.getTime())
+        ? d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' }) + ' · '
+        : '';
+      staleTag = ` <span class="hero-yesterday-inline">(${dLabel}ขยับล่าสุด)</span>`;
+    }
+
+    heroDailyEl.style.display = 'block';
+    heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
+    heroDailyEl.innerHTML = `Day Change <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}${sym}${fmt(dailyChange)} (${fmtPct(dailyPct)})</b> <span class="hero-yesterday-inline">${sym}${fmt(dailyInfo.base)}</span>${staleTag}`;
+    yesterdaySmallEl.style.display = 'none';
+  } else {
+    heroDailyEl.style.display = 'none';
+    yesterdaySmallEl.style.display = 'none';
+  }
+
+  
 
   if (currentForDaily !== null && baselineValue !== null) {
     const dailyChange = currentForDaily - baselineValue;
