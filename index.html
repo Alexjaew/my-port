@@ -1900,7 +1900,7 @@ function renderHero() {
   const heroDailyEl = document.getElementById('heroDaily');
   const yesterdaySmallEl = document.getElementById('heroYesterdaySmall');
 
-   // ===== Day Change: ถ้าราคาไม่ขยับ (เสาร์-อาทิตย์/วันหยุดตลาด) ให้คงค่าที่ขยับล่าสุดไว้ =====
+  // ===== Day Change: ถ้าราคาไม่ขยับ (เสาร์-อาทิตย์/วันหยุดตลาด) ให้คงค่าที่ขยับล่าสุดไว้ =====
   let dailyInfo = null; // { current, base, stale, date }
   if (!isThai) {
     // สร้างลำดับมูลค่า เก่า -> ใหม่
@@ -1947,8 +1947,7 @@ function renderHero() {
     heroDailyEl.style.display = 'none';
     yesterdaySmallEl.style.display = 'none';
   }
-
-  
+  }
 
   if (currentForDaily !== null && baselineValue !== null) {
     const dailyChange = currentForDaily - baselineValue;
