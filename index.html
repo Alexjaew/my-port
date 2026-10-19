@@ -1874,7 +1874,6 @@ function renderHero() {
   document.getElementById('heroCashRow').style.display = 'none';
   document.getElementById('heroTotalRow').style.display = 'none';
   document.getElementById('heroPrincipalRow').style.display = 'none';
-  }
 
   // แถวเดิม: เหลือแค่ปุ่มแก้ยอดเงินสด (ซ่อนตัวเลข แต่ยังเก็บค่าไว้ให้ปุ่มดินสอใช้เป็นค่าเริ่มต้น)
   const cashRowEl = document.getElementById('heroCashRow');
@@ -1935,6 +1934,8 @@ function renderHero() {
     heroDailyEl.style.display = 'none';
   }
 }
+
+  
 function renderHeroBgChart() {
   const svg = document.getElementById('heroBgChart');
   if (!svg) return;
