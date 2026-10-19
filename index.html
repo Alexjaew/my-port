@@ -3115,21 +3115,13 @@ function renderHoldingsTable() {
     const weight = val / total * 100;
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
-    const price = Number(r['price']) || 0;
-    const avg = Number(r['ราคา FIFO']) || 0;
     let sub = `${sym}${fmt(price)} · ต้นทุน ${sym}${fmt(avg)}`;
     if (state.port === 'ALL' && r['ชื่อ port']) sub += ` · ${r['ชื่อ port']}`;
-    let targetLine = '';
-    if (target !== undefined) {
-      const diff = weight - target;
-      targetLine = `เป้า ${fmt(target, 0)}% · ${diff > 0 ? 'เกิน +' : 'เหลือ '}${fmt(Math.abs(diff), 1)}%`;
-    }
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
         <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span></div>
         <div class="hr-sub">${sub}</div>
-        ${targetLine ? `<div class="hr-sub">${targetLine}</div>` : ''}
       </div>
       <div class="hr-right">
         <div class="hr-val" style="color:${pp >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
@@ -3137,7 +3129,6 @@ function renderHoldingsTable() {
     </div>`;
   }).join('') + cashRow + '</div>';
 }
-
   
 function quickTrade(ticker, action) {
   closeStockDrawer();
