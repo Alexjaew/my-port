@@ -3115,7 +3115,8 @@ function renderHoldingsTable() {
     const weight = val / total * 100;
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
-    const target = state.allocTargets[t];
+    const price = Number(r['price']) || 0;
+    const avg = Number(r['ราคา FIFO']) || 0;
     let sub = `${sym}${fmt(price)} · ต้นทุน ${sym}${fmt(avg)}`;
     if (state.port === 'ALL' && r['ชื่อ port']) sub += ` · ${r['ชื่อ port']}`;
     let targetLine = '';
