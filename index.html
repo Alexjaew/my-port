@@ -1851,15 +1851,29 @@ function renderHero() {
   const costSub = document.getElementById('footCostSub');
   if (costSub) costSub.textContent = '';
 
-  const cashItem = document.getElementById('footProfit').closest('.hero-foot-item');
+    const cashItem = document.getElementById('footProfit').closest('.hero-foot-item');
   const footCash = document.getElementById('footProfit');
+  const editBtn = document.getElementById('editCashBtn');
   document.getElementById('footProfitLabel').textContent = 'เงินสด (Cash)';
   if (state.summary && !isThai) {
     cashItem.style.display = '';
     footCash.style.color = '';
+    footCash.style.display = 'inline-block';
     footCash.innerHTML = `${cashPct.toFixed(1)}% <span style="font-size:11px;font-weight:400;opacity:.65">· $${fmt(cashBalance)}</span>`;
+    // ย้ายปุ่มดินสอมาไว้บรรทัดเดียวกับตัวเลขเงินสด
+    if (editBtn.parentNode !== cashItem) cashItem.appendChild(editBtn);
+    editBtn.style.display = 'inline-flex';
+    editBtn.style.verticalAlign = 'middle';
+    editBtn.style.marginLeft = '4px';
   } else {
     cashItem.style.display = 'none';
+  }
+
+  // แถวเงินสดเดิมซ่อนทั้งแถว (เก็บค่าไว้ให้ปุ่มดินสอใช้เป็นค่าเริ่มต้นตอนกดแก้)
+  document.getElementById('heroCashValue').textContent = `$${fmt(cashBalance)}`;
+  document.getElementById('heroCashRow').style.display = 'none';
+  document.getElementById('heroTotalRow').style.display = 'none';
+  document.getElementById('heroPrincipalRow').style.display = 'none';
   }
 
   // แถวเดิม: เหลือแค่ปุ่มแก้ยอดเงินสด (ซ่อนตัวเลข แต่ยังเก็บค่าไว้ให้ปุ่มดินสอใช้เป็นค่าเริ่มต้น)
