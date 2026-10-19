@@ -1916,17 +1916,17 @@ function renderHero() {
     }
   }
 
-  if (dailyInfo) {
+   if (dailyInfo) {
     const dailyPct = dailyInfo.base ? (dailyInfo.current - dailyInfo.base) / dailyInfo.base : 0;
     const dailyUp = dailyPct >= 0;
-       let staleTag = '';
-    if (dailyInfo.stale) {
-      const d = dailyInfo.date ? new Date(dailyInfo.date) : null;
-      if (d && !isNaN(d.getTime())) {
-        const dLabel = d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' });
-        staleTag = ` <span class="hero-yesterday-inline">(${dLabel})</span>`;
-      }
-    }
+
+    // แสดงวันที่เสมอ: ถ้าเป็นมูลค่าสดวันนี้ (ไม่มีวันที่ใน History) ใช้วันที่ปัจจุบัน
+    const d = dailyInfo.date ? new Date(dailyInfo.date) : now;
+    const dLabel = !isNaN(d.getTime())
+      ? d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+      : '';
+    const staleTag = dLabel ? ` <span class="hero-yesterday-inline">(${dLabel})</span>` : '';
+
     heroDailyEl.style.display = 'block';
     heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
     heroDailyEl.innerHTML = `Day Change <b>${dailyUp ? '▲' : '▼'} ${fmtPct(dailyPct)}</b>${staleTag}`;
