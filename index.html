@@ -2336,9 +2336,6 @@ function renderPLChart() {
           grid: { color: gridColor },
           border: { display: false },
           ticks: { display: false
-            color: axisColor,
-            font: { size: 10 },
-            callback: v => '$' + (v >= 1000 ? (v/1000).toFixed(0)+'k' : v)
           }
         }
       }
