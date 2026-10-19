@@ -1947,6 +1947,36 @@ function renderHero() {
     heroDailyEl.style.display = 'none';
     yesterdaySmallEl.style.display = 'none';
   }
+  } else {
+    // วันทำการปกติ: เทียบมูลค่าสดตอนนี้กับวันทำการก่อนหน้าล่าสุดที่ไม่ใช่วันนี้
+    const priorDayEntries = allValueEntries.filter(h => new Date(h['Date']).toDateString() !== todayStr);
+    if (priorDayEntries.length > 0) {
+      currentForDaily = totalValueForHero;
+      baselineValue = Number(priorDayEntries[priorDayEntries.length - 1]['มูลค่าพอร์ต']) || 0;
+    }
+  }
+
+  if (currentForDaily !== null && baselineValue !== null) {
+    const dailyChange = currentForDaily - baselineValue;
+    const dailyPct = baselineValue ? dailyChange / baselineValue : 0;
+    const dailyUp = dailyChange >= 0;
+
+    heroDailyEl.style.display = 'block';
+    heroDailyEl.className = 'hero-daily ' + (dailyUp ? 'up' : 'down');
+    heroDailyEl.innerHTML = `Day Change <b>${dailyUp?'▲':'▼'} ${dailyUp?'+':''}${sym}${fmt(dailyChange)} (${fmtPct(dailyPct)})</b> <span class="hero-yesterday-inline">${sym}${fmt(baselineValue)}</span>`;
+
+    yesterdaySmallEl.style.display = 'none';
+  } else {
+    heroDailyEl.style.display = 'none';
+    yesterdaySmallEl.style.display = 'none';
+  }
+
+  // ต้นทุน (sub-line เล็กใต้มูลค่าหุ้น) — ไม่ต้องโชว์ % เปลี่ยนแปลงแล้ว เพราะดูจาก Day Change ในการ์ดใหญ่ด้านบนได้อยู่แล้ว
+  const footCostSubEl = document.getElementById('footCostSub');
+  if (footCostSubEl) {
+    footCostSubEl.innerHTML = `ต้นทุน ${sym}${fmt(costValue)}`;
+  }
+}
 
 function renderHeroBgChart() {
   const svg = document.getElementById('heroBgChart');
