@@ -2400,11 +2400,14 @@ function renderPLChart() {
   const basis = state.basis;
   const sym = currencySymbol();
 
-  const withData = rows.map(r => ({
-    ticker: r['หุ้น'],
-    value:  Number(r['มูลค่าปัจจุบัน']) || 0,
-    plPct:  parseFloat(((basis === 'AVG' ? Number(r['กำไร% AVG']) : Number(r['กำไร% FIFO'])) * 100).toFixed(2))
-  })).sort((a,b) => a.plPct - b.plPct)
+  const withData = rows.map(r => {
+    const raw = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']);
+    return {
+      ticker: r['หุ้น'],
+      value:  Number(r['มูลค่าปัจจุบัน']) || 0,
+      plPct:  isFinite(raw) ? parseFloat((raw * 100).toFixed(2)) : 0
+    };
+  }).sort((a, b) => (a.plPct - b.plPct) || a.ticker.localeCompare(b.ticker));
 
   const tickers   = withData.map(r => r.ticker);
   const values    = withData.map(r => r.value);
@@ -3043,6 +3046,7 @@ document.getElementById('basisToggle').addEventListener('click', (e) => {
   btn.classList.add('active');
   state.basis = btn.dataset.basis;
   renderAllocList();
+  renderBarChart();
 });
 
 document.getElementById('editCashBtn').addEventListener('click', async () => {
