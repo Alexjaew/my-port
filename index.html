@@ -457,22 +457,22 @@
   .alloc-target-compare.over { background: var(--loss-soft); color: var(--loss); }
   .alloc-target-compare.under { background: var(--line); color: var(--ink-soft); }
 
-  .alloc-sum-bar {
+ .alloc-sum-status-bar {
     display: flex; align-items: center; justify-content: space-between;
     flex-wrap: wrap; gap: 8px;
     background: var(--paper-raised); border: 1px solid var(--line);
     border-radius: var(--radius-sm); padding: 11px 14px; margin-bottom: 11px;
     box-shadow: var(--shadow-sm);
   }
-  .alloc-sum-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
-  .alloc-sum-label b { color: var(--ink); }
-  .alloc-sum- {
+  .alloc-sum-status-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
+  .alloc-sum-status-label b { color: var(--ink); }
+  .alloc-sum-status- {
     font-size: 11.5px; font-weight: 700; font-family: var(--mono);
     padding: 3px 10px; border-radius: 100px;
   }
-  .alloc-sum-.ontarget { background: var(--gain-soft); color: var(--gain); }
-  .alloc-sum-.over { background: var(--loss-soft); color: var(--loss); }
-  .alloc-sum-.under { background: var(--accent-soft); color: var(--accent-text); }
+  .ontarget { background: var(--gain-soft); color: var(--gain); }
+  .over { background: var(--loss-soft); color: var(--loss); }
+  .under { background: var(--accent-soft); color: var(--accent-text); }
   .alloc-normalize-btn {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 11.5px; font-weight: 700; color: var(--accent-dark-text);
@@ -2429,10 +2429,10 @@ function updateAllocTargetSumBar() {
   }
   const sum = targets.reduce((s, v) => s + (Number(v) || 0), 0);
   const diff = sum - 100;
-  let Html;
+  let statusHtml = '';
   let normalizeBtnHtml = '';
   if (Math.abs(diff) < 0.05) {
-    Html = `<span class="alloc-sum- ontarget">✓ ครบ 100% พอดี</span>`;
+    Html = `<span class="alloc-sum-status ontarget">✓ ครบ 100% พอดี</span>`;
   } else if (diff > 0) {
     Html = `<span class="alloc-sum-status over">เกิน 100% ไป ${fmt(diff,1)}%</span>`;
     normalizeBtnHtml = `<button class="alloc-normalize-btn" id="normalizeTargetsBtn"><i class="ti ti-adjustments-horizontal"></i> ปรับให้รวม 100%</button>`;
@@ -2784,33 +2784,33 @@ function renderTargetPriceResultHtml(row, priceStr, sym) {
 
   const targetPrice = Number(priceStr);
   if (!priceStr || isNaN(targetPrice) || targetPrice <= 0) {
-  
+    return currentLine;
   }
   if (currentShares <= 0) {
     return `${currentLine}<span class="dca-calc-hint">ยังไม่มีหุ้นที่ถืออยู่สำหรับคำนวณ</span>`;
   }
 
-  // กำไร/ขาดทุนถ้าขายทั้งหมดที่ราคาเป้าหมายนี้ (เทียบกับต้นทุนเฉลี่ย FIFO)
+  // กำไร/ขาดทุนถ้าขายทั้งหมดที่ราคาเป้าหมาย (เทียบต้นทุนเฉลี่ย FIFO)
   const estProfit = (targetPrice - currentAvgCost) * currentShares;
   const estProfitPct = currentAvgCost ? (targetPrice - currentAvgCost) / currentAvgCost : 0;
   const isGain = estProfit >= 0;
+  const sign = isGain ? '+' : '-';
 
-  // ราคาต้องขึ้น/ลงอีกกี่ % จากราคาปัจจุบันถึงจะถึงเป้าหมายนี้
+  // ราคาต้องขยับกี่ % จากราคาปัจจุบันถึงจะถึงเป้า (ติดลบ = เป้าต่ำกว่าราคาตอนนี้)
   const moveNeeded = currentPrice ? (targetPrice - currentPrice) / currentPrice : 0;
-  const moveDirection = moveNeeded >= 0 ? '' : '';
 
   return `
     ${currentLine}
     Sell <b>${sym}${fmt(targetPrice)}</b> :
-    <span class="dca-calc-drop ${isGain?'gain':'loss'}">
-      ${isGain ? '↑ ' : '↓ '} ${sym}${fmt(Math.abs(estProfit))} (${fmtPct(Math.abs(estProfitPct))})
+    <span class="dca-calc-drop ${isGain ? 'gain' : 'loss'}">
+      ${isGain ? '↑' : '↓'} ${sign}${sym}${fmt(Math.abs(estProfit))} (${fmtPct(estProfitPct)})
     </span>
     <div class="dca-alloc-projection">
-      ${moveDirection} ${fmtPct(Math.abs(moveNeeded))} From (${sym}${fmt(currentPrice)})
+      ${moveNeeded >= 0 ? '▲' : '▼'} ${fmtPct(moveNeeded)} From (${sym}${fmt(currentPrice)})
     </div>
   `;
 }
-
+  
 function renderTransactions() {
   const el = document.getElementById('txnList');
   const txns = state.transactions.filter(t => t['รายการ']).slice(0, 40);
