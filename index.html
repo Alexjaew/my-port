@@ -17,6 +17,7 @@
 <noscript><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/dist/tabler-icons.min.css"></noscript>
 <!-- ย้าย Chart.js มาไว้ที่นี่และเพิ่ม defer เพื่อโหลดขนานตั้งแต่เริ่มแรก ลดเวลาบล็อกเรนเดอร์หน้าจอ -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
+  
 <style>
   :root {
     --ink: #0E1116;
@@ -1433,8 +1434,15 @@
     .pill-btn{margin-left:auto}
     .overview-total-value{font-size:25px}
     .fab{right:16px;bottom:max(18px,env(safe-area-inset-bottom))}
-  }
-
+  
+/* ===== BUY / SELL สีเขียว-แดงเสมอ ===== */
+.action-btn.buy{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 40%,var(--line))}
+.action-btn.sell{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 40%,var(--line))}
+.txn-badge{width:auto;min-width:42px;padding:0 8px;font-size:11px;letter-spacing:.03em}
+.mini-btn[data-trade="ซื้อ"]{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 40%,var(--line))}
+.mini-btn[data-trade="ขาย"]{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 40%,var(--line))}
+    
+}
 </style>
 </head>
 <body>
