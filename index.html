@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="th">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
@@ -1449,19 +1449,19 @@
 
 <aside class="sidebar" id="sidebar">
   <div class="sb-logo">◆</div>
-  <button class="sb-item active" data-go="top"><i class="ti ti-wallet"></i><span>พอร์ต</span></button>
-  <button class="sb-item" data-go="chartsAnchor"><i class="ti ti-chart-pie"></i><span>สัดส่วน</span></button>
-  <button class="sb-item" data-go="holdingsSection"><i class="ti ti-table"></i><span>หุ้นที่ถือ</span></button>
-  <button class="sb-item" data-go="txnAnchor"><i class="ti ti-history"></i><span>ประวัติ</span></button>
+  <button class="sb-item active" data-go="top"><i class="ti ti-wallet"></i><span>Portfolio</span></button>
+  <button class="sb-item" data-go="chartsAnchor"><i class="ti ti-chart-pie"></i><span>Allocation</span></button>
+  <button class="sb-item" data-go="holdingsSection"><i class="ti ti-table"></i><span>Holdings</span></button>
+  <button class="sb-item" data-go="txnAnchor"><i class="ti ti-history"></i><span>History</span></button>
   <div style="flex:1"></div>
-  <button class="sb-item" data-go="settings"><i class="ti ti-settings"></i><span>ตั้งค่า</span></button>
+  <button class="sb-item" data-go="settings"><i class="ti ti-settings"></i><span>Settings</span></button>
 </aside>
 
   <div class="topbar">
     <div class="topbar-row">
       <div class="brand">My Port<span class="dot">.</span></div>
       <div class="topbar-actions">
-        <button id="refreshBtn" title="รีเฟรชข้อมูล" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-refresh"></i></button>
+        <button id="refreshBtn" title="Refresh" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-refresh"></i></button>
         <button id="themeToggleBtn" style="background:none;border:none;font-size:17px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-moon"></i></button>
         <button id="settingsBtn" style="background:none;border:none;font-size:18px;color:var(--ink-soft);cursor:pointer;padding:4px;display:flex;align-items:center;"><i class="ti ti-settings"></i></button>
       </div>
@@ -1476,7 +1476,7 @@
   <!-- 0. ภาพรวมทุกสินทรัพย์ (รวม US/Gold/BTC/Thai เป็นตัวเลขเดียว แบบประมาณการ) -->
   <div class="section" id="overviewSection" style="display:none">
     <button type="button" class="ov-toggle" id="ovToggle" aria-expanded="false">
-      <span class="ov-title">ภาพรวมทุกสินทรัพย์ <span class="sl-sub">ประมาณการ</span></span>
+      <span class="ov-title">All Assets <span class="sl-sub">Estimate</span></span>
       <span class="ov-head-right"><b id="ovHeadTotal"></b><i class="ti ti-chevron-down ov-chev"></i></span>
     </button>
     <div class="overview-card" id="overviewCard"></div>
@@ -1484,19 +1484,19 @@
 
   <!-- 1. Portfolio Value -->
   <div class="section" id="heroSection">
-    <div class="section-label">มูลค่าพอร์ต <span class="sl-sub">พอร์ตที่เลือก</span></div>
+    <div class="section-label">Portfolio Value <span class="sl-sub">Selected portfolio</span></div>
     <div class="hero-card">
       <svg class="hero-bg-chart" id="heroBgChart" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
-      <div class="hero-label" id="heroLabel">มูลค่าปัจจุบัน</div>
+      <div class="hero-label" id="heroLabel">Current Value</div>
       <div class="hero-value" id="heroValue">—</div>
       <div class="hero-delta" id="heroDelta" style="display:none"></div>
       <div class="hero-daily" id="heroDaily" style="display:none"></div>
       <div class="hero-yesterday-small" id="heroYesterdaySmall" style="display:none">
-        <span id="heroYesterdayLabel">เมื่อวาน</span> $<span id="heroYesterdayValue">—</span>
+        <span id="heroYesterdayLabel">Yesterday</span> $<span id="heroYesterdayValue">—</span>
       </div>
       <div class="hero-foot">
         <div class="hero-foot-item">
-          <div class="hero-foot-label">มูลค่าหุ้น</div>
+          <div class="hero-foot-label">Stock Value</div>
           <div class="hero-foot-value" id="footStockValue">—</div>
           <div class="hero-foot-sub" id="footCostSub">—</div>
         </div>
@@ -1509,13 +1509,13 @@
         <div class="hero-cash-label"><i class="ti ti-cash" aria-hidden="true"></i>Cash (USD)</div>
         <div style="display:flex;align-items:center;gap:8px">
           <div class="hero-cash-value" id="heroCashValue">—</div>
-          <button type="button" id="editCashBtn" title="แก้ไขยอดเงินสดจริง" style="background:none;border:none;cursor:pointer;color:var(--hero-text-dim);padding:2px;display:flex;align-items:center">
+          <button type="button" id="editCashBtn" title="Edit actual cash" style="background:none;border:none;cursor:pointer;color:var(--hero-text-dim);padding:2px;display:flex;align-items:center">
             <i class="ti ti-pencil" aria-hidden="true" style="font-size:14px"></i>
           </button>
         </div>
       </div>
       <div class="hero-cash-row" id="heroTotalRow" style="display:none;margin-top:8px;padding-top:8px;border-top:none">
-        <div class="hero-cash-label"><i class="ti ti-wallet" aria-hidden="true"></i>มูลค่ารวม (หุ้น + เงินสด)</div>
+        <div class="hero-cash-label"><i class="ti ti-wallet" aria-hidden="true"></i>Total (Stocks + Cash)</div>
         <div class="hero-cash-value" id="heroTotalValue">—</div>
       </div>
       <div class="hero-cash-row" id="heroPrincipalRow" style="display:none;margin-top:8px;padding-top:8px;border-top:none">
@@ -1530,13 +1530,13 @@
   <div class="section" id="chartsAnchor">
     <div class="charts-frame">
       <div class="cf-pane">
-        <div class="section-label">มูลค่าปัจจุบัน <span class="sl-sub">พร้อม P/L%</span></div>
+        <div class="section-label">Current Value <span class="sl-sub">with P/L%</span></div>
         <div class="chart-card" id="barChartCard">
           <div class="skel" style="height:200px;"></div>
         </div>
       </div>
       <div class="cf-pane">
-        <div class="section-label">สัดส่วนหุ้น</div>
+        <div class="section-label">Allocation</div>
         <div class="chart-card" id="donutChartCard">
           <div class="skel" style="height:180px;"></div>
         </div>
@@ -1547,12 +1547,12 @@
   <div class="section" id="holdingsSection">
     <div class="tcard">
       <div class="tcard-head">
-        <div class="tcard-title" id="holdingsTitle">หุ้นที่ถือ</div>
+        <div class="tcard-title" id="holdingsTitle">Holdings</div>
         <div class="basis-toggle-inline" id="basisToggle" style="margin-left:auto">
           <div class="basis-btn-inline active" data-basis="AVG">AVG</div>
           <div class="basis-btn-inline" data-basis="FIFO">FIFO</div>
         </div>
-        <button class="pill-btn" id="holdingsAddBtn"><i class="ti ti-plus"></i> บันทึกซื้อ/ขาย</button>
+        <button class="pill-btn" id="holdingsAddBtn"><i class="ti ti-plus"></i> Record Buy/Sell</button>
       </div>
       <div class="tscroll" id="holdingsTable"></div>
     </div>
@@ -1560,7 +1560,7 @@
 
   <!-- 4. สัดส่วนการลงทุนรายตัว -->
 <div class="section" id="txnAnchor">
-    <div class="section-label">Recent Activity · รายการล่าสุด</div>
+    <div class="section-label">Recent Activity</div>
     <div id="txnList" style="background:var(--paper-raised);border:1px solid var(--line);border-radius:var(--radius-md);padding:4px 14px;box-shadow:var(--shadow-sm);">
       <div class="skel" style="height:50px;margin:10px 0;"></div>
       <div class="skel" style="height:50px;margin:10px 0;"></div>
@@ -1569,10 +1569,10 @@
 
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
   <aside class="drawer" id="stockDrawer" aria-hidden="true">
-    <div class="drawer-head"><div class="drawer-grab"></div><div class="drawer-title" id="drawerTitle">รายละเอียดหุ้น</div></div>
+    <div class="drawer-head"><div class="drawer-grab"></div><div class="drawer-title" id="drawerTitle">Stock Details</div></div>
     <div class="drawer-body">
       <div id="drawerSummary"></div>
-      <div class="drawer-sub">เครื่องมือ · เป้าหมายสัดส่วน / DCA / ราคาเป้าหมาย</div>
+      <div class="drawer-sub">Tools · Allocation Target / DCA / Target Price</div>
       <div id="allocList">
         <div class="skel" style="height:64px;margin-bottom:8px"></div>
       </div>
@@ -1585,35 +1585,35 @@
   <div class="sheet" id="addSheet">
     <div class="sheet-handle"></div>
     <div class="sheet-head">
-      <div class="sheet-title" id="sheetTitle">เพิ่มรายการ</div>
+      <div class="sheet-title" id="sheetTitle">Add Transaction</div>
       <button class="sheet-close" id="sheetClose">✕</button>
     </div>
     <div class="sheet-body">
       <div class="action-toggle">
-        <div class="action-btn buy active" data-action="ซื้อ">ซื้อ</div>
-        <div class="action-btn sell" data-action="ขาย">ขาย</div>
+        <div class="action-btn buy active" data-action="ซื้อ">BUY</div>
+        <div class="action-btn sell" data-action="ขาย">SELL</div>
       </div>
 
       <div class="field">
-        <label class="field-label">พอร์ต</label>
+        <label class="field-label">Portfolio</label>
         <select id="fPort"></select>
       </div>
 
       <div class="field">
-        <label class="field-label">ชื่อหุ้น</label>
-        <input type="text" id="fStock" placeholder="เช่น AAPL" autocapitalize="characters">
+        <label class="field-label">Ticker</label>
+        <input type="text" id="fStock" autocapitalize="characters">
       </div>
 
       <div class="field-row">
         <div class="field">
-          <label class="field-label">จำนวนเงินรวม ($)</label>
+          <label class="field-label"Total Amount ($)</label>
           <input type="number" id="fAmount" placeholder="0.00" inputmode="decimal">
         </div>
         <div class="field">
-          <label class="field-label">จำนวนหุ้น</label>
+          <label class="field-label">>Shares</label>
           <div style="display:flex;gap:6px;align-items:center">
             <input type="number" id="fShares" placeholder="0.000000" inputmode="decimal" style="flex:1;min-width:0">
-            <button type="button" id="sellAllBtn" style="display:none;flex:0 0 auto;padding:8px 10px;border-radius:8px;border:1px solid var(--loss);background:var(--loss-soft);color:var(--loss);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">ขายทั้งหมด</button>
+            <button type="button" id="sellAllBtn" style="display:none;flex:0 0 auto;padding:8px 10px;border-radius:8px;border:1px solid var(--loss);background:var(--loss-soft);color:var(--loss);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">Sell All</button>
           </div>
         </div>
       </div>
@@ -1624,11 +1624,11 @@
       </div>
 
       <div class="field">
-        <label class="field-label">โน้ต (ไม่บังคับ)</label>
+        <label class="field-label">Note (optional)</label>
         <input type="text" id="fNote" placeholder="">
       </div>
 
-      <button class="submit-btn" id="submitBtn">บันทึกรายการ</button>
+      <button class="submit-btn" id="submitBtn">Save</button>
       <div class="form-msg" id="formMsg"></div>
     </div>
   </div>
