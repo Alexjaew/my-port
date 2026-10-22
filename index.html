@@ -3130,7 +3130,7 @@ function renderHoldingsTable() {
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
     let sub = ` ${fmt(price)}  / ${sym}${fmt(avg)}`;
-    if (state.port === 'ALL' && r['ชื่อ port']) sub += `  ${r['ชื่อ port']}`;
+    if (state.port === 'ALL' && r['ชื่อ port']) sub += ` - ${r['ชื่อ port']}`;
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
