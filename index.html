@@ -2705,7 +2705,7 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
 
   return `
     <div class="alloc-target-summary-text">
-      Status <b>${fmt(actualPct,1)}%</b>&nbsp;·&nbsp;Target <b>${fmt(targetPct,1)}%</b>
+      Now <b>${fmt(actualPct,1)}%</b>&nbsp;·&nbsp;Target <b>${fmt(targetPct,1)}%</b>
     </div>
     <div class="alloc-room-bar-track">
       <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
@@ -2760,7 +2760,7 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue, sym) {
     const newPct = (newValue / newTotal) * 100;
     allocLine = `
       <div class="dca-alloc-projection">
-        New Status: <b>${fmt(newPct,2)}%</b> (Old ${fmt(currentPct,2)}%)
+        New: <b>${fmt(newPct,2)}%</b> (Now ${fmt(currentPct,2)}%)
         ${targetVal !== undefined ? renderTargetCompareHtml(newPct, targetVal) : ''}
       </div>`;
   }
