@@ -2511,7 +2511,7 @@ function renderAllocList() {
         </button>
         <div class="dca-calc" id="targetPriceCalc-${ticker}" style="display:none">
           <div class="dca-calc-input-row">
-            <span class="dca-calc-label">ราคาเป้าหมาย ${sym}</span>
+            <span class="dca-calc-label">Add Target ${sym}</span>
             <input type="number" class="target-price-input" data-ticker="${ticker}" placeholder="${currentPrice ? fmt(currentPrice) : '0'}" inputmode="decimal" value="${targetPriceInputVal}">
           </div>
           <div class="dca-calc-result" id="targetPriceResult-${ticker}">${renderTargetPriceResultHtml(r, targetPriceInputVal, sym)}</div>
@@ -2780,11 +2780,11 @@ function renderTargetPriceResultHtml(row, priceStr, sym) {
   const currentPrice = Number(row['price']) || 0;
   const currentShares = Number(row['จำนวนหุ้น']) || 0;
   const currentAvgCost = Number(row['ราคา FIFO']) || 0;
-  const currentLine = `<div class="dca-current">ต้นทุนเฉลี่ยปัจจุบัน: <b>${sym}${fmt(currentAvgCost)}</b> · ถืออยู่ <b>${fmt(currentShares,4)}</b> หุ้น</div>`;
+  const currentLine = `<div class="dca-current">Now: <b>${sym}${fmt(currentAvgCost)}</b> -  <b>${fmt(currentShares,4)}</b> </div>`;
 
   const targetPrice = Number(priceStr);
   if (!priceStr || isNaN(targetPrice) || targetPrice <= 0) {
-    return `${currentLine}<span class="dca-calc-hint">พิมพ์ราคาเป้าหมายเพื่อดูกำไร/ขาดทุนถ้าขายที่ราคานี้</span>`;
+  
   }
   if (currentShares <= 0) {
     return `${currentLine}<span class="dca-calc-hint">ยังไม่มีหุ้นที่ถืออยู่สำหรับคำนวณ</span>`;
