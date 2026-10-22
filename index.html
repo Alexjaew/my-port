@@ -1930,7 +1930,7 @@ function renderHero() {
     // แสดงวันที่เสมอ: ถ้าเป็นมูลค่าสดวันนี้ (ไม่มีวันที่ใน History) ใช้วันที่ปัจจุบัน
     const d = dailyInfo.date ? new Date(dailyInfo.date) : now;
     const dLabel = !isNaN(d.getTime())
-      ? d.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
+      ? d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
       : '';
     const staleTag = dLabel ? ` <span class="hero-yesterday-inline">(${dLabel})</span>` : '';
 
@@ -2827,7 +2827,7 @@ function renderTransactions() {
     const raw = getTxnDateRaw(t);
     const d = raw ? new Date(raw) : null;
     const validDate = d && !isNaN(d.getTime()) ? d : null;
-    const key = validDate ? validDate.toDateString() : 'ไม่ระบุวันที่';
+    const key = validDate ? validDate.toDateString() : 'No date';
     if (key !== currentKey) {
       groups.push({ key, date: validDate, items: [] });
       currentKey = key;
@@ -2837,15 +2837,15 @@ function renderTransactions() {
 
   el.innerHTML = groups.map(g => {
     const dateLabel = g.date
-      ? g.date.toLocaleDateString('th-TH', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' })
-      : 'ไม่ระบุวันที่';
+      ? g.date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
+      : 'No date';
     const rowsHtml = g.items.map(t => {
       const isBuy = t['action'] === 'ซื้อ';
       const rawDate = getTxnDateRaw(t);
       const parsedDate = rawDate ? new Date(rawDate) : null;
       const shortDate = (parsedDate && !isNaN(parsedDate.getTime()))
-        ? parsedDate.toLocaleDateString('th-TH', { day: 'numeric', month: 'short' })
-        : 'ไม่ระบุวันที่';
+        ? parsedDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        : 'No date';
       const fifoPL = Number(t['FIFO P/L']) || 0;
       const txnSym = isThaiPortName(t['Port']) ? '฿' : '$';
       const plHtml = fifoPL !== 0
