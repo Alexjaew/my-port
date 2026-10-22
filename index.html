@@ -2797,7 +2797,7 @@ function renderTargetPriceResultHtml(row, priceStr, sym) {
 
   // ราคาต้องขึ้น/ลงอีกกี่ % จากราคาปัจจุบันถึงจะถึงเป้าหมายนี้
   const moveNeeded = currentPrice ? (targetPrice - currentPrice) / currentPrice : 0;
-  const moveDirection = moveNeeded >= 0 ? 'ขึ้นอีก' : 'ลงอีก';
+  const moveDirection = moveNeeded >= 0 ? '' : '';
 
   return `
     ${currentLine}
@@ -2806,7 +2806,7 @@ function renderTargetPriceResultHtml(row, priceStr, sym) {
       ${isGain ? '↑ ' : '↓ '} ${sym}${fmt(Math.abs(estProfit))} (${fmtPct(Math.abs(estProfitPct))})
     </span>
     <div class="dca-alloc-projection">
-      ราคาต้อง${moveDirection} ${fmtPct(Math.abs(moveNeeded))} จากราคาปัจจุบัน (${sym}${fmt(currentPrice)})
+      ${moveDirection} ${fmtPct(Math.abs(moveNeeded))} From (${sym}${fmt(currentPrice)})
     </div>
   `;
 }
