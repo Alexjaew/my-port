@@ -2528,7 +2528,7 @@ function renderAllocList() {
               <div class="alloc-ticker">${ticker}</div>
               <div class="alloc-current-price">${sym}${fmt(currentPrice)}</div>
             </div>
-            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">Avg. Cost ${sym}${fmt(avgCostPerShare)}/หุ้น</div>
+            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">Avg. Cost ${sym}${fmt(avgCostPerShare)}/</div>
           </div>
           <div class="alloc-right">
             <div class="alloc-value">${sym}${fmt(value)}</div>
@@ -2712,7 +2712,7 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
     </div>
     <div class="alloc-target-footer-row">
       ${overTarget ? `<span class="alloc-target-over-label">⚠ เกินเป้าหมายแล้ว</span>` : `<span class="alloc-target-room-label">เหลือ ${fmt(Math.max(0,targetPct-actualPct),2)}%</span>`}
-      <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ แก้ไข</button>
+      <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ Edit</button>
     </div>
   `;
 }
