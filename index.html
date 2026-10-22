@@ -2801,9 +2801,9 @@ function renderTargetPriceResultHtml(row, priceStr, sym) {
 
   return `
     ${currentLine}
-    ถ้าขายที่ <b>${sym}${fmt(targetPrice)}</b> จะได้:
+    Sell <b>${sym}${fmt(targetPrice)}</b> :
     <span class="dca-calc-drop ${isGain?'gain':'loss'}">
-      ${isGain ? '↑ กำไร' : '↓ ขาดทุน'} ${sym}${fmt(Math.abs(estProfit))} (${fmtPct(Math.abs(estProfitPct))})
+      ${isGain ? '↑ ' : '↓ '} ${sym}${fmt(Math.abs(estProfit))} (${fmtPct(Math.abs(estProfitPct))})
     </span>
     <div class="dca-alloc-projection">
       ราคาต้อง${moveDirection} ${fmtPct(Math.abs(moveNeeded))} จากราคาปัจจุบัน (${sym}${fmt(currentPrice)})
