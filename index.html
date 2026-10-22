@@ -402,7 +402,7 @@
   .alloc-mid { flex: 1; min-width: 0; }
   .alloc-ticker-row { display: flex; align-items: baseline; gap: 8px; }
   .alloc-ticker { font-weight: 700; font-size: 14.5px; font-family: var(--mono); }
-  .alloc-current-price { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
+  .alloc-current- { font-size: 12px; color: var(--ink-soft); font-family: var(--mono); }
 .alloc-cost-row { font-size: 13.5px; font-weight: 700; font-family: var(--mono); margin-top: 3px; }
 .alloc-cost-row.cost-below { color: var(--gain); } /* ต้นทุนเฉลี่ยต่ำกว่าราคาปัจจุบัน = กำไร */
 .alloc-cost-row.cost-above { color: var(--loss); } /* ต้นทุนเฉลี่ยสูงกว่าราคาปัจจุบัน = ขาดทุน */
@@ -493,7 +493,7 @@
   .alloc-gain.up { color: var(--gain); }
   .alloc-gain.down { color: var(--loss); }
 
-  .dca-toggle-btn, .target-price-toggle-btn {
+  .dca-toggle-btn, .target--toggle-btn {
     width: 100%;
     display: flex; align-items: center; justify-content: center; gap: 6px;
     border: none; border-top: 1px solid var(--line);
@@ -503,7 +503,7 @@
     padding: 8px 14px;
     cursor: pointer;
   }
-  .target-price-toggle-btn-top {
+  .target--toggle-btn-top {
     border-top: none;
     border-bottom: 1px solid var(--line);
     font-size: 14px;
@@ -512,14 +512,14 @@
     color: var(--accent-text);
     background: var(--accent-soft);
   }
-  .target-price-toggle-btn-top .ti-target-arrow,
-  .target-price-toggle-btn-top .dca-toggle-chevron {
+  .target--toggle-btn-top .ti-target-arrow,
+  .target--toggle-btn-top .dca-toggle-chevron {
     font-size: 17px;
   }
-  .target-price-toggle-btn-top:active { background: var(--accent-border); }
-  .dca-toggle-btn:active, .target-price-toggle-btn:active { background: var(--accent-soft); }
+  .target--toggle-btn-top:active { background: var(--accent-border); }
+  .dca-toggle-btn:active, .target--toggle-btn:active { background: var(--accent-soft); }
   .dca-toggle-chevron { transition: transform 0.15s ease; margin-left: 2px; }
-  .dca-toggle-btn.open .dca-toggle-chevron, .target-price-toggle-btn.open .dca-toggle-chevron { transform: rotate(180deg); }
+  .dca-toggle-btn.open .dca-toggle-chevron, .target--toggle-btn.open .dca-toggle-chevron { transform: rotate(180deg); }
 
   .dca-calc {
     border-top: 1px solid var(--line);
@@ -533,14 +533,14 @@
   .dca-calc-label {
     font-size: 12px; font-weight: 600; color: var(--accent-text); line-height: 1.3; /* เอา nowrap ออก */
   }
-  .dca-calc-input, .alloc-target-input, .target-price-input {
+  .dca-calc-input, .alloc-target-input, .target--input {
     flex: 1; min-width: 0;
     padding: 7px 10px;
     border-radius: 8px; border: 1px solid var(--accent-border);
     font-size: 16px; font-family: var(--mono);
     background: var(--paper-raised); color: var(--ink);
   }
-  .dca-calc-input:focus, .alloc-target-input:focus, .target-price-input:focus { outline: none; border-color: var(--accent); }
+  .dca-calc-input:focus, .alloc-target-input:focus, .target--input:focus { outline: none; border-color: var(--accent); }
   .dca-calc-result {
     font-size: 12px; margin-top: 7px; color: var(--ink-soft); font-family: var(--mono);
   }
@@ -906,7 +906,7 @@
   .drawer-body{flex:1;overflow-y:auto;padding:18px 20px 30px}
   .drawer-sub{font-size:12px;font-weight:700;color:var(--ink-soft);margin:22px 0 10px}
   .dr-hero{margin-bottom:14px}
-  .dr-price{font:700 26px var(--mono);letter-spacing:-.02em}
+  .dr-{font:700 26px var(--mono);letter-spacing:-.02em}
   .dr-profit{font:600 13px var(--mono);margin-top:2px}
   .dr-profit small{opacity:.85;font-size:12px}
   .dr-profit.up,.dr-v.up{color:var(--gain)}.dr-profit.down,.dr-v.down{color:var(--loss)}
@@ -976,7 +976,7 @@
     .hr-pct{font-size:13px}
     .drawer{width:100%}
     .drawer-body{padding:14px 14px 28px}
-    .dr-price{font-size:24px}
+    .dr-{font-size:24px}
     .dr-v{font-size:13.5px}
     .chart-card,.overview-card{border-radius:16px}
   }
@@ -1523,7 +1523,7 @@ const state = {
   ports: [],
   history: [],
   dcaInputs: {},
-  targetPriceInputs: {},
+  targetInputs: {},
   allocTargets: JSON.parse(localStorage.getItem('portfolio_alloc_targets') || '{}')
 };
 
@@ -1781,7 +1781,7 @@ function currencySymbol() {
 }
 
 // ฟิลด์ที่เป็น "จำนวนเงิน" (ต้องแปลงสกุลเงิน) ต่างจาก % หรือจำนวนหุ้นที่ไม่ต้องแปลง
-const CURRENCY_FIELDS = ['price', 'มูลค่าปัจจุบัน', 'ทุน  FIFO', 'ราคา FIFO', 'กำไร AVG', 'กำไร FIFO'];
+const CURRENCY_FIELDS = ['', 'มูลค่าปัจจุบัน', 'ทุน  FIFO', 'ราคา FIFO', 'กำไร AVG', 'กำไร FIFO'];
 
 function getFilteredSummaryRows() {
   if (!state.summary) return [];
@@ -3130,7 +3130,7 @@ function renderHoldingsTable() {
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
     let sub = `Price ${sym}${fmt(price)}  Avg. Cost ${sym}${fmt(avg)}`;
-    if (state.port === 'ALL' && r['ชื่อ port']) sub += `  ${r['ชื่อ port']}`;
+    if (state.port === 'ALL' && r['ชื่อ port']) sub += `;
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
