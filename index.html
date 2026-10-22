@@ -3096,7 +3096,7 @@ let editingTxn = null; // เก็บรายการที่กำลัง
 function openSheet() {
   editingTxn = null;
   document.getElementById('sheetTitle').textContent = 'เพิ่มรายการ';
-  document.getElementById('submitBtn').textContent = 'บันทึกรายการ';
+  document.getElementById('submitBtn').textContent = '';
   document.getElementById('fDate').valueAsDate = new Date();
   document.getElementById('fStock').value = '';
   document.getElementById('fAmount').value = '';
@@ -3215,7 +3215,7 @@ document.getElementById('submitBtn').onclick = async () => {
       document.getElementById('fNote').value = '';
       setTimeout(() => { closeSheet(); loadAll(); }, 700);
     } else {
-      msg.textContent = result.error || 'เกิดข้อผิดพลาด';
+      msg.textContent = result.error || 'Error';
       msg.className = 'form-msg error';
     }
   } catch (err) {
@@ -3223,7 +3223,7 @@ document.getElementById('submitBtn').onclick = async () => {
     msg.className = 'form-msg error';
   } finally {
     btn.disabled = false;
-    btn.textContent = 'บันทึกรายการ';
+    btn.textContent = 'SAVE';
   }
 };
 
