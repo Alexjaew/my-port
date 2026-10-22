@@ -950,6 +950,8 @@
   .hr-val{font:700 15px var(--mono)}
   .hr-pct{font:600 13px var(--mono);margin-top:3px}
   .hr-pct.up{color:var(--gain)}.hr-pct.down{color:var(--loss)}
+  .hr-cost.up{color:var(--gain);font-weight:600}
+  .hr-cost.down{color:var(--loss);font-weight:600}
 
   /* ===== v5: ปรับสำหรับมือถือ ===== */
   @media (max-width:899px){
@@ -3129,7 +3131,8 @@ function renderHoldingsTable() {
     const weight = val / total * 100;
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
-    let sub = ` ${fmt(price)}  / ${sym}${fmt(avg)}`;
+    const costCls = avg === 0 ? '' : (avg < price ? 'up' : (avg > price ? 'down' : ''));
+    let sub = ` ${sym}${fmt(price)} / <span class="hr-cost ${costCls}">${sym}${fmt(avg)}</span>`;
     if (state.port === 'ALL' && r['ชื่อ port']) sub += ` - ${r['ชื่อ port']}`;
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
@@ -3171,7 +3174,11 @@ function renderDrawerSummary(r) {
     </div>
     <div class="dr-grid">
       ${tile('Price', sym + fmt(Number(r['price']) || 0))}
-      ${tile('Average Cost', sym + fmt(Number(r['ราคา FIFO']) || 0))}
+      ${tile('Average Cost', sym + fmt(Number(r['ราคา FIFO']) || 0),
+  (() => {
+    const a = Number(r['ราคา FIFO']) || 0, p = Number(r['price']) || 0;
+    return a && p ? (a < p ? 'up' : (a > p ? 'down' : '')) : '';
+  })())}
       ${tile('Shares Held', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
     </div>
     <div class="dr-actions">
