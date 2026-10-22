@@ -2528,7 +2528,7 @@ function renderAllocList() {
               <div class="alloc-ticker">${ticker}</div>
               <div class="alloc-current-price">${sym}${fmt(currentPrice)}</div>
             </div>
-            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">Avg. Cost ${sym}${fmt(avgCostPerShare)}/</div>
+            <div class="alloc-cost-row ${avgCostPerShare === 0 ? '' : (avgCostPerShare < currentPrice ? 'cost-below' : (avgCostPerShare > currentPrice ? 'cost-above' : 'cost-equal'))}">Avg. Cost ${sym}${fmt(avgCostPerShare)}</div>
           </div>
           <div class="alloc-right">
             <div class="alloc-value">${sym}${fmt(value)}</div>
