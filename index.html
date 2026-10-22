@@ -2705,13 +2705,13 @@ function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
 
   return `
     <div class="alloc-target-summary-text">
-      ปัจจุบัน <b>${fmt(actualPct,1)}%</b>&nbsp;·&nbsp;เป้าหมาย <b>${fmt(targetPct,1)}%</b>
+      Status <b>${fmt(actualPct,1)}%</b>&nbsp;·&nbsp;Target <b>${fmt(targetPct,1)}%</b>
     </div>
     <div class="alloc-room-bar-track">
       <div class="alloc-room-bar-fill" style="width:${barWidth.toFixed(1)}%;background:${color}"></div>
     </div>
     <div class="alloc-target-footer-row">
-      ${overTarget ? `<span class="alloc-target-over-label">⚠ เกินเป้าหมายแล้ว</span>` : `<span class="alloc-target-room-label">เหลือ ${fmt(Math.max(0,targetPct-actualPct),2)}%</span>`}
+      ${overTarget ? `<span class="alloc-target-over-label">⚠ Overallocated</span>` : `<span class="alloc-target-room-label">Remaining to Target ${fmt(Math.max(0,targetPct-actualPct),2)}%</span>`}
       <button class="alloc-target-edit-btn" data-ticker="${ticker}">✏️ Edit</button>
     </div>
   `;
