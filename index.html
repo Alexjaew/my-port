@@ -466,13 +466,13 @@
   }
   .alloc-sum-label { font-size: 12.5px; color: var(--ink-soft); font-family: var(--mono); }
   .alloc-sum-label b { color: var(--ink); }
-  .alloc-sum-status {
+  .alloc-sum- {
     font-size: 11.5px; font-weight: 700; font-family: var(--mono);
     padding: 3px 10px; border-radius: 100px;
   }
-  .alloc-sum-status.ontarget { background: var(--gain-soft); color: var(--gain); }
-  .alloc-sum-status.over { background: var(--loss-soft); color: var(--loss); }
-  .alloc-sum-status.under { background: var(--accent-soft); color: var(--accent-text); }
+  .alloc-sum-.ontarget { background: var(--gain-soft); color: var(--gain); }
+  .alloc-sum-.over { background: var(--loss-soft); color: var(--loss); }
+  .alloc-sum-.under { background: var(--accent-soft); color: var(--accent-text); }
   .alloc-normalize-btn {
     display: inline-flex; align-items: center; gap: 4px;
     font-size: 11.5px; font-weight: 700; color: var(--accent-dark-text);
@@ -2429,12 +2429,12 @@ function updateAllocTargetSumBar() {
   }
   const sum = targets.reduce((s, v) => s + (Number(v) || 0), 0);
   const diff = sum - 100;
-  let statusHtml;
+  let Html;
   let normalizeBtnHtml = '';
   if (Math.abs(diff) < 0.05) {
-    statusHtml = `<span class="alloc-sum-status ontarget">✓ ครบ 100% พอดี</span>`;
+    Html = `<span class="alloc-sum- ontarget">✓ ครบ 100% พอดี</span>`;
   } else if (diff > 0) {
-    statusHtml = `<span class="alloc-sum-status over">เกิน 100% ไป ${fmt(diff,1)}%</span>`;
+    Html = `<span class="alloc-sum-status over">เกิน 100% ไป ${fmt(diff,1)}%</span>`;
     normalizeBtnHtml = `<button class="alloc-normalize-btn" id="normalizeTargetsBtn"><i class="ti ti-adjustments-horizontal"></i> ปรับให้รวม 100%</button>`;
   } else {
     statusHtml = `<span class="alloc-sum-status under">ขาดอีก ${fmt(Math.abs(diff),1)}% ถึง 100%</span>`;
@@ -2737,7 +2737,7 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue, sym) {
   const currentValue = Number(row['มูลค่าปัจจุบัน']) || 0;
   const ticker = row['หุ้น'];
   const targetVal = state.allocTargets[ticker];
-  const currentLine = `<div class="dca-current">Status: <b>${sym}${fmt(currentAvgCost)}</b></div>`;
+  const currentLine = `<div class="dca-current">Now: <b>${sym}${fmt(currentAvgCost)}</b></div>`;
 
   const amount = Number(amountStr);
   if (!amountStr || isNaN(amount) || amount <= 0) {
