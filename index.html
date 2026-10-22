@@ -1295,9 +1295,7 @@
     .overview-total-value{font-size:25px}
     .fab{right:16px;bottom:max(18px,env(safe-area-inset-bottom))}
 
-    /* v16: โลโก้หุ้น พื้นขาวให้เห็นโลโก้สีเข้มในโหมดมืด */
-.ht-logo{background:#fff}
-.ht-logo img{object-fit:contain;padding:4px}
+
   
 /* ===== BUY / SELL สีเขียว-แดงเสมอ ===== */
 .action-btn.buy{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 40%,var(--line))}
@@ -1307,6 +1305,11 @@
 .mini-btn[data-trade="ขาย"]{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 40%,var(--line))}
     
 }
+
+  /* v16: โลโก้หุ้น พื้นขาวให้เห็นโลโก้สีเข้มในโหมดมืด */
+.ht-logo{background:#fff}
+.ht-logo img{object-fit:contain;padding:4px}
+  
 </style>
 </head>
 <body>
@@ -3105,6 +3108,7 @@ function getShareBase(rows) {
   const stock = rows.reduce((a, r) => a + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
   const cash = isThaiPortSelected() ? 0 : (Number(getCashBalance()) || 0);
   return { stock, cash: cash > 0 ? cash : 0, total: (stock + (cash > 0 ? cash : 0)) || 1 };
+}
 
 
   // ลองโหลดโลโก้ตามลำดับ ถ้าแหล่งไหนไม่มี ข้ามไปแหล่งถัดไป
