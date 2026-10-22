@@ -1484,7 +1484,7 @@
 
   <!-- 1. Portfolio Value -->
   <div class="section" id="heroSection">
-    <div class="section-label">Portfolio Value <span class="sl-sub">Selected portfolio</span></div>
+    <div class="section-label">Portfolio Value <span class="sl-sub"></span></div>
     <div class="hero-card">
       <svg class="hero-bg-chart" id="heroBgChart" viewBox="0 0 400 200" preserveAspectRatio="none"></svg>
       <div class="hero-label" id="heroLabel">Current Value</div>
@@ -2631,7 +2631,7 @@ function renderAllocList() {
     return `
       <div class="alloc-row-wrap${state.detailTicker === ticker ? ' sel' : ''}">
         <button class="target-price-toggle-btn target-price-toggle-btn-top" data-ticker="${ticker}">
-          <i class="ti ti-target-arrow"></i> เป้าหมายราคา · คาดกำไร/ขาดทุน
+          <i class="ti ti-target-arrow"></i> เป้าหมายราคา
           <i class="ti ti-chevron-down dca-toggle-chevron"></i>
         </button>
         <div class="dca-calc" id="targetPriceCalc-${ticker}" style="display:none">
@@ -3241,7 +3241,7 @@ function renderHoldingsTable() {
   if (!box) return;
   const rows = getFilteredSummaryRows();
   const titleEl = document.getElementById('holdingsTitle');
-  if (titleEl) titleEl.textContent = `หุ้นที่ถือ (${rows.length} ตัว)`;
+  if (titleEl) titleEl.textContent = `Holdings (${rows.length} Stocks)`;
   if (!rows.length) { box.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>'; return; }
 
   const basis = state.basis;
@@ -3254,8 +3254,8 @@ function renderHoldingsTable() {
     <div class="hrow hrow-cash">
       <span class="ht-logo"><span class="ht-fb" style="display:flex;background:#64748B">$</span></span>
       <div class="hr-mid">
-        <div class="hr-top"><b>เงินสด</b></div>
-        <div class="hr-sub">ของพอร์ตทั้งหมด</div>
+        <div class="hr-top"><b>Cash</b></div>
+        <div class="hr-sub"></div>
       </div>
       <div class="hr-right">
         <div class="hr-val">${(base.cash/total*100).toFixed(1)}%</div>
@@ -3312,9 +3312,9 @@ function renderDrawerSummary(r) {
       <div class="dr-profit" style="color:var(--ink-soft)">กำไร (${basis})</div>
     </div>
     <div class="dr-grid">
-      ${tile('ราคาปัจจุบัน', sym + fmt(Number(r['price']) || 0))}
-      ${tile('ต้นทุนเฉลี่ย', sym + fmt(Number(r['ราคา FIFO']) || 0))}
-      ${tile('จำนวนหุ้น', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
+      ${tile('Price', sym + fmt(Number(r['price']) || 0))}
+      ${tile('Average Cost', sym + fmt(Number(r['ราคา FIFO']) || 0))}
+      ${tile('Shares Held', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
     </div>
     <div class="dr-actions">
       <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">BUY</button>
