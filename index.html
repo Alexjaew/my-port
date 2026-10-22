@@ -3293,33 +3293,19 @@ function renderDrawerSummary(r) {
   const basis = state.basis;
   const sym = currencySymbol();
   const t = r['หุ้น'];
-  const val = Number(r['มูลค่าปัจจุบัน']) || 0;
-  const total = getShareBase(holdingsSorted).total;
-  const weight = val / total * 100;
-  const ppAvg = Number(r['กำไร% AVG']) || 0;
-  const ppFifo = Number(r['กำไร% FIFO']) || 0;
-  const pp = basis === 'AVG' ? ppAvg : ppFifo;
+  const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
   const up = pp >= 0;
-  const target = state.allocTargets[t];
   const tile = (l, v, c) => `<div class="dr-tile"><div class="dr-l">${l}</div><div class="dr-v ${c || ''}">${v}</div></div>`;
-  const gap = target !== undefined
-    ? `${weight - target >= 0 ? '+' : '−'}${fmt(Math.abs(weight - target), 1)}%`
-    : '—';
   document.getElementById('drawerTitle').textContent = t;
   document.getElementById('drawerSummary').innerHTML = `
     <div class="dr-hero">
       <div class="dr-price ${up ? 'up' : 'down'}" style="color:${up ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
-      <div class="dr-profit" style="color:var(--ink-soft)">กำไร (${basis}) · สัดส่วน ${weight.toFixed(1)}% ของพอร์ต</div>
+      <div class="dr-profit" style="color:var(--ink-soft)">กำไร (${basis})</div>
     </div>
     <div class="dr-grid">
       ${tile('ราคาปัจจุบัน', sym + fmt(Number(r['price']) || 0))}
       ${tile('ต้นทุนเฉลี่ย', sym + fmt(Number(r['ราคา FIFO']) || 0))}
-      ${tile('สัดส่วนพอร์ต', weight.toFixed(1) + '%')}
-      ${tile('เป้าหมาย', target !== undefined ? fmt(target, 1) + '%' : '—')}
-      ${tile('ห่างจากเป้า', gap)}
       ${tile('จำนวนหุ้น', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
-      ${tile('กำไร AVG', fmtPct(ppAvg), ppAvg >= 0 ? 'up' : 'down')}
-      ${tile('กำไร FIFO', fmtPct(ppFifo), ppFifo >= 0 ? 'up' : 'down')}
     </div>
     <div class="dr-actions">
       <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">ซื้อเพิ่ม</button>
