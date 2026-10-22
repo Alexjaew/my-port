@@ -3289,28 +3289,117 @@ function quickTrade(ticker, action) {
 let holdingsSorted = [];
 
   
+
 function renderDrawerSummary(r) {
   const basis = state.basis;
   const sym = currencySymbol();
-  const t = r['หุ้น'];
-  const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
-  const up = pp >= 0;
-  const tile = (l, v, c) => `<div class="dr-tile"><div class="dr-l">${l}</div><div class="dr-v ${c || ''}">${v}</div></div>`;
-  document.getElementById('drawerTitle').textContent = t;
-  document.getElementById('drawerSummary').innerHTML = `
-    <div class="dr-hero">
-      <div class="dr-price ${up ? 'up' : 'down'}" style="color:${up ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
-      <div class="dr-profit" style="color:var(--ink-soft)">กำไร (${basis})</div>
-    </div>
-    <div class="dr-grid">
-      ${tile('ราคาปัจจุบัน', sym + fmt(Number(r['price']) || 0))}
-      ${tile('ต้นทุนเฉลี่ย', sym + fmt(Number(r['ราคา FIFO']) || 0))}
-      ${tile('จำนวนหุ้น', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
-    </div>
-    <div class="dr-actions">
-      <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">ซื้อเพิ่ม</button>
-      <button class="mini-btn" data-trade="ขาย" data-ticker="${t}">ขาย</button>
+  const ticker = r['หุ้น'] || '';
+
+  const pp = Number(
+    basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']
+  ) || 0;
+
+  const isUp = pp >= 0;
+  const tone = isUp ? 'up' : 'down';
+  const toneColor = isUp ? 'var(--gain)' : 'var(--loss)';
+
+  const price = Number(r['price']) || 0;
+  const cost = Number(r['ราคา FIFO']) || 0;
+  const shares = Number(r['จำนวนหุ้น']) || 0;
+
+  const safeTicker = String(ticker)
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const tile = (icon, label, value) => `
+    <div class="dr-card">
+      <div class="dr-card-label">
+        <span class="dr-card-icon">${icon}</span>
+        <span>${label}</span>
+      </div>
+      <div class="dr-card-value">${value}</div>
     </div>`;
+
+  document.getElementById('drawerTitle').textContent = ticker;
+
+  document.getElementById('drawerSummary').innerHTML = `
+    <div class="dr-panel">
+
+      <div class="dr-heading">
+        <div class="dr-heading-info">
+          <div class="dr-eyebrow">STOCK POSITION</div>
+          <div class="dr-ticker">${safeTicker}</div>
+          <div class="dr-subtitle">Portfolio overview</div>
+        </div>
+        <div class="dr-stock-icon">↗</div>
+      </div>
+
+      <div class="dr-performance ${tone}">
+        <div class="dr-performance-top">
+          <span class="dr-section-label">กำไร / ขาดทุน (%)</span>
+          <span class="dr-basis">${basis}</span>
+        </div>
+
+        <div class="dr-percent" style="color:${toneColor}">
+          ${pp > 0 ? '+' : ''}${fmtPct(pp)}
+        </div>
+
+        <div class="dr-status" style="color:${toneColor}">
+          <span class="dr-status-dot"></span>
+          ${isUp ? 'ผลตอบแทนเป็นบวก' : 'ผลตอบแทนเป็นลบ'}
+        </div>
+      </div>
+
+      <div class="dr-grid">
+        ${tile(
+          '↗',
+          'ราคาปัจจุบัน',
+          sym + fmt(price)
+        )}
+
+        ${tile(
+          '◈',
+          'ต้นทุนเฉลี่ย',
+          sym + fmt(cost)
+        )}
+
+        <div class="dr-card dr-card-wide">
+          <div class="dr-card-label">
+            <span class="dr-card-icon">▤</span>
+            <span>จำนวนหุ้นที่ถือ</span>
+          </div>
+          <div class="dr-card-value">
+            ${shares.toLocaleString('en-US', {
+              maximumFractionDigits: 6
+            })}
+          </div>
+        </div>
+      </div>
+
+      <div class="dr-actions">
+        <button
+          type="button"
+          class="dr-action-btn dr-buy"
+          data-trade="ซื้อ"
+          data-ticker="${safeTicker}">
+          <span class="dr-action-symbol">+</span>
+          <span>ซื้อเพิ่ม</span>
+        </button>
+
+        <button
+          type="button"
+          class="dr-action-btn dr-sell"
+          data-trade="ขาย"
+          data-ticker="${safeTicker}">
+          <span class="dr-action-symbol">↗</span>
+          <span>ขายหุ้น</span>
+        </button>
+      </div>
+
+    </div>`;
+
 
 }
 function openStockDrawer(i) {
