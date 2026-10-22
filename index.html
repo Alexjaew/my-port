@@ -1985,7 +1985,7 @@ function renderHero() {
   // ===== ตัวใหญ่: ผลตอบแทนรวม % =====
   const profit = marketValue - costValue;
   const profitPct = costValue ? profit / costValue : 0;
-  document.getElementById('heroLabel').textContent = 'ผลตอบแทนรวม (Unrealized)';
+  document.getElementById('heroLabel').textContent = '';
   const heroValEl = document.getElementById('heroValue');
   heroValEl.textContent = fmtPct(profitPct);
   heroValEl.style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
@@ -2006,7 +2006,7 @@ function renderHero() {
     const cashItem = document.getElementById('footProfit').closest('.hero-foot-item');
   const footCash = document.getElementById('footProfit');
   const editBtn = document.getElementById('editCashBtn');
-  document.getElementById('footProfitLabel').textContent = 'เงินสด (Cash)';
+  document.getElementById('footProfitLabel').textContent = 'Cash';
   if (state.summary && !isThai) {
     cashItem.style.display = '';
     footCash.style.color = '';
@@ -3317,8 +3317,8 @@ function renderDrawerSummary(r) {
       ${tile('จำนวนหุ้น', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
     </div>
     <div class="dr-actions">
-      <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">ซื้อเพิ่ม</button>
-      <button class="mini-btn" data-trade="ขาย" data-ticker="${t}">ขาย</button>
+      <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">BUY</button>
+      <button class="mini-btn" data-trade="ขาย" data-ticker="${t}">SELL</button>
     </div>`;
 }
   
