@@ -3205,7 +3205,7 @@ function renderDrawerSummary(r) {
   document.getElementById('drawerSummary').innerHTML = `
     <div class="dr-hero">
       <div class="dr-price ${up ? 'up' : 'down'}" style="color:${up ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
-      <div class="dr-profit" style="color:var(--ink-soft)">กำไร (${basis})</div>
+      <div class="dr-profit" style="color:var(--ink-soft)"> (${basis})</div>
     </div>
     <div class="dr-grid">
       ${tile('Price', sym + fmt(Number(r['price']) || 0))}
