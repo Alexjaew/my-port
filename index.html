@@ -1294,6 +1294,10 @@
     .pill-btn{margin-left:auto}
     .overview-total-value{font-size:25px}
     .fab{right:16px;bottom:max(18px,env(safe-area-inset-bottom))}
+
+    /* v16: โลโก้หุ้น พื้นขาวให้เห็นโลโก้สีเข้มในโหมดมืด */
+.ht-logo{background:#fff}
+.ht-logo img{object-fit:contain;padding:4px}
   
 /* ===== BUY / SELL สีเขียว-แดงเสมอ ===== */
 .action-btn.buy{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 40%,var(--line))}
@@ -3101,8 +3105,27 @@ function getShareBase(rows) {
   const stock = rows.reduce((a, r) => a + (Number(r['มูลค่าปัจจุบัน']) || 0), 0);
   const cash = isThaiPortSelected() ? 0 : (Number(getCashBalance()) || 0);
   return { stock, cash: cash > 0 ? cash : 0, total: (stock + (cash > 0 ? cash : 0)) || 1 };
-}
 
+
+  // ลองโหลดโลโก้ตามลำดับ ถ้าแหล่งไหนไม่มี ข้ามไปแหล่งถัดไป
+function logoSources(t) {
+  return [
+    `https://eodhd.com/img/logos/US/${t}.png`,
+    `https://financialmodelingprep.com/image-stock/${t}.png`,
+    `https://assets.parqet.com/logos/symbol/${t}?format=png`
+  ];
+}
+function logoErr(img) {
+  const list = logoSources(img.dataset.t);
+  const n = Number(img.dataset.n || 0) + 1;
+  if (n < list.length) {
+    img.dataset.n = n;
+    img.src = list[n];
+  } else {
+    img.style.display = 'none';
+    img.nextElementSibling.style.display = 'flex';
+  }
+}
   
 function renderHoldingsTable() {
   const box = document.getElementById('holdingsTable');
@@ -3143,7 +3166,7 @@ function renderHoldingsTable() {
     let sub = ` ${sym}${fmt(price)} / <span class="hr-cost ${costCls}">${sym}${fmt(avg)}</span>`;
     if (state.port === 'ALL' && r['ชื่อ port']) sub += ` - ${r['ชื่อ port']}`;
     return `<div class="hrow ht-row" data-i="${i}">
-      <span class="ht-logo"><img src="https://eodhd.com/img/logos/US/${t}.png" alt="" loading="lazy" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
+      <span class="ht-logo"><img src="${logoSources(t)[0]}" data-t="${t}" alt="" loading="lazy" onerror="logoErr(this)"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
         <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span></div>
         <div class="hr-sub">${sub}</div>
