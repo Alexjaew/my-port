@@ -1943,8 +1943,16 @@ function renderHeroBgChart() {
   if (data.length < 1) { svg.innerHTML = ''; return; }
 
   const W = 400, H = 200;
-  // เริ่มที่ $0 แล้วไล่ขึ้นไปถึงค่าล่าสุด
-  const values = [0, ...data.map(d => Number(d['มูลค่าพอร์ต']) || 0)];
+  
+// กรองค่าผิดปกติ (<=0) ออก และเลิกเริ่มจาก 0
+const values = data
+  .map(d => Number(d['มูลค่าพอร์ต']) || 0)
+  .filter(v => v > 0);
+if (values.length < 2) { svg.innerHTML = ''; return; }
+
+const lo = Math.min(...values), hi = Math.max(...values);
+const pad = (hi - lo) * 0.1 || hi * 0.05;
+const min = lo - pad, max = hi + pad;
   
   // ตรวจสอบการเปลี่ยนแปลงจากวันแรกถึงวันล่าสุดเพื่อกำหนดสี
   const isUp = values[values.length - 1] >= (values.length > 2 ? values[values.length - 2] : 0)
@@ -1960,7 +1968,7 @@ function renderHeroBgChart() {
   const gradStart = `rgba(${gradRGB},0.60)`;
   const gradMid = `rgba(${gradRGB},0.30)`;
 
-  const min = 0, max = Math.max(...values, 1) * 1.08; // แกนเริ่มที่ $0 เว้นหัวกราฟเล็กน้อย
+ 
   const range = max - min;
   const xStep = W / (values.length - 1);
   const points = values.map((v, i) => [i * xStep, (1 - (v - min) / range) * H]);
