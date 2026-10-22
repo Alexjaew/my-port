@@ -1473,11 +1473,11 @@
 
       <div class="field-row">
         <div class="field">
-          <label class="field-label"Total Amount ($)</label>
+          <label class="field-label"></label>
           <input type="number" id="fAmount" placeholder="0.00" inputmode="decimal">
         </div>
         <div class="field">
-          <label class="field-label">>Shares</label>
+          <label class="field-label"></label>
           <div style="display:flex;gap:6px;align-items:center">
             <input type="number" id="fShares" placeholder="0.000000" inputmode="decimal" style="flex:1;min-width:0">
             <button type="button" id="sellAllBtn" style="display:none;flex:0 0 auto;padding:8px 10px;border-radius:8px;border:1px solid var(--loss);background:var(--loss-soft);color:var(--loss);font-size:11.5px;font-weight:600;cursor:pointer;white-space:nowrap">Sell All</button>
@@ -2741,6 +2741,7 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue, sym) {
 
   const amount = Number(amountStr);
   if (!amountStr || isNaN(amount) || amount <= 0) {
+    return currentLine;
     }
   if (currentPrice <= 0) {
     return `${currentLine}<span class="dca-calc-hint">ไม่มีราคาปัจจุบันสำหรับคำนวณ</span>`;
