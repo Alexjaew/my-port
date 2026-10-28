@@ -1319,7 +1319,11 @@
   .overview-cost-value{font:600 16px var(--mono);letter-spacing:-.02em}
   .overview-cost-value small{margin-left:6px;color:var(--ink-soft);font-size:11px;font-weight:400}
   .overview-cost-row .overview-native-pl{font-size:12px;line-height:1.4}
-  
+  /* เส้นสัดส่วนเทียบเป้าหมาย ในรายการ Holdings */
+.hr-bar{height:5px;background:var(--line);border-radius:4px;margin-top:8px;overflow:hidden}
+.hr-bar-fill{height:100%;border-radius:4px;transition:width .3s ease}
+.hr-tg{margin-left:auto;font:500 11px var(--mono);color:var(--ink-soft);white-space:nowrap}
+.hr-tg.over{color:var(--loss)}
 </style>
 </head>
 <body>
@@ -3225,6 +3229,14 @@ function renderHoldingsTable() {
     const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
     const color = CHART_COLORS[i % CHART_COLORS.length];
     const weight = val / total * 100;
+    const tgt = Number(state.allocTargets[t]) || 0;
+    const stockPct = base.stock ? val / base.stock * 100 : 0;   // เทียบแบบเดียวกับตอนตั้งเป้าในแผงรายละเอียด (ไม่รวมเงินสด)
+    const hasT = tgt > 0;
+    const ratio = hasT ? stockPct / tgt : 0;
+    const over = hasT && ratio > 1;
+    const barW = hasT ? Math.min(ratio, 1) * 100 : weight;
+    const barColor = !hasT ? 'var(--ink-soft)' : (over ? 'var(--loss)' : color);
+    const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over ' : ''}Target ${+tgt.toFixed(1)}%</span>` : '';
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
     const costCls = avg === 0 ? '' : (avg < price ? 'up' : (avg > price ? 'down' : ''));
@@ -3233,8 +3245,9 @@ function renderHoldingsTable() {
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="${logoSources(t)[0]}" data-t="${t}" alt="" loading="lazy" onerror="logoErr(this)"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
-        <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span></div>
+               <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span>${tgLabel}</div>
         <div class="hr-sub">${sub}</div>
+        <div class="hr-bar"><div class="hr-bar-fill" style="width:${barW.toFixed(1)}%;background:${barColor}"></div></div>
       </div>
       <div class="hr-right">
         <div class="hr-val" style="color:${pp >= 0 ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
