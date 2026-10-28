@@ -3230,26 +3230,12 @@ function renderHoldingsTable() {
     const color = CHART_COLORS[i % CHART_COLORS.length];
     const weight = val / total * 100;
     const tgt = Number(state.allocTargets[t]) || 0;
-    const stockPct = base.stock ? val / base.stock * 100 : 0;
-    const hasT = tgt > 0;
-    const ratio = hasT ? stockPct / tgt : 0;
-    const over = hasT && ratio > 1;
-    const barW = hasT ? Math.min(ratio, 1) * 100 : weight;
-    const prog = Math.min(ratio, 1);
-    const barColor = !hasT ? 'var(--ink-soft)'
-      : (over ? 'hsl(0,75%,38%)'
-      : `hsl(${Math.round(30 * (1 - prog))},85%,${Math.round(68 - 26 * prog)}%)`);
-    const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over ' : ''}Target ${+tgt.toFixed(1)}%</span>` : '';
-    const tgt = Number(state.allocTargets[t]) || 0;
     const stockPct = base.stock ? val / base.stock * 100 : 0;   // เทียบแบบเดียวกับตอนตั้งเป้าในแผงรายละเอียด (ไม่รวมเงินสด)
     const hasT = tgt > 0;
     const ratio = hasT ? stockPct / tgt : 0;
     const over = hasT && ratio > 1;
     const barW = hasT ? Math.min(ratio, 1) * 100 : weight;
-        const prog = Math.min(ratio, 1);
-    const barColor = !hasT ? 'var(--ink-soft)'
-      : (over ? 'hsl(0,75%,38%)'
-      : `hsl(${Math.round(30 * (1 - prog))},85%,${Math.round(68 - 26 * prog)}%)`);
+    const barColor = !hasT ? 'var(--ink-soft)' : (over ? 'var(--loss)' : color);
     const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over ' : ''}Target ${+tgt.toFixed(1)}%</span>` : '';
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
@@ -3258,9 +3244,8 @@ function renderHoldingsTable() {
     if (state.port === 'ALL' && r['ชื่อ port']) sub += ` - ${r['ชื่อ port']}`;
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="${logoSources(t)[0]}" data-t="${t}" alt="" loading="lazy" onerror="logoErr(this)"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
-      
-           <div class="hr-mid">
-        <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span>${tgLabel}</div>
+      <div class="hr-mid">
+               <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span>${tgLabel}</div>
         <div class="hr-sub">${sub}</div>
         <div class="hr-bar"><div class="hr-bar-fill" style="width:${barW.toFixed(1)}%;background:${barColor}"></div></div>
       </div>
