@@ -3251,7 +3251,7 @@ function renderHoldingsTable() {
 const barColor = !hasT ? 'var(--ink-soft)'
   : (over ? 'hsl(0,75%,38%)'
   : `hsl(${Math.round(50 * (1 - prog))},90%,${Math.round(60 - 18 * prog)}%)`);
-    const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over ' : ''}Target ${+tgt.toFixed(1)}%</span>` : '';
+    const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over' : 'Target ' + (+tgt.toFixed(1)) + '%'}</span>` : '';
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
     const costCls = avg === 0 ? '' : (avg < price ? 'up' : (avg > price ? 'down' : ''));
