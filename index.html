@@ -175,8 +175,8 @@
   .brand .dot { color: var(--accent); }
   .port-switch {
     display: flex; gap: 7px; margin-top: 14px;
-    overflow-x: auto;
-    -ms-overflow-style: none; scrollbar-width: none;
+    flow-x: auto;
+    -ms-flow-style: none; scrollbar-width: none;
   }
   .port-switch::-webkit-scrollbar { display: none; }
   .port-chip {
@@ -225,22 +225,22 @@
   }
   .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
 
-.overview-native-row {
-  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
+.view-native-row {
+  display: flex; gap: 10px; flow-x: auto; padding-bottom: 4px;
   margin-bottom: 16px;
 }
-.overview-native-card {
+.view-native-card {
   flex: 0 0 auto; min-width: 130px;
   background: var(--paper); border: 1px solid var(--line); border-radius: 12px;
   padding: 10px 12px;
 }
-.overview-native-dot { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; border: 1px solid var(--line); }
-.overview-native-label { font-size: 11px; color: var(--ink-soft); margin-bottom: 3px; }
-.overview-native-value { font-family: var(--mono); font-size: 15px; font-weight: 700; }
-.overview-native-pl { font-family: var(--mono); font-size: 11px; font-weight: 600; margin-top: 2px; }
-.overview-native-pl.up { color: var(--gain); }
-.overview-native-pl.down { color: var(--loss); }
-.overview-combined-block { border-top: 1px solid var(--line); padding-top: 14px; }
+.view-native-dot { width: 8px; height: 8px; border-radius: 50%; margin-bottom: 6px; border: 1px solid var(--line); }
+.view-native-label { font-size: 11px; color: var(--ink-soft); margin-bottom: 3px; }
+.view-native-value { font-family: var(--mono); font-size: 15px; font-weight: 700; }
+.view-native-pl { font-family: var(--mono); font-size: 11px; font-weight: 600; margin-top: 2px; }
+.view-native-pl.up { color: var(--gain); }
+.view-native-pl.down { color: var(--loss); }
+.view-combined-block { border-top: 1px solid var(--line); padding-top: 14px; }
 
 .overview-card {
   background: var(--paper-raised);
@@ -1467,8 +1467,7 @@
     <div class="drawer-body">
       <div id="drawerSummary"></div>
            <div class="drawer-sub">Tools · Target Allocation</div>
-      <div id="allocTargetSumBar"></div>
-      <div id="allocList">
+          <div id="allocList">
         <div class="skel" style="height:64px;margin-bottom:8px"></div>
       </div>
     </div>
