@@ -3235,7 +3235,10 @@ function renderHoldingsTable() {
     const ratio = hasT ? stockPct / tgt : 0;
     const over = hasT && ratio > 1;
     const barW = hasT ? Math.min(ratio, 1) * 100 : weight;
-    const barColor = !hasT ? 'var(--ink-soft)' : (over ? 'var(--loss)' : color);
+        const prog = Math.min(ratio, 1);
+    const barColor = !hasT ? 'var(--ink-soft)'
+      : (over ? 'hsl(0,75%,38%)'
+      : `hsl(${Math.round(30 * (1 - prog))},85%,${Math.round(68 - 26 * prog)}%)`);
     const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over ' : ''}Target ${+tgt.toFixed(1)}%</span>` : '';
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
