@@ -1326,6 +1326,18 @@
 .hr-tg{margin-left:auto;font:500 11px var(--mono);color:var(--ink-soft);white-space:nowrap}
 .hr-tg.over{color:var(--loss)}
 </style>
+  .hr-tg{flex:0 1 auto;overflow:hidden;text-overflow:ellipsis}
+.hr-top{min-width:0}
+@media (max-width:899px){
+  .hlist{grid-template-columns:minmax(0,1fr)}
+  .hrow{min-width:0;padding:10px 11px;gap:10px}
+  .hrow .ht-logo{width:40px;height:40px}
+  .hr-top{gap:6px}
+  .hr-top b{font-size:15px}
+  .hr-tg{font-size:10.5px}
+  .hr-right{flex:0 0 auto;white-space:nowrap}
+  .hr-val{font-size:15px}
+}
 </head>
 <body>
 
@@ -3239,7 +3251,7 @@ function renderHoldingsTable() {
         const prog = Math.min(ratio, 1);
 const barColor = !hasT ? 'var(--ink-soft)'
   : (over ? 'hsl(0,75%,38%)'
-  : `hsl(${Math.round(45 * (1 - prog))},85%,${Math.round(50 + 10 * prog)}%)`);
+  : `hsl(${Math.round(50 * (1 - prog))},90%,${Math.round(60 - 18 * prog)}%)`);
     const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over ' : ''}Target ${+tgt.toFixed(1)}%</span>` : '';
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
