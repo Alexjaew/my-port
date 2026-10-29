@@ -175,7 +175,7 @@
   .brand .dot { color: var(--accent); }
   .port-switch {
     display: flex; gap: 7px; margin-top: 14px;
-    flow-x: auto;
+    overflow-x: auto;
     -ms-flow-style: none; scrollbar-width: none;
   }
   .port-switch::-webkit-scrollbar { display: none; }
@@ -226,7 +226,7 @@
   .basis-btn-inline.active { background: var(--paper-raised); color: var(--ink); }
 
 .view-native-row {
-  display: flex; gap: 10px; flow-x: auto; padding-bottom: 4px;
+  display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px;
   margin-bottom: 16px;
 }
 .view-native-card {
@@ -335,7 +335,7 @@
     margin-bottom: 16px;
     width: fit-content;
     max-width: 100%;
-    overflow-x: auto;
+    overoverflow-x: auto;
   }
   .basis-btn {
     font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
@@ -418,7 +418,7 @@
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
     margin-top: 6px;
     white-space: nowrap;
-    overflow-x: auto;
+    overoverflow-x: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -1575,15 +1575,19 @@ const fmtPct = (n) => {
   if (n === null || n === undefined || isNaN(n)) return '—';
   return (n * 100 >= 0 ? '+' : '') + (n * 100).toFixed(2) + '%';
 };
+// Escape untrusted strings before inserting them into HTML attributes or markup.
+const escapeHtml = (value) => String(value ?? '').replace(/[&<>\"']/g, ch => ({
+  '&': '&amp;', '<': '&lt;', '>': '&gt;', '\"': '&quot;', "'": '&#39;'
+}[ch]));
 
 function showSetupBanner(errorMsg) {
   const el = document.getElementById('setupBanner');
   el.innerHTML = `
     <div class="setup-banner">
-      ${errorMsg ? '⚠️ ' + errorMsg + '<br><br>' : ''}วาง <strong>Web App URL</strong> จาก Apps Script ที่ deploy ไว้ที่นี่
+      ${errorMsg ? '⚠️ ' + escapeHtml(errorMsg) + '<br><br>' : ''}วาง <strong>Web App URL</strong> จาก Apps Script ที่ deploy ไว้ที่นี่
       (ลงท้ายด้วย <code>/exec</code>)
       <div class="url-input-row">
-        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${API_URL || ''}">
+        <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${escapeHtml(API_URL || '')}">
         <button id="apiUrlClear" type="button" title="ลบลิงก์ที่บันทึกไว้ และกลับไปใช้ค่าเริ่มต้น">✕</button>
       </div>
       <button id="apiUrlSave">บันทึกและเชื่อมต่อ</button>
@@ -1705,7 +1709,7 @@ async function loadOverview() {
       }
       if (!state.summary) {
         document.getElementById('allocList').innerHTML =
-          `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${err.message}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
+          `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
       }
       showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
       return false;
@@ -2242,7 +2246,12 @@ async function renderDonutChart() {
     items.push({ ticker: 'Cash', value: cashBalance, plPct: 0, isCash: true });
   }
 
-  const total = stockTotal + (cashBalance > 0 ? cashBalance : 0) || 1;
+  const total = stockTotal + (cashBalance > 0 ? cashBalance : 0);
+  if (!(total > 0)) {
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีมูลค่าให้แสดงสัดส่วน</div></div>`;
+    if (_donutInstance) { _donutInstance.destroy(); _donutInstance = null; }
+    return;
+  }
   const tickers = items.map(it => it.ticker);
   const pcts = items.map(it => parseFloat((it.value / total * 100).toFixed(1)));
   // สีเดิม: เขียวถ้ากำไร แดงถ้าขาดทุน (ไม่ไล่เฉด) ยกเว้นเงินสดใช้สีขาว
@@ -2744,9 +2753,9 @@ function getRoomColor(ratio) {
 }
 
 function renderTargetRoomBarHtml(actualPct, targetPct, ticker) {
-  const ratio = targetPct > 0 ? actualPct / targetPct : 0;
-  const barWidth = Math.min(ratio, 1) * 100;
-  const overTarget = ratio > 1;
+  const ratio = targetPct > 0 ? actualPct / targetPct : (actualPct > 0 ? Infinity : 0);
+  const barWidth = ratio === Infinity ? 100 : Math.min(ratio, 1) * 100;
+  const overTarget = targetPct === 0 ? actualPct > 0 : ratio > 1;
   const color = overTarget ? '#D9483B' : getRoomColor(ratio);
 
   return `
