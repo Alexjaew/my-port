@@ -1337,6 +1337,16 @@
   .hr-right{flex:0 0 auto;white-space:nowrap}
   .hr-val{font-size:15px}
 }
+
+/* ===== v17: กราฟราคารายตัวในแผงรายละเอียดหุ้น ===== */
+.dr-chart{margin-top:14px;background:var(--paper-raised);border:1px solid var(--line);border-radius:14px;padding:12px}
+.dr-chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.dr-chart-range{display:flex;background:var(--line);border-radius:100px;padding:2px}
+.dr-chart-range span{font:700 10.5px var(--sans);padding:4px 9px;border-radius:100px;color:var(--ink-soft);cursor:pointer}
+.dr-chart-range span.active{background:var(--paper-raised);color:var(--ink)}
+.dr-chart-pct{font:600 12px var(--mono)}
+.dr-chart-box{position:relative;height:170px}
+.dr-chart-msg{display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--ink-soft)}
 </style>
 </head>
 <body>
@@ -3317,8 +3327,127 @@ function renderDrawerSummary(r) {
     <div class="dr-actions">
       <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">BUY</button>
       <button class="mini-btn" data-trade="ขาย" data-ticker="${t}">SELL</button>
+    </div>
+    <div class="dr-chart">
+      <div class="dr-chart-head">
+        <span class="dr-chart-pct" id="drChartPct"></span>
+        <div class="dr-chart-range" id="drChartRange">
+          <span data-d="30">1M</span><span data-d="90">3M</span>
+          <span class="active" data-d="180">6M</span><span data-d="365">1Y</span>
+        </div>
+      </div>
+      <div class="dr-chart-box" id="drChartBox"><div class="dr-chart-msg">Loading...</div></div>
     </div>`;
+  loadStockChart(t, 180);
 }
+
+/* ==================== กราฟราคารายตัว (ในแผงรายละเอียดหุ้น) ==================== */
+let _stockChart = null;
+const _phCache = {};
+
+// หุ้นตัวนี้อยู่พอร์ตไทยหรือไม่ (ใช้ส่ง market=TH ให้ backend ใส่ prefix BKK:)
+function isThaiTicker(ticker) {
+  const rows = (state.summary && state.summary.rows) || [];
+  const hit = rows.find(r => r['หุ้น'] === ticker && (state.port === 'ALL' || r['ชื่อ port'] === state.port));
+  return !!hit && isThaiPortName(hit['ชื่อ port']);
+}
+
+async function loadStockChart(ticker, days) {
+  const box = document.getElementById('drChartBox');
+  if (!box) return;
+  document.querySelectorAll('#drChartRange span').forEach(s =>
+    s.classList.toggle('active', Number(s.dataset.d) === days));
+  if (_stockChart) { _stockChart.destroy(); _stockChart = null; }
+  box.innerHTML = '<div class="dr-chart-msg">Loading...</div>';
+
+  const market = isThaiTicker(ticker) ? 'TH' : null;
+  const key = ticker + '_' + days + '_' + (market || 'US');
+  try {
+    if (!_phCache[key]) {
+      const res = await api('price_history', { ticker, days, market });
+      if (res.error && !Array.isArray(res.rows)) throw new Error(res.error);
+      _phCache[key] = res.rows || [];
+    }
+    // ถ้าผู้ใช้เปลี่ยนไปดูตัวอื่น/ปิดแผงระหว่างรอ ให้ทิ้งผลนี้
+    if (state.detailTicker !== ticker) return;
+    drawStockChart(ticker, _phCache[key]);
+  } catch (err) {
+    console.error('loadStockChart failed:', err);
+    if (state.detailTicker === ticker) {
+      const b = document.getElementById('drChartBox');
+      if (b) b.innerHTML = '<div class="dr-chart-msg">Chart unavailable</div>';
+    }
+  }
+}
+
+function drawStockChart(ticker, rows) {
+  const box = document.getElementById('drChartBox');
+  if (!box) return;
+  if (rows.length < 2 || typeof Chart === 'undefined') {
+    box.innerHTML = '<div class="dr-chart-msg">No price history</div>';
+    return;
+  }
+  const sym = (isThaiTicker(ticker)) ? '฿' : '$';
+  const prices = rows.map(r => r[1]);
+  const first = prices[0], last = prices[prices.length - 1];
+  const up = last >= first;
+  const color = up ? '#3DBE7C' : '#E8645A';
+
+  const pctEl = document.getElementById('drChartPct');
+  if (pctEl) {
+    const chg = first ? (last - first) / first : 0;
+    pctEl.textContent = fmtPct(chg);
+    pctEl.style.color = up ? 'var(--gain)' : 'var(--loss)';
+  }
+
+  // เส้นต้นทุนเฉลี่ย (FIFO) ของหุ้นตัวนี้
+  const srow = (state.summary?.rows || []).find(r => r['หุ้น'] === ticker && (state.port === 'ALL' || r['ชื่อ port'] === state.port));
+  const avg = srow ? Number(srow['ราคา FIFO']) || 0 : 0;
+
+  box.innerHTML = '<canvas id="drChartCanvas"></canvas>';
+  if (_stockChart) { _stockChart.destroy(); _stockChart = null; }
+  const ctx = document.getElementById('drChartCanvas').getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 170);
+  grad.addColorStop(0, color + '55');
+  grad.addColorStop(1, color + '00');
+
+  const datasets = [{
+    data: prices, borderColor: color, backgroundColor: grad, fill: true,
+    borderWidth: 2, pointRadius: 0, pointHoverRadius: 4, tension: 0.2
+  }];
+  if (avg > 0) datasets.push({
+    data: prices.map(() => avg), borderColor: '#94A3B8', borderDash: [5, 4],
+    borderWidth: 1.2, pointRadius: 0, fill: false
+  });
+
+  _stockChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels: rows.map(r => r[0]), datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: {
+          title: items => items[0].label,
+          label: c => c.datasetIndex === 1
+            ? ` Avg cost ${sym}${fmt(c.raw)}` : ` ${sym}${fmt(c.raw)}`
+        } }
+      },
+      scales: {
+        x: { display: false },
+        y: { grid: { color: 'rgba(128,128,128,.12)' }, border: { display: false },
+             ticks: { color: '#8B92A0', font: { size: 10 }, maxTicksLimit: 4,
+                      callback: v => sym + fmt(v, v < 10 ? 2 : 0) } }
+      }
+    }
+  });
+}
+
+document.addEventListener('click', (e) => {
+  const s = e.target.closest('#drChartRange span');
+  if (s && state.detailTicker) loadStockChart(state.detailTicker, Number(s.dataset.d));
+});
   
 function openStockDrawer(i) {
   const r = holdingsSorted[i]; if (!r) return;
@@ -3332,6 +3461,7 @@ function openStockDrawer(i) {
 }
 function closeStockDrawer() {
   state.detailTicker = null;
+  if (_stockChart) { _stockChart.destroy(); _stockChart = null; }
   document.getElementById('stockDrawer').style.transform = '';
   document.getElementById('stockDrawer').classList.remove('open');
   document.getElementById('drawerBackdrop').classList.remove('open');
