@@ -1339,7 +1339,7 @@
 }
 
 /* ===== v17: กราฟราคารายตัวในแผงรายละเอียดหุ้น ===== */
-.dr-chart{margin-top:14px;background:var(--paper-raised);border:1px solid var(--line);border-radius:14px;padding:12px}
+.dr-chart{margin-top:10px;background:var(--paper-raised);border:1px solid var(--line);border-radius:14px;padding:12px}
 .dr-chart-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
 .dr-chart-range{display:flex;background:var(--line);border-radius:100px;padding:2px}
 .dr-chart-range span{font:700 10.5px var(--sans);padding:4px 9px;border-radius:100px;color:var(--ink-soft);cursor:pointer}
@@ -1347,6 +1347,32 @@
 .dr-chart-pct{font:600 12px var(--mono)}
 .dr-chart-box{position:relative;height:220px}
 .dr-chart-ctl{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+/* เครื่องมือในแผงหุ้น: ปุ่ม Price Target + DCA อยู่บรรทัดเดียว ซ่อนแถวชื่อหุ้น/ราคาที่ซ้ำกับด้านบน */
+#allocList{margin-top:10px}
+#allocList .alloc-row-wrap.sel{display:grid;grid-template-columns:1fr 1fr;margin-bottom:0}
+#allocList .alloc-row-wrap.sel .alloc-row{display:none}
+#allocList .alloc-row-wrap.sel .target-price-toggle-btn,
+#allocList .alloc-row-wrap.sel .dca-toggle-btn{
+  width:auto;padding:10px 8px;font-size:13px;font-weight:700;
+  border:0;border-bottom:1px solid var(--line);
+  color:var(--accent-text);background:var(--accent-soft)}
+#allocList .alloc-row-wrap.sel .target-price-toggle-btn-top{order:1;grid-column:1;border-right:1px solid var(--line)}
+#allocList .alloc-row-wrap.sel .dca-toggle-btn{order:2;grid-column:2}
+#allocList .alloc-row-wrap.sel .target-price-toggle-btn-top .ti-target-arrow,
+#allocList .alloc-row-wrap.sel .target-price-toggle-btn-top .dca-toggle-chevron{font-size:15px}
+#allocList .alloc-row-wrap.sel .dca-calc{order:3;grid-column:1/-1;border-top:0;border-bottom:1px solid var(--line)}
+#allocList .alloc-row-wrap.sel .alloc-target-block{order:4;grid-column:1/-1;padding:8px 12px 10px}
+/* ปุ่ม BUY / SELL ในหัวแผง (แถวเดียวกับชื่อหุ้น) */
+.drawer-acts{display:flex;gap:6px;margin-left:auto}
+.drawer-acts .mini-btn{padding:6px 14px;font-size:12px;min-height:30px;border-radius:8px}
+.drawer-acts .mini-btn[data-trade="ซื้อ"]{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 45%,var(--line))}
+.drawer-acts .mini-btn[data-trade="ขาย"]{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 45%,var(--line))}
+/* แถวบนของแผงหุ้น: % + Price + Avg Cost อยู่บรรทัดเดียว */
+.dr-toprow{display:grid;grid-template-columns:auto 1fr 1fr;gap:8px;align-items:stretch}
+.dr-toprow .dr-hero{margin-bottom:0;display:flex;flex-direction:column;justify-content:center}
+.dr-toprow .dr-tile{padding:8px 10px;min-width:0}
+.dr-basis{font:600 10px var(--mono);color:var(--ink-soft);margin-top:2px;letter-spacing:.04em}
+@media (max-width:380px){.dr-toprow .dr-price{font-size:20px}.dr-toprow .dr-v{font-size:12.5px}}
 .dr-chart-note{margin-top:6px;font-size:10.5px;color:var(--ink-soft);min-height:0}
 .dr-chart-msg{display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--ink-soft)}
 </style>
@@ -1475,10 +1501,9 @@
 
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
   <aside class="drawer" id="stockDrawer" aria-hidden="true">
-    <div class="drawer-head"><div class="drawer-grab"></div><div class="drawer-title" id="drawerTitle">Stock Details</div></div>
+    <div class="drawer-head"><div class="drawer-grab"></div><div class="drawer-title" id="drawerTitle">Stock Details</div><div class="drawer-acts" id="drawerActions"></div></div>
     <div class="drawer-body">
       <div id="drawerSummary"></div>
-           <div class="drawer-sub">Tools · Target Allocation</div>
           <div id="allocList">
         <div class="skel" style="height:64px;margin-bottom:8px"></div>
       </div>
@@ -3312,23 +3337,21 @@ function renderDrawerSummary(r) {
   const up = pp >= 0;
   const tile = (l, v, c) => `<div class="dr-tile"><div class="dr-l">${l}</div><div class="dr-v ${c || ''}">${v}</div></div>`;
   document.getElementById('drawerTitle').textContent = t;
+  document.getElementById('drawerActions').innerHTML =
+    `<button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">BUY</button>` +
+    `<button class="mini-btn" data-trade="ขาย" data-ticker="${t}">SELL</button>`;
   document.getElementById('drawerSummary').innerHTML = `
-    <div class="dr-hero">
-      <div class="dr-price ${up ? 'up' : 'down'}" style="color:${up ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
-      <div class="dr-profit" style="color:var(--ink-soft)"> (${basis})</div>
-    </div>
-    <div class="dr-grid">
+    <div class="dr-toprow">
+      <div class="dr-hero">
+        <div class="dr-price ${up ? 'up' : 'down'}" style="color:${up ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(pp)}</div>
+        <div class="dr-basis">${basis}</div>
+      </div>
       ${tile('Price', sym + fmt(Number(r['price']) || 0))}
       ${tile('Average Cost', sym + fmt(Number(r['ราคา FIFO']) || 0),
   (() => {
     const a = Number(r['ราคา FIFO']) || 0, p = Number(r['price']) || 0;
     return a && p ? (a < p ? 'up' : (a > p ? 'down' : '')) : '';
   })())}
-      ${tile('Shares Held', (Number(r['จำนวนหุ้น']) || 0).toLocaleString('en-US', { maximumFractionDigits: 6 }))}
-    </div>
-    <div class="dr-actions">
-      <button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">BUY</button>
-      <button class="mini-btn" data-trade="ขาย" data-ticker="${t}">SELL</button>
     </div>
     <div class="dr-chart">
       <div class="dr-chart-head">
@@ -3351,7 +3374,22 @@ function renderDrawerSummary(r) {
 
 /* ==================== กราฟราคารายตัว: แท่งเทียน / เส้น (ในแผงรายละเอียดหุ้น) ==================== */
 let _stockChart = null;
-const _phCache = {};
+const _phCache = {};      // key -> { rows, ts }
+const _phInflight = {};   // key -> true ขณะกำลังดึงอยู่ (กันยิงซ้ำ)
+const PH_LS_KEY = 'portfolio_ph_v1';
+const PH_FRESH_MS = 30 * 60 * 1000;            // ใหม่พอ ไม่ต้องดึงซ้ำ
+const PH_MAX_AGE_MS = 7 * 24 * 3600 * 1000;    // เก่ากว่านี้ทิ้ง
+function phLoadStore() {
+  try { return JSON.parse(localStorage.getItem(PH_LS_KEY) || '{}') || {}; } catch (e) { return {}; }
+}
+function phSaveStore(store) {
+  try {
+    const now = Date.now();
+    Object.keys(store).forEach(k => { if (!store[k] || now - store[k].ts > PH_MAX_AGE_MS) delete store[k]; });
+    Object.keys(store).sort((a, b) => store[b].ts - store[a].ts).slice(40).forEach(k => delete store[k]);
+    localStorage.setItem(PH_LS_KEY, JSON.stringify(store));
+  } catch (e) { /* เต็มหรือถูกบล็อก ก็ข้ามไป */ }
+}
 let _chartType = 'candle';   // 'candle' | 'line'
 let _chartDays = 180;
 
@@ -3401,25 +3439,45 @@ async function loadStockChart(ticker, days) {
   const market = isThaiTicker(ticker) ? 'TH' : null;
   const key = ticker + '_' + days + '_' + (market || 'US');
 
-  if (!_phCache[key]) {
+  // 1) มีแคช (ในหน่วยความจำ หรือใน localStorage) -> วาดทันที
+  let entry = _phCache[key];
+  if (!entry) {
+    const st = phLoadStore()[key];
+    if (st && Array.isArray(st.rows) && st.rows.length) entry = _phCache[key] = st;
+  }
+  if (entry) {
+    if (state.detailTicker !== ticker) return;
+    drawStockChart(ticker, entry.rows, days);
+    if (Date.now() - entry.ts < PH_FRESH_MS) return;   // ยังใหม่อยู่ ไม่ต้องดึงซ้ำ
+  } else {
     if (_stockChart) { _stockChart.destroy(); _stockChart = null; }
     box.innerHTML = '<div class="dr-chart-msg">Loading...</div>';
   }
+
+  // 2) ไม่มีแคช หรือเก่าแล้ว -> ดึงจาก backend (ถ้าเก่า จะวาดทับให้เองเมื่อได้ข้อมูลใหม่)
+  if (_phInflight[key]) return;
+  _phInflight[key] = true;
   try {
-    if (!_phCache[key]) {
-      const res = await api('price_history', { ticker, days, market, ohlc: 1 });
-      if (res.error && !Array.isArray(res.rows)) throw new Error(res.error);
-      _phCache[key] = res.rows || [];
+    const res = await api('price_history', { ticker, days, market, ohlc: 1 });
+    if (res.error && !Array.isArray(res.rows)) throw new Error(res.error);
+    const rows = res.rows || [];
+    const fresh = { rows, ts: Date.now() };
+    _phCache[key] = fresh;
+    if (rows.length) {
+      const store = phLoadStore();
+      store[key] = fresh;
+      phSaveStore(store);
     }
-    // ถ้าผู้ใช้เปลี่ยนไปดูตัวอื่น/ปิดแผงระหว่างรอ ให้ทิ้งผลนี้
-    if (state.detailTicker !== ticker) return;
-    drawStockChart(ticker, _phCache[key], days);
+    if (state.detailTicker !== ticker || _chartDays !== days) return;
+    drawStockChart(ticker, rows, days);
   } catch (err) {
     console.error('loadStockChart failed:', err);
-    if (state.detailTicker === ticker) {
+    if (!entry && state.detailTicker === ticker) {
       const b = document.getElementById('drChartBox');
       if (b) b.innerHTML = '<div class="dr-chart-msg">Chart unavailable</div>';
     }
+  } finally {
+    delete _phInflight[key];
   }
 }
 
