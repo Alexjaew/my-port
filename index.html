@@ -3293,10 +3293,8 @@ function renderHoldingsTable() {
     const ratio = hasT ? stockPct / tgt : 0;
     const over = hasT && ratio > 1;
     const barW = hasT ? Math.min(ratio, 1) * 100 : weight;
-        const prog = Math.min(ratio, 1);
-const barColor = !hasT ? 'var(--ink-soft)'
-  : (over ? 'hsl(0,75%,38%)'
-  : `hsl(${Math.round(50 * (1 - prog))},90%,${Math.round(60 - 18 * prog)}%)`);
+        // ใช้สีชุดเดียวกับแถบเป้าหมายในแผงรายละเอียดหุ้น (เขียว -> เหลือง -> แดง, เกินเป้า = แดงเข้ม)
+    const barColor = !hasT ? 'var(--ink-soft)' : (over ? '#D9483B' : getRoomColor(ratio));
     const tgLabel = hasT ? `<span class="hr-tg ${over ? 'over' : ''}">${over ? 'Over' : 'Target'} ${+tgt.toFixed(1)}%</span>` : '';
     const price = Number(r['price']) || 0;
     const avg = Number(r['ราคา FIFO']) || 0;
