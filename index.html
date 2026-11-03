@@ -1347,6 +1347,7 @@
 .dr-chart-pct{font:600 12px var(--mono)}
 .dr-chart-box{position:relative;height:220px}
 .dr-chart-ctl{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.dr-chart-note{margin-top:6px;font-size:10.5px;color:var(--ink-soft);min-height:0}
 .dr-chart-msg{display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--ink-soft)}
 </style>
 </head>
@@ -3343,6 +3344,7 @@ function renderDrawerSummary(r) {
         </div>
       </div>
       <div class="dr-chart-box" id="drChartBox"><div class="dr-chart-msg">Loading...</div></div>
+      <div class="dr-chart-note" id="drChartNote"></div>
     </div>`;
   loadStockChart(t, 180);
 }
@@ -3431,6 +3433,10 @@ function drawStockChart(ticker, rows, days) {
   const sym = isThaiTicker(ticker) ? '฿' : '$';
   const { candles, hasOHLC } = normalizeCandles(rows, days);
   const candleMode = _chartType === 'candle' && hasOHLC;
+  const noteEl = document.getElementById('drChartNote');
+  if (noteEl) noteEl.textContent = (_chartType === 'candle' && !hasOHLC)
+    ? 'ไม่ได้รับข้อมูลเปิด/สูง/ต่ำ จึงแสดงเป็นกราฟเส้นแทน'
+    : '';
 
   const closes = candles.map(x => x.c);
   const first = closes[0], last = closes[closes.length - 1];
