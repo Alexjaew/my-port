@@ -1363,7 +1363,8 @@
 #allocList .alloc-row-wrap.sel .dca-calc{order:3;grid-column:1/-1;border-top:0;border-bottom:1px solid var(--line)}
 #allocList .alloc-row-wrap.sel .alloc-target-block{order:4;grid-column:1/-1;padding:8px 12px 10px}
 /* ปุ่ม BUY / SELL ในหัวแผง (แถวเดียวกับชื่อหุ้น) */
-.drawer-acts{display:flex;gap:6px;margin-left:auto}
+.drawer-acts{display:flex;gap:6px}
+.drawer-head .drawer-title{margin-left:auto}
 .drawer-acts .mini-btn{padding:6px 14px;font-size:12px;min-height:30px;border-radius:8px}
 .drawer-acts .mini-btn[data-trade="ซื้อ"]{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 45%,var(--line))}
 .drawer-acts .mini-btn[data-trade="ขาย"]{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 45%,var(--line))}
@@ -1501,7 +1502,7 @@
 
   <div class="drawer-backdrop" id="drawerBackdrop"></div>
   <aside class="drawer" id="stockDrawer" aria-hidden="true">
-    <div class="drawer-head"><div class="drawer-grab"></div><div class="drawer-title" id="drawerTitle">Stock Details</div><div class="drawer-acts" id="drawerActions"></div></div>
+    <div class="drawer-head"><div class="drawer-grab"></div><div class="drawer-acts" id="drawerActions"></div><div class="drawer-title" id="drawerTitle">Stock Details</div></div>
     <div class="drawer-body">
       <div id="drawerSummary"></div>
           <div id="allocList">
