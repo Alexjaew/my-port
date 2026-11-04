@@ -1344,7 +1344,7 @@
 .dr-chart-range{display:flex;background:var(--line);border-radius:100px;padding:2px}
 .dr-chart-range span{font:700 10.5px var(--sans);padding:4px 9px;border-radius:100px;color:var(--ink-soft);cursor:pointer}
 .dr-chart-range span.active{background:var(--paper-raised);color:var(--ink)}
-.dr-chart-pct{font:600 12px var(--mono)}
+.dr-chart-pct{font:700 14px var(--mono)}
 .dr-chart-box{position:relative;height:220px}
 .dr-chart-ctl{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
 /* เครื่องมือในแผงหุ้น: ปุ่ม Price Target + DCA อยู่บรรทัดเดียว ซ่อนแถวชื่อหุ้น/ราคาที่ซ้ำกับด้านบน */
@@ -1373,6 +1373,7 @@
 .dr-toprow .dr-hero{margin-bottom:0;display:flex;flex-direction:column;justify-content:center}
 .dr-toprow .dr-tile{padding:8px 10px;min-width:0}
 .dr-basis{font:600 10px var(--mono);color:var(--ink-soft);margin-top:2px;letter-spacing:.04em}
+.dr-chart-pct small{font:500 10px var(--mono);color:var(--ink-soft);margin-left:6px}
 @media (max-width:380px){.dr-toprow .dr-price{font-size:20px}.dr-toprow .dr-v{font-size:12.5px}}
 .dr-chart-note{margin-top:6px;font-size:10.5px;color:var(--ink-soft);min-height:0}
 .dr-chart-msg{display:flex;align-items:center;justify-content:center;height:100%;font-size:12px;color:var(--ink-soft)}
@@ -3419,7 +3420,7 @@ function normalizeCandles(rows, days) {
     }
     c = g;
   }
-  return { candles: c, hasOHLC };
+  return { candles: c, hasOHLC, weekly: hasOHLC && days >= 365 };
 }
 
 function syncChartControls() {
@@ -3488,7 +3489,7 @@ function drawStockChart(ticker, rows, days) {
     return;
   }
   const sym = isThaiTicker(ticker) ? '฿' : '$';
-  const { candles, hasOHLC } = normalizeCandles(rows, days);
+  const { candles, hasOHLC, weekly } = normalizeCandles(rows, days);
   const candleMode = _chartType === 'candle' && hasOHLC;
   const noteEl = document.getElementById('drChartNote');
   if (noteEl) noteEl.textContent = (_chartType === 'candle' && !hasOHLC)
@@ -3501,12 +3502,23 @@ function drawStockChart(ticker, rows, days) {
   const GAIN = '#3DBE7C', LOSS = '#E8645A';
   const color = up ? GAIN : LOSS;
 
+  // % มุมบนของกราฟ = ขึ้น/ลงของ "วัน" (หรือสัปดาห์ในช่วง 1Y) เทียบปิดก่อนหน้า
+  // ค่าเริ่มต้น = แท่งล่าสุด และเปลี่ยนตามแท่งที่แตะ/ชี้
   const pctEl = document.getElementById('drChartPct');
-  if (pctEl) {
-    const chg = first ? (last - first) / first : 0;
-    pctEl.textContent = fmtPct(chg);
-    pctEl.style.color = up ? 'var(--gain)' : 'var(--loss)';
-  }
+  const setChartPct = (i) => {
+    if (!pctEl) return;
+    if (!(i > 0) || !candles[i] || !candles[i - 1] || !candles[i - 1].c) {
+      pctEl.innerHTML = '<span style="color:var(--ink-soft)">—</span>';
+      return;
+    }
+    const v = (candles[i].c - candles[i - 1].c) / candles[i - 1].c * 100;
+    const col = v === 0 ? 'var(--ink-soft)' : (v > 0 ? 'var(--gain)' : 'var(--loss)');
+    const dt = new Date(candles[i].d + 'T00:00:00Z');
+    const dl = (weekly ? 'wk ' : '') + (isNaN(dt) ? candles[i].d
+      : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }));
+    pctEl.innerHTML = `<span style="color:${col}">${v > 0 ? '+' : ''}${v.toFixed(2)}%</span><small>${dl}</small>`;
+  };
+  setChartPct(candles.length - 1);
 
   // เส้นต้นทุนเฉลี่ย (FIFO) ของหุ้นตัวนี้
   const srow = (state.summary?.rows || []).find(r => r['หุ้น'] === ticker && (state.port === 'ALL' || r['ชื่อ port'] === state.port));
@@ -3570,6 +3582,27 @@ function drawStockChart(ticker, rows, days) {
     }
   };
 
+  // อัปเดต % มุมบนตามแท่งที่ชี้/แตะ และกลับเป็นแท่งล่าสุดเมื่อเมาส์ออกจากกราฟ
+  let lastTouchTs = 0;
+  const pctPlugin = {
+    id: 'pctFollow',
+    afterEvent(chart, args) {
+      const e = args.event;
+      if (e.native && e.native.type === 'touchstart') lastTouchTs = Date.now();
+      if (e.type === 'mouseout') {
+        // นิ้วที่ยกออกก็ส่ง mouseout มาด้วย: บนมือถือให้ค้างค่าไว้จนกว่าจะแตะนอกกราฟ
+        if (Date.now() - lastTouchTs < 2000) return;
+        setChartPct(candles.length - 1);
+        return;
+      }
+      if (!args.inChartArea) return;
+      if (['mousemove', 'mousedown', 'click', 'touchstart', 'touchmove'].indexOf(e.type) !== -1) {
+        const els = chart.getElementsAtEventForMode(e, 'index', { intersect: false }, false);
+        if (els && els.length) setChartPct(els[0].index);
+      }
+    }
+  };
+
   _stockChart = new Chart(ctx, {
     type: 'line',
     data: { labels: candles.map(x => x.d), datasets },
@@ -3582,11 +3615,19 @@ function drawStockChart(ticker, rows, days) {
           title: items => items[0].label,
           label: c => {
             if (c.datasetIndex === 1) return ` Avg cost ${sym}${fmt(c.raw)}`;
+            const i = c.dataIndex;
+            const prevC = i > 0 ? candles[i - 1].c : null;
+            const chgLine = prevC ? (() => {
+              const v = (candles[i].c - prevC) / prevC * 100;
+              return ` Chg ${v > 0 ? '+' : ''}${v.toFixed(2)}%`;
+            })() : null;
             if (candleMode) {
-              const d = candles[c.dataIndex];
-              return [` O ${sym}${fmt(d.o)}   H ${sym}${fmt(d.h)}`, ` L ${sym}${fmt(d.l)}   C ${sym}${fmt(d.c)}`];
+              const d = candles[i];
+              const lines = [` O ${sym}${fmt(d.o)}   H ${sym}${fmt(d.h)}`, ` L ${sym}${fmt(d.l)}   C ${sym}${fmt(d.c)}`];
+              if (chgLine) lines.push(chgLine);
+              return lines;
             }
-            return ` ${sym}${fmt(c.raw)}`;
+            return chgLine ? [` ${sym}${fmt(c.raw)}`, chgLine] : ` ${sym}${fmt(c.raw)}`;
           }
         } }
       },
@@ -3598,8 +3639,16 @@ function drawStockChart(ticker, rows, days) {
                       callback: v => sym + fmt(v, v < 10 ? 2 : 0) } }
       }
     },
-    plugins: [candlePlugin]
+    plugins: [candlePlugin, pctPlugin]
   });
+
+  // ออกจากกราฟแล้วให้กลับไปแสดงแท่งล่าสุด (เมาส์: mouseleave / มือถือ: แตะนอกกราฟ)
+  const cv = document.getElementById('drChartCanvas');
+  if (window._chartOutside) document.removeEventListener('touchstart', window._chartOutside);
+  window._chartOutside = (ev) => {
+    if (!ev.target.closest || !ev.target.closest('#drChartCanvas')) setChartPct(candles.length - 1);
+  };
+  document.addEventListener('touchstart', window._chartOutside, { passive: true });
 }
 
 document.addEventListener('click', (e) => {
