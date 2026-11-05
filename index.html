@@ -1373,6 +1373,7 @@
 .dr-toprow .dr-hero{margin-bottom:0;display:flex;flex-direction:column;justify-content:center}
 .dr-toprow .dr-tile{padding:8px 10px;min-width:0}
 .dr-basis{font:600 10px var(--mono);color:var(--ink-soft);margin-top:2px;letter-spacing:.04em}
+#drChartCanvas{touch-action:pan-y}
 .dr-chart-pct small{font:500 10px var(--mono);color:var(--ink-soft);margin-left:6px}
 @media (max-width:380px){.dr-toprow .dr-price{font-size:20px}.dr-toprow .dr-v{font-size:12.5px}}
 .dr-chart-note{margin-top:6px;font-size:10.5px;color:var(--ink-soft);min-height:0}
@@ -3505,8 +3506,15 @@ function drawStockChart(ticker, rows, days) {
   // % มุมบนของกราฟ = ขึ้น/ลงของ "วัน" (หรือสัปดาห์ในช่วง 1Y) เทียบปิดก่อนหน้า
   // ค่าเริ่มต้น = แท่งล่าสุด และเปลี่ยนตามแท่งที่แตะ/ชี้
   const pctEl = document.getElementById('drChartPct');
-  const setChartPct = (i) => {
+  const liveRow = (state.summary?.rows || []).find(r => r['หุ้น'] === ticker && (state.port === 'ALL' || r['ชื่อ port'] === state.port));
+  const liveChg = (!liveRow || liveRow['chg%'] === '' || liveRow['chg%'] == null) ? NaN : Number(liveRow['chg%']);
+  const setChartPct = (i, live) => {
     if (!pctEl) return;
+    if (live && !weekly && isFinite(liveChg)) {
+      const lc = liveChg === 0 ? 'var(--ink-soft)' : (liveChg > 0 ? 'var(--gain)' : 'var(--loss)');
+      pctEl.innerHTML = `<span style="color:${lc}">${liveChg > 0 ? '+' : ''}${liveChg.toFixed(2)}%</span><small>Latest</small>`;
+      return;
+    }
     if (!(i > 0) || !candles[i] || !candles[i - 1] || !candles[i - 1].c) {
       pctEl.innerHTML = '<span style="color:var(--ink-soft)">—</span>';
       return;
@@ -3518,7 +3526,7 @@ function drawStockChart(ticker, rows, days) {
       : dt.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' }));
     pctEl.innerHTML = `<span style="color:${col}">${v > 0 ? '+' : ''}${v.toFixed(2)}%</span><small>${dl}</small>`;
   };
-  setChartPct(candles.length - 1);
+  setChartPct(candles.length - 1, true);
 
   // เส้นต้นทุนเฉลี่ย (FIFO) ของหุ้นตัวนี้
   const srow = (state.summary?.rows || []).find(r => r['หุ้น'] === ticker && (state.port === 'ALL' || r['ชื่อ port'] === state.port));
@@ -3592,7 +3600,7 @@ function drawStockChart(ticker, rows, days) {
       if (e.type === 'mouseout') {
         // นิ้วที่ยกออกก็ส่ง mouseout มาด้วย: บนมือถือให้ค้างค่าไว้จนกว่าจะแตะนอกกราฟ
         if (Date.now() - lastTouchTs < 2000) return;
-        setChartPct(candles.length - 1);
+        setChartPct(candles.length - 1, true);
         return;
       }
       if (!args.inChartArea) return;
@@ -3646,7 +3654,7 @@ function drawStockChart(ticker, rows, days) {
   const cv = document.getElementById('drChartCanvas');
   if (window._chartOutside) document.removeEventListener('touchstart', window._chartOutside);
   window._chartOutside = (ev) => {
-    if (!ev.target.closest || !ev.target.closest('#drChartCanvas')) setChartPct(candles.length - 1);
+    if (!ev.target.closest || !ev.target.closest('#drChartCanvas')) setChartPct(candles.length - 1, true);
   };
   document.addEventListener('touchstart', window._chartOutside, { passive: true });
 }
@@ -3696,6 +3704,7 @@ document.getElementById('drawerBackdrop').addEventListener('click', closeStockDr
   let sy = 0, dy = 0, t0 = 0, mode = false, fromHead = false;
   dr.addEventListener('touchstart', (e) => {
     if (!mobile()) return;
+    if (e.target.closest && e.target.closest('#drChartCanvas')) { mode = false; return; }   // ลากดูกราฟ ไม่ใช่ปิดแผง
     fromHead = !!e.target.closest('.drawer-head');
     if (!fromHead && body.scrollTop > 0) { mode = false; return; }
     sy = e.touches[0].clientY; dy = 0; t0 = Date.now(); mode = 'pending';
