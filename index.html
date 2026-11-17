@@ -1373,6 +1373,12 @@
 .dr-toprow .dr-hero{margin-bottom:0;display:flex;flex-direction:column;justify-content:center}
 .dr-toprow .dr-tile{padding:8px 10px;min-width:0}
 .dr-basis{font:600 10px var(--mono);color:var(--ink-soft);margin-top:2px;letter-spacing:.04em}
+/* แถว "ซื้อล่าสุด" ใต้แถวบนของแผงหุ้น */
+.dr-lastbuy{display:flex;align-items:baseline;gap:8px;margin-top:8px;padding:7px 12px;background:var(--paper-raised);border:1px solid var(--line);border-radius:12px;font-size:12px;min-height:34px;align-items:center}
+.dr-lb-l{color:var(--ink-soft);font-weight:600}
+.dr-lb-v{font:700 13px var(--mono)}
+.dr-lb-dt{color:var(--ink-soft);font-size:11px}
+.dr-lb-d{margin-left:auto;font:700 12px var(--mono)}
 #drChartCanvas{touch-action:pan-y}
 .dr-chart-pct small{font:500 10px var(--mono);color:var(--ink-soft);margin-left:6px}
 @media (max-width:380px){.dr-toprow .dr-price{font-size:20px}.dr-toprow .dr-v{font-size:12.5px}}
@@ -1776,6 +1782,7 @@ async function loadRest() {
     renderHero();
     renderHeroBgChart();
     renderTransactions();
+    if (state.detailTicker) renderLastBuy();
     cacheSnapshot();
   } catch (err) {
     console.error('loadRest failed:', err);
@@ -3330,6 +3337,45 @@ let holdingsSorted = [];
 
   
 
+// ราคาปัจจุบันในสกุลเงินจริงของหุ้น (ในโหมด All หุ้นไทยถูกแปลงเป็น USD แล้ว ต้องแปลงกลับก่อนเทียบกับราคาซื้อ)
+function nativePrice(r) {
+  let p = Number(r['price']) || 0;
+  if (state.port === 'ALL' && isThaiPortName(r['ชื่อ port'])) {
+    const u = (state.summary?.rows || []).find(x => x['หุ้น'] === 'USD');
+    const rate = u ? Number(u['thbUsdRate']) || 0 : 0;
+    p = rate ? p / rate : 0;
+  }
+  return p;
+}
+
+// แถว "Last Buy": ราคาที่ซื้อล่าสุดของหุ้นตัวนี้ (ในพอร์ตเดียวกัน) + วันที่ + % เทียบราคาตอนนี้
+function renderLastBuy() {
+  const el = document.getElementById('drLastBuy');
+  const r = state.detailRow;
+  if (!el || !r) return;
+  const muted = (txt) => `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v" style="color:var(--ink-soft)">${txt}</span>`;
+  if (!state.transactions.length) { el.innerHTML = muted('…'); return; }   // ประวัติธุรกรรมยังโหลดไม่เสร็จ
+  const ticker = r['หุ้น'], port = r['ชื่อ port'];
+  // state.transactions เรียงใหม่สุดก่อนอยู่แล้ว ตัวแรกที่เจอคือซื้อล่าสุด
+  const t = state.transactions.find(x => x['รายการ'] === ticker && x['action'] === 'ซื้อ' && (!port || x['Port'] === port));
+  if (!t) { el.innerHTML = muted('—'); return; }
+  const tsym = isThaiPortName(t['Port']) ? '฿' : '$';
+  const bp = Number(t['ราคา']) || 0;
+  const d = t['_date'] ? new Date(t['_date']) : null;
+  const sameYear = d && !isNaN(d) && d.getFullYear() === new Date().getFullYear();
+  const dl = d && !isNaN(d)
+    ? d.toLocaleDateString('en-US', sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' })
+    : '';
+  const now = nativePrice(r);
+  let delta = '';
+  if (bp > 0 && now > 0) {
+    const v = (now - bp) / bp;
+    const col = v === 0 ? 'var(--ink-soft)' : (v > 0 ? 'var(--gain)' : 'var(--loss)');
+    delta = `<span class="dr-lb-d" style="color:${col}" title="เทียบกับราคาปัจจุบัน">${fmtPct(v)}</span>`;
+  }
+  el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${delta}`;
+}
+
 function renderDrawerSummary(r) {
   const basis = state.basis;
   const sym = currencySymbol();
@@ -3354,6 +3400,7 @@ function renderDrawerSummary(r) {
     return a && p ? (a < p ? 'up' : (a > p ? 'down' : '')) : '';
   })())}
     </div>
+    <div class="dr-lastbuy" id="drLastBuy"></div>
     <div class="dr-chart">
       <div class="dr-chart-head">
         <span class="dr-chart-pct" id="drChartPct"></span>
@@ -3370,6 +3417,8 @@ function renderDrawerSummary(r) {
       <div class="dr-chart-box" id="drChartBox"><div class="dr-chart-msg">Loading...</div></div>
       <div class="dr-chart-note" id="drChartNote"></div>
     </div>`;
+  state.detailRow = r;
+  renderLastBuy();
   loadStockChart(t, 180);
 }
 
