@@ -1374,10 +1374,12 @@
 .dr-toprow .dr-tile{padding:8px 10px;min-width:0}
 .dr-basis{font:600 10px var(--mono);color:var(--ink-soft);margin-top:2px;letter-spacing:.04em}
 /* แถว "ซื้อล่าสุด" ใต้แถวบนของแผงหุ้น */
-.dr-lastbuy{display:flex;align-items:baseline;gap:8px;margin-top:8px;padding:7px 12px;background:var(--paper-raised);border:1px solid var(--line);border-radius:12px;font-size:12px;min-height:34px;align-items:center}
+.dr-lastbuy{display:flex;flex-wrap:wrap;gap:2px 8px;margin-top:8px;padding:7px 12px;background:var(--paper-raised);border:1px solid var(--line);border-radius:12px;font-size:12px;min-height:34px;align-items:center}
 .dr-lb-l{color:var(--ink-soft);font-weight:600}
 .dr-lb-v{font:700 13px var(--mono)}
 .dr-lb-dt{color:var(--ink-soft);font-size:11px}
+.dr-lb-amt{font:600 12px var(--mono)}
+.dr-lb-amt small{font:500 11px var(--sans);color:var(--ink-soft);margin-right:4px}
 .dr-lb-d{margin-left:auto;font:700 12px var(--mono)}
 #drChartCanvas{touch-action:pan-y}
 .dr-chart-pct small{font:500 10px var(--mono);color:var(--ink-soft);margin-left:6px}
@@ -3373,7 +3375,10 @@ function renderLastBuy() {
     const col = v === 0 ? 'var(--ink-soft)' : (v > 0 ? 'var(--gain)' : 'var(--loss)');
     delta = `<span class="dr-lb-d" style="color:${col}" title="เทียบกับราคาปัจจุบัน">${fmtPct(v)}</span>`;
   }
-  el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${delta}`;
+  const amt = Number(t['รวม $']);
+  const amtHtml = isFinite(amt) && amt > 0
+    ? `<span class="dr-lb-amt"><small>ลงทุน</small>${tsym}${fmt(amt)}</span>` : '';
+  el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}`;
 }
 
 function renderDrawerSummary(r) {
