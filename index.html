@@ -1462,7 +1462,7 @@
         <div class="hero-cash-value" id="heroTotalValue">—</div>
       </div>
       <div class="hero-cash-row" id="heroPrincipalRow" style="display:none;margin-top:8px;padding-top:8px;border-top:none">
-        <div class="hero-cash-label"><i class="ti ti-piggy-bank" aria-hidden="true"></i>เงินต้น</div>
+        <div class="hero-cash-label"><i class="ti ti-piggy-bank" aria-hidden="true"></i>Principal</div>
         <div class="hero-cash-value" id="heroPrincipalValue">—</div>
       </div>
     </div>
@@ -1632,14 +1632,14 @@ function showSetupBanner(errorMsg) {
   const el = document.getElementById('setupBanner');
   el.innerHTML = `
     <div class="setup-banner">
-      ${errorMsg ? '⚠️ ' + escapeHtml(errorMsg) + '<br><br>' : ''}วาง <strong>Web App URL</strong> จาก Apps Script ที่ deploy ไว้ที่นี่
-      (ลงท้ายด้วย <code>/exec</code>)
+      ${errorMsg ? '⚠️ ' + escapeHtml(errorMsg) + '<br><br>' : ''}Paste the <strong>Web App URL</strong> of your deployed Apps Script here
+      (ending in <code>/exec</code>)
       <div class="url-input-row">
         <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${escapeHtml(API_URL || '')}">
-        <button id="apiUrlClear" type="button" title="ลบลิงก์ที่บันทึกไว้ และกลับไปใช้ค่าเริ่มต้น">✕</button>
+        <button id="apiUrlClear" type="button" title="Remove the saved link and use the default">✕</button>
       </div>
-      <button id="apiUrlSave">บันทึกและเชื่อมต่อ</button>
-      <div class="setup-hint">💡 หลังบันทึกแล้ว แนะนำให้ลบ icon บนหน้าจอโฮมเดิม แล้วทำ "Add to Home Screen" ใหม่อีกครั้ง เพื่อให้ icon จำ URL นี้ไว้แบบถาวร ไม่หายแม้ Safari จะล้างข้อมูลแอพที่ไม่ได้เปิดนาน ๆ</div>
+      <button id="apiUrlSave">Save and connect</button>
+      <div class="setup-hint">💡 After saving, we recommend deleting the old home-screen icon and doing "Add to Home Screen" again, so the icon remembers this URL permanently even if Safari clears data for apps that have not been opened in a long time.</div>
     </div>`;
   document.getElementById('apiUrlSave').onclick = () => {
     const val = document.getElementById('apiUrlInput').value.trim();
@@ -1750,16 +1750,16 @@ async function loadOverview() {
       if (attempt < MAX_ATTEMPTS) {
         if (!state.summary) {
           document.getElementById('allocList').innerHTML =
-            `<div class="empty-state"><div class="icon">⏳</div><div class="msg">กำลังเชื่อมต่อใหม่... (ครั้งที่ ${attempt + 1})</div></div>`;
+            `<div class="empty-state"><div class="icon">⏳</div><div class="msg">Reconnecting... (attempt ${attempt + 1})</div></div>`;
         }
         await new Promise(r => setTimeout(r, RETRY_DELAY_MS[attempt - 1]));
         continue;
       }
       if (!state.summary) {
         document.getElementById('allocList').innerHTML =
-          `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(err.message)}<br><br>กดปุ่ม ⚙ ด้านบนเพื่อตรวจสอบ/แก้ไข URL</div></div>`;
+          `<div class="empty-state"><div class="icon"><i class="ti ti-alert-triangle"></i></div><div class="msg">Failed to load data: ${escapeHtml(err.message)}<br><br>Tap the ⚙ button above to check or edit the URL</div></div>`;
       }
-      showSetupBanner('เชื่อมต่อไม่สำเร็จ: ' + err.message + ' — ตรวจสอบว่า URL ถูกต้อง และตอน Deploy เลือก "Who has access: Anyone" แล้ว');
+      showSetupBanner('Connection failed: ' + err.message + ' — Check that the URL is correct and that "Who has access: Anyone" was selected when deploying');
       return false;
     }
   }
@@ -2209,13 +2209,13 @@ function renderOverviewCard() {
   }).join('');
 
   card.innerHTML = `
-    <div class="overview-total-label">มูลค่ารวมทุกสินทรัพย์</div>
+    <div class="overview-total-label">Total value of all assets</div>
     <div class="overview-total-value">$${fmt(totalWithCash)}</div>
-        <div class="overview-total-thb">${usdToThb ? `≈ ${totalThb} ` : ''}<button type="button" class="fx-edit" id="fxEditBtn" title="ตั้งเรทให้ตรงกับแอพ Dime">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} บาท${fxManual > 0 ? ' (ตั้งเอง)' : (FX_OFFSET ? ' (เรทกลาง ' + (FX_OFFSET < 0 ? '−' : '+') + Math.abs(FX_OFFSET).toFixed(2) + ')' : ' (เรทปกติ)')}` : 'ตั้งเรทบาท'} ✎</button></div>
+        <div class="overview-total-thb">${usdToThb ? `≈ ${totalThb} ` : ''}<button type="button" class="fx-edit" id="fxEditBtn" title="Set the rate to match the Dime app">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} THB${fxManual > 0 ? ' (custom)' : (FX_OFFSET ? ' (mid-rate ' + (FX_OFFSET < 0 ? '−' : '+') + Math.abs(FX_OFFSET).toFixed(2) + ')' : ' (market rate)')}` : 'Set THB rate'} ✎</button></div>
     ${principalUsd > 0 ? `
     <div class="overview-cost-row">
       <div>
-        <div class="overview-total-label">เงินต้น (หักยอดถอนแล้ว)</div>
+        <div class="overview-total-label">Principal (net of withdrawals)</div>
         <div class="overview-cost-value">$${fmt(principalUsd)}${principalThb ? `<small>≈ ${principalThb}</small>` : ''}</div>
       </div>
       <div class="overview-native-pl ${principalUp ? 'up' : 'down'}" style="text-align:right">
@@ -2228,19 +2228,19 @@ function renderOverviewCard() {
     </div>
     <div class="overview-native-row">${nativeCardsHtml}</div>
     <details class="overview-disclaimer">
-      <summary>หมายเหตุการแปลงสกุลเงิน</summary>
-      <div>ยอด Thai Stocks แปลงจากบาทเป็นดอลลาร์ตามอัตราแลกเปลี่ยนปัจจุบัน (${thbRate ? '1 USD ≈ ' + fmt(1/thbRate,2) + ' บาท' : 'ไม่มีอัตรา'}) เพื่อประมาณการภาพรวมเท่านั้น ตัวเลขจริงในพอร์ต SET100 ยังคงเป็นบาท ตัวเลขในช่องแยกสกุลเงินคือค่าจริงที่ไม่ผ่านการแปลง</div>
+      <summary>Currency conversion note</summary>
+      <div>Thai Stocks totals are converted from THB to USD at the current exchange rate (${thbRate ? '1 USD ≈ ' + fmt(1/thbRate,2) + ' THB' : 'rate unavailable'}) for an overview estimate only. The real figures in the SET100 portfolio remain in THB, and the per-currency boxes show the actual unconverted values.</div>
     </details>
   `;
   const fxBtn = document.getElementById('fxEditBtn');
   if (fxBtn) fxBtn.addEventListener('click', () => {
-    const v = prompt('ใส่เรทบาทต่อ 1 USD ตามที่แอพ Dime แสดง (เช่น 32.50)\nเว้นว่างเพื่อกลับไปใช้เรทอัตโนมัติ', fxManual > 0 ? String(fxManual) : '');
+    const v = prompt('Enter the THB per 1 USD rate shown in the Dime app (e.g. 32.50)\nLeave blank to go back to the automatic rate', fxManual > 0 ? String(fxManual) : '');
     if (v === null) return;
     const n = Number(String(v).replace(',', '.'));
     try {
       if (!v.trim()) localStorage.removeItem('fxThbPerUsd');
       else if (n > 0 && n < 1000) localStorage.setItem('fxThbPerUsd', String(n));
-      else { alert('เรทไม่ถูกต้อง'); return; }
+      else { alert('Invalid rate'); return; }
     } catch (e) {}
     renderOverviewCard();
   });
@@ -2274,7 +2274,7 @@ async function renderDonutChart() {
   if (!card) return;
   const rows = getFilteredSummaryRows();
   if (!rows.length) {
-    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">No stocks to show allocation for</div></div>`;
     return;
   }
   const basis = state.basis;
@@ -2297,7 +2297,7 @@ async function renderDonutChart() {
 
   const total = stockTotal + (cashBalance > 0 ? cashBalance : 0);
   if (!(total > 0)) {
-    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีมูลค่าให้แสดงสัดส่วน</div></div>`;
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">No value to show allocation for</div></div>`;
     if (_donutInstance) { _donutInstance.destroy(); _donutInstance = null; }
     return;
   }
@@ -2381,7 +2381,7 @@ function renderPLChart() {
   if (!card) return;
   const rows = getFilteredSummaryRows();
   if (!rows.length) {
-    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">ยังไม่มีข้อมูลกำไร/ขาดทุน</div></div>`;
+    card.innerHTML = `<div class="empty-state" style="padding:24px;"><div class="msg">No profit/loss data yet</div></div>`;
     return;
   }
   const basis = state.basis;
@@ -2536,16 +2536,16 @@ function updateAllocTargetSumBar() {
   let statusHtml = '';
   let normalizeBtnHtml = '';
   if (Math.abs(diff) < 0.05) {
-    statusHtml = `<span class="alloc-sum-status ontarget">✓ ครบ 100% พอดี</span>`;
+    statusHtml = `<span class="alloc-sum-status ontarget">✓ Exactly 100%</span>`;
   } else if (diff > 0) {
-    statusHtml = `<span class="alloc-sum-status over">เกิน 100% ไป ${fmt(diff,1)}%</span>`;
-    normalizeBtnHtml = `<button class="alloc-normalize-btn" id="normalizeTargetsBtn"><i class="ti ti-adjustments-horizontal"></i> ปรับให้รวม 100%</button>`;
+    statusHtml = `<span class="alloc-sum-status over">Over 100% by ${fmt(diff,1)}%</span>`;
+    normalizeBtnHtml = `<button class="alloc-normalize-btn" id="normalizeTargetsBtn"><i class="ti ti-adjustments-horizontal"></i> Normalize to 100%</button>`;
   } else {
-    statusHtml = `<span class="alloc-sum-status under">ขาดอีก ${fmt(Math.abs(diff),1)}% ถึง 100%</span>`;
+    statusHtml = `<span class="alloc-sum-status under">${fmt(Math.abs(diff),1)}% short of 100%</span>`;
   }
   bar.innerHTML = `
     <div class="alloc-sum-bar">
-      <span class="alloc-sum-label">เป้าหมายรวมทั้งหมด: <b>${fmt(sum,1)}%</b></span>
+      <span class="alloc-sum-label">Total target: <b>${fmt(sum,1)}%</b></span>
       <div style="display:flex;align-items:center;gap:8px;">
         ${statusHtml}
         ${normalizeBtnHtml}
@@ -2559,11 +2559,11 @@ function updateAllocTargetSumBar() {
       const sum = allTickers.reduce((s, t) => s + (Number(state.allocTargets[t]) || 0), 0);
 
       if (!allTickers.length || sum <= 0) {
-        alert('ยังไม่มีเป้าหมายให้ปรับ');
+        alert('No targets to adjust yet');
         return;
       }
 
-      const ok = confirm('ปรับเป้าหมายทุกตัวให้รวมกันเป็น 100% พอดี (ลดทุกตัวตามสัดส่วนเดิม) ใช่ไหม?');
+      const ok = confirm('Scale all targets so they add up to exactly 100% (every target is reduced proportionally). Continue?');
       if (!ok) return;
 
       const scale = 100 / sum;
@@ -2582,7 +2582,7 @@ function renderAllocList() {
   const el = document.getElementById('allocList');
   const rows = getFilteredSummaryRows();
   if (!rows.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นให้แสดงสัดส่วน</div></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon">📊</div><div class="msg">No stocks to show allocation for</div></div>`;
     updateAllocTargetSumBar();
     return;
   }
@@ -2637,7 +2637,7 @@ function renderAllocList() {
           <div class="alloc-right">
             <div class="alloc-value">${sym}${fmt(value)}</div>
             <div class="alloc-gain ${up?'up':'down'}">${up?'+':''}${sym}${fmt(profit)} (${fmtPct(profitPct)})</div>
-            <div class="alloc-cost-total">ทุนรวม ${sym}${fmt(totalCostBasis)}</div>
+            <div class="alloc-cost-total">Total cost ${sym}${fmt(totalCostBasis)}</div>
           </div>
         </div>
 
@@ -2651,14 +2651,14 @@ function renderAllocList() {
               <div class="alloc-bar-fill" style="width:${pct.toFixed(1)}%;background:${color}"></div>
             </div>
             <div class="alloc-pct-row">
-              <span class="alloc-pct">${pct.toFixed(1)}% ของพอร์ต</span>
-              <button class="alloc-target-add-btn" data-ticker="${ticker}">+ ตั้งเป้าหมาย</button>
+              <span class="alloc-pct">${pct.toFixed(1)}% of portfolio</span>
+              <button class="alloc-target-add-btn" data-ticker="${ticker}">+ Set target</button>
             </div>
           </div>
 
           <div class="alloc-target-input-row" id="targetInputRow-${ticker}" style="display:none;">
-            <span class="dca-calc-label">เป้าหมายสัดส่วน</span>
-            <input type="number" class="alloc-target-input" data-ticker="${ticker}" placeholder="เช่น 20" inputmode="decimal" min="0" max="100" value="${hasTarget ? targetVal : ''}">
+            <span class="dca-calc-label">Target allocation</span>
+            <input type="number" class="alloc-target-input" data-ticker="${ticker}" placeholder="e.g. 20" inputmode="decimal" min="0" max="100" value="${hasTarget ? targetVal : ''}">
             <span class="dca-calc-suffix">%</span>
             <button class="alloc-target-save-btn" data-ticker="${ticker}">✓</button>
           </div>
@@ -2825,7 +2825,7 @@ function renderTargetCompareHtml(actualPct, targetPct) {
   if (targetPct === undefined || targetPct === null) return '';
   const diff = actualPct - targetPct;
   if (Math.abs(diff) < 0.5) {
-    return `<span class="alloc-target-compare ontarget">✓ ตรงเป้า (${fmt(targetPct,0)}%)</span>`;
+    return `<span class="alloc-target-compare ontarget">✓ On target (${fmt(targetPct,0)}%)</span>`;
   }
   if (diff > 0) {
     return `<span class="alloc-target-compare over">Above +${fmt(diff,1)}%</span>`;
@@ -2848,7 +2848,7 @@ function renderDcaResultHtml(row, amountStr, totalPortfolioValue, sym) {
     return currentLine;
     }
   if (currentPrice <= 0) {
-    return `${currentLine}<span class="dca-calc-hint">ไม่มีราคาปัจจุบันสำหรับคำนวณ</span>`;
+    return `${currentLine}<span class="dca-calc-hint">No current price to calculate with</span>`;
   }
 
   const newShares = amount / currentPrice;
@@ -2892,7 +2892,7 @@ function renderTargetPriceResultHtml(row, priceStr, sym) {
     return currentLine;
   }
   if (currentShares <= 0) {
-    return `${currentLine}<span class="dca-calc-hint">ยังไม่มีหุ้นที่ถืออยู่สำหรับคำนวณ</span>`;
+    return `${currentLine}<span class="dca-calc-hint">No shares held to calculate with</span>`;
   }
 
   // กำไร/ขาดทุนถ้าขายทั้งหมดที่ราคาเป้าหมาย (เทียบต้นทุนเฉลี่ย FIFO)
@@ -2920,7 +2920,7 @@ function renderTransactions() {
   const el = document.getElementById('txnList');
   const txns = state.transactions.filter(t => t['รายการ']).slice(0, 40);
   if (!txns.length) {
-    el.innerHTML = `<div class="empty-state"><div class="icon"><i class="ti ti-clipboard-list"></i></div><div class="msg">ยังไม่มีรายการ</div></div>`;
+    el.innerHTML = `<div class="empty-state"><div class="icon"><i class="ti ti-clipboard-list"></i></div><div class="msg">No transactions yet</div></div>`;
     return;
   }
 
@@ -2967,8 +2967,8 @@ function renderTransactions() {
             <div class="txn-shares">@ ${txnSym}${fmt(t['ราคา'])}</div>
             ${plHtml}
           </div>
-          <button class="txn-edit" data-row="${t['_row']}" title="แก้ไขรายการนี้"><i class="ti ti-pencil"></i></button>
-          <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="ลบรายการนี้"><i class="ti ti-trash"></i></button>
+          <button class="txn-edit" data-row="${t['_row']}" title="Edit this transaction"><i class="ti ti-pencil"></i></button>
+          <button class="txn-delete" data-row="${t['_row']}" data-stock="${t['รายการ']}" title="Delete this transaction"><i class="ti ti-trash"></i></button>
         </div>`;
     }).join('');
     return `
@@ -2982,7 +2982,7 @@ function renderTransactions() {
     btn.addEventListener('click', () => {
       const row = Number(btn.dataset.row);
       const t = state.transactions.find(tx => Number(tx['_row']) === row);
-      if (!t) { alert('ไม่พบรายการนี้ (ข้อมูลอาจไม่ตรงกันชั่วคราว ลองรีเฟรชแล้วลองใหม่)'); return; }
+      if (!t) { alert('Transaction not found (data may be temporarily out of sync — refresh and try again)'); return; }
       openEditSheet(t);
     });
   });
@@ -2991,7 +2991,7 @@ function renderTransactions() {
     btn.addEventListener('click', async () => {
       const row = btn.dataset.row;
       const stock = btn.dataset.stock;
-      const confirmed = confirm(`ลบรายการ ${stock} นี้ออกจาก Sheet เลยไหม? การลบนี้ย้อนกลับไม่ได้`);
+      const confirmed = confirm(`Delete this ${stock} transaction from the Sheet? This cannot be undone.`);
       if (!confirmed) return;
 
       btn.disabled = true;
@@ -3001,12 +3001,12 @@ function renderTransactions() {
         if (result.success) {
           loadAll();
         } else {
-          alert(result.error || 'ลบไม่สำเร็จ');
+          alert(result.error || 'Delete failed');
           btn.disabled = false;
           btn.innerHTML = '<i class="ti ti-trash"></i>';
         }
       } catch (err) {
-        alert('เชื่อมต่อไม่สำเร็จ: ' + err.message);
+        alert('Connection failed: ' + err.message);
         btn.disabled = false;
         btn.innerHTML = '<i class="ti ti-trash"></i>';
       }
@@ -3038,12 +3038,12 @@ document.getElementById('basisToggle').addEventListener('click', (e) => {
 
 document.getElementById('editCashBtn').addEventListener('click', async () => {
   const currentText = document.getElementById('heroCashValue').textContent.replace(/[^0-9.\-]/g, '');
-  const input = prompt('ใส่ยอดเงินสดจริงล่าสุดในพอร์ต (USD):', currentText || '0');
+  const input = prompt('Enter the actual latest cash balance in the portfolio (USD):', currentText || '0');
   if (input === null) return; // ผู้ใช้กดยกเลิก
 
   const amount = Number(input);
   if (isNaN(amount)) {
-    alert('กรุณาใส่ตัวเลขที่ถูกต้อง');
+    alert('Please enter a valid number');
     return;
   }
 
@@ -3056,10 +3056,10 @@ document.getElementById('editCashBtn').addEventListener('click', async () => {
     if (result.success) {
       loadAll();
     } else {
-      alert(result.error || 'อัปเดตไม่สำเร็จ');
+      alert(result.error || 'Update failed');
     }
   } catch (err) {
-    alert('เชื่อมต่อไม่สำเร็จ: ' + err.message);
+    alert('Connection failed: ' + err.message);
   } finally {
     btn.disabled = false;
     btn.innerHTML = originalIcon;
@@ -3092,8 +3092,8 @@ function openSheet() {
 
 function openEditSheet(t) {
   editingTxn = t;
-  document.getElementById('sheetTitle').textContent = 'แก้ไขรายการ';
-  document.getElementById('submitBtn').textContent = 'บันทึกการแก้ไข';
+  document.getElementById('sheetTitle').textContent = 'Edit Transaction';
+  document.getElementById('submitBtn').textContent = 'Save changes';
 
   const portSel = document.getElementById('fPort');
   if ([...portSel.options].some(o => o.value === t['Port'])) portSel.value = t['Port'];
@@ -3174,14 +3174,14 @@ document.querySelector('.action-toggle').addEventListener('click', (e) => {
 document.getElementById('sellAllBtn').addEventListener('click', () => {
   const port = document.getElementById('fPort').value;
   const stock = document.getElementById('fStock').value.trim().toUpperCase();
-  if (!stock) { alert('กรุณาใส่ชื่อหุ้นก่อน'); return; }
+  if (!stock) { alert('Please enter the ticker first'); return; }
 
   const row = (state.summary?.rows || []).find(r => r['หุ้น'] === stock && r['ชื่อ port'] === port);
-  if (!row) { alert(`ไม่พบหุ้น "${stock}" ที่ถืออยู่ในพอร์ต "${port}"`); return; }
+  if (!row) { alert(`Stock "${stock}" not found in portfolio "${port}"`); return; }
 
   const sharesHeld = Number(row['จำนวนหุ้น']) || 0;
   const currentPrice = Number(row['price']) || 0;
-  if (sharesHeld <= 0) { alert(`ไม่มีหุ้น "${stock}" เหลืออยู่ในพอร์ต "${port}"`); return; }
+  if (sharesHeld <= 0) { alert(`No "${stock}" shares left in portfolio "${port}"`); return; }
 
   document.getElementById('fShares').value = sharesHeld;
   if (currentPrice) {
@@ -3200,13 +3200,13 @@ document.getElementById('submitBtn').onclick = async () => {
   const note = document.getElementById('fNote').value.trim();
 
   if (!port || !stock || !amount || !shares) {
-    msg.textContent = 'กรุณากรอกข้อมูลให้ครบ';
+    msg.textContent = 'Please fill in all fields';
     msg.className = 'form-msg error';
     return;
   }
 
   btn.disabled = true;
-  btn.textContent = editingTxn ? 'กำลังบันทึกการแก้ไข...' : 'กำลังบันทึก...';
+  btn.textContent = editingTxn ? 'Saving changes...' : 'Saving...';
   msg.textContent = '';
   msg.className = 'form-msg';
 
@@ -3217,7 +3217,7 @@ document.getElementById('submitBtn').onclick = async () => {
     const result = await apiPost(payload);
 
     if (result.success) {
-      msg.textContent = '✓ บันทึกสำเร็จ';
+      msg.textContent = '✓ Saved';
       msg.className = 'form-msg success';
       document.getElementById('fStock').value = '';
       document.getElementById('fAmount').value = '';
@@ -3225,11 +3225,11 @@ document.getElementById('submitBtn').onclick = async () => {
       document.getElementById('fNote').value = '';
       setTimeout(() => { closeSheet(); loadAll(); }, 700);
     } else {
-      msg.textContent = result.error || 'เกิดข้อผิดพลาด';
+      msg.textContent = result.error || 'Something went wrong';
       msg.className = 'form-msg error';
     }
   } catch (err) {
-    msg.textContent = 'เชื่อมต่อไม่สำเร็จ: ' + err.message;
+    msg.textContent = 'Connection failed: ' + err.message;
     msg.className = 'form-msg error';
   } finally {
     btn.disabled = false;
@@ -3272,7 +3272,7 @@ function renderHoldingsTable() {
   const rows = getFilteredSummaryRows();
   const titleEl = document.getElementById('holdingsTitle');
   if (titleEl) titleEl.textContent = `Holdings (${rows.length} Stocks)`;
-  if (!rows.length) { box.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div class="msg">ยังไม่มีหุ้นในพอร์ตนี้</div></div>'; return; }
+  if (!rows.length) { box.innerHTML = '<div class="empty-state"><div class="icon">📊</div><div class="msg">No stocks in this portfolio yet</div></div>'; return; }
 
   const basis = state.basis;
   const sym = currencySymbol();
@@ -3373,11 +3373,11 @@ function renderLastBuy() {
   if (bp > 0 && now > 0) {
     const v = (now - bp) / bp;
     const col = v === 0 ? 'var(--ink-soft)' : (v > 0 ? 'var(--gain)' : 'var(--loss)');
-    delta = `<span class="dr-lb-d" style="color:${col}" title="เทียบกับราคาปัจจุบัน">${fmtPct(v)}</span>`;
+    delta = `<span class="dr-lb-d" style="color:${col}" title="vs. current price">${fmtPct(v)}</span>`;
   }
   const amt = Number(t['รวม $']);
   const amtHtml = isFinite(amt) && amt > 0
-    ? `<span class="dr-lb-amt"><small>ลงทุน</small>${tsym}${fmt(amt)}</span>` : '';
+    ? `<span class="dr-lb-amt"><small>Invested</small>${tsym}${fmt(amt)}</span>` : '';
   el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}`;
 }
 
@@ -3548,7 +3548,7 @@ function drawStockChart(ticker, rows, days) {
   const candleMode = _chartType === 'candle' && hasOHLC;
   const noteEl = document.getElementById('drChartNote');
   if (noteEl) noteEl.textContent = (_chartType === 'candle' && !hasOHLC)
-    ? 'ไม่ได้รับข้อมูลเปิด/สูง/ต่ำ จึงแสดงเป็นกราฟเส้นแทน'
+    ? 'No open/high/low data received — showing a line chart instead'
     : '';
 
   const closes = candles.map(x => x.c);
