@@ -2172,8 +2172,19 @@ function renderOverviewCard() {
   const principalUp = principalPL >= 0;
   
   section.style.display = 'block';
+  // หัวการ์ด (มองเห็นในหน้าหลัก) = % ผลตอบแทนเทียบเงินต้น ส่วนมูลค่ารวมปัจจุบันอยู่ด้านบนในการ์ดที่กางออก
   const ovHead = document.getElementById('ovHeadTotal');
-  if (ovHead) ovHead.textContent = '$' + fmt(totalWithCash);
+  if (ovHead) {
+    if (principalUsd > 0) {
+      ovHead.innerHTML = '<small style="font:500 10px var(--sans);color:var(--ink-soft);margin-right:6px">on principal</small>' + fmtPct(principalPLPct);
+      ovHead.style.color = principalUp ? 'var(--gain)' : 'var(--loss)';
+      ovHead.title = 'Return on principal (current total value vs. principal after withdrawals)';
+    } else {
+      ovHead.textContent = '$' + fmt(totalWithCash);   // ยังไม่มีเงินต้น ใช้มูลค่ารวมเหมือนเดิม
+      ovHead.style.color = '';
+      ovHead.title = '';
+    }
+  }
 
   const breakdownHtml = activeCats.map(([name, c]) => `
     <div class="overview-breakdown-row">
