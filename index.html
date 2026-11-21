@@ -2130,11 +2130,6 @@ function renderOverviewCard() {
 
   const usdRow = state.summary.rows.find(r => r['หุ้น'] === 'USD');
   const thbRate = usdRow ? Number(usdRow['thbUsdRate']) || 0 : 0;
-  let fxManual = 0;
-  try { fxManual = Number(localStorage.getItem('fxThbPerUsd')) || 0; } catch (e) {}
-  const FX_OFFSET = 0;   // ส่วนต่างจากเรทมาตรฐาน (บาทต่อ 1 USD) เช่น -0.18 = ต่ำกว่าเรทกลาง 0.18 / 0 = ใช้เรทปกติ
-  const fxAuto = thbRate ? (1 / thbRate) + FX_OFFSET : 0;
-  const usdToThb = fxManual > 0 ? fxManual : fxAuto;   // บาทต่อ 1 ดอลลาร์ (ตั้งเองได้)
 
   const stockRows = state.summary.rows.filter(r => r['หุ้น'] !== 'USD');
   if (!stockRows.length) { section.style.display = 'none'; return; }
@@ -2185,14 +2180,9 @@ function renderOverviewCard() {
 
   const grandTotal = activeCats.reduce((s, [, c]) => s + c.value, 0);
   const totalWithCash = grandTotal; // เงินสดรวมอยู่ใน grandTotal แล้ว (เป็นอีกหมวดหนึ่ง)
-  // บาท: หมวดไทยใช้ยอดบาทจริง ไม่แปลงวนไปมา / หมวดอื่นแปลงด้วยเรทที่ใช้
-  const thbNum = (name, c) => name === 'Thai Stocks' ? c.rawValue : c.value * usdToThb;
-  const thbOf = (name, c) => usdToThb ? '฿' + fmt(thbNum(name, c), 0) : '';
-  const totalThb = usdToThb ? '฿' + fmt(activeCats.reduce((a, [n, c]) => a + thbNum(n, c), 0), 0) : '';
 
    // เงินต้น = ผลรวมรายการ "ซื้อ USD" (ยอดฝากเข้าพอร์ตทั้งหมด)
   const principalUsd = getPrincipalBalance() - getWithdrawnBalance();
-  const principalThb = usdToThb && principalUsd ? '฿' + fmt(principalUsd * usdToThb, 0) : '';
   const principalPL = totalWithCash - principalUsd;   // มูลค่ารวมทุกสินทรัพย์ (รวมเงินสด) เทียบเงินต้น
   const principalPLPct = principalUsd ? principalPL / principalUsd : 0;
   const principalUp = principalPL >= 0;
@@ -2247,7 +2237,6 @@ function renderOverviewCard() {
   }).join('');
 
   card.innerHTML = `
-    <div class="overview-total-thb" style="margin-top:2px"><button type="button" class="fx-edit" id="fxEditBtn" title="Set the rate to match the Dime app">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} THB${fxManual > 0 ? ' (custom)' : (FX_OFFSET ? ' (mid-rate ' + (FX_OFFSET < 0 ? '−' : '+') + Math.abs(FX_OFFSET).toFixed(2) + ')' : ' (market rate)')}` : 'Set THB rate'} ✎</button></div>
     <div class="overview-chart-row">
       <div class="overview-donut-wrap"><canvas id="overviewDonutCanvas"></canvas></div>
       <div class="overview-breakdown">${breakdownHtml}</div>
@@ -2255,21 +2244,9 @@ function renderOverviewCard() {
     <div class="overview-native-row">${nativeCardsHtml}</div>
     <details class="overview-disclaimer">
       <summary>Currency conversion note</summary>
-      <div>Thai Stocks are converted from THB to USD at the current exchange rate (${thbRate ? '1 USD ≈ ' + fmt(1/thbRate,2) + ' THB' : 'rate unavailable'}) only to estimate the allocation weights and the overall return. Each box's return % is calculated in its own currency.</div>
+      <div>Thai Stocks are converted from THB to USD at the current exchange rate only to estimate the allocation weights and the overall return. Each box's return % is calculated in its own currency.</div>
     </details>
   `;
-  const fxBtn = document.getElementById('fxEditBtn');
-  if (fxBtn) fxBtn.addEventListener('click', () => {
-    const v = prompt('Enter the THB per 1 USD rate shown in the Dime app (e.g. 32.50)\nLeave blank to go back to the automatic rate', fxManual > 0 ? String(fxManual) : '');
-    if (v === null) return;
-    const n = Number(String(v).replace(',', '.'));
-    try {
-      if (!v.trim()) localStorage.removeItem('fxThbPerUsd');
-      else if (n > 0 && n < 1000) localStorage.setItem('fxThbPerUsd', String(n));
-      else { alert('Invalid rate'); return; }
-    } catch (e) {}
-    renderOverviewCard();
-  });
 
   if (_overviewDonutInstance) { _overviewDonutInstance.destroy(); _overviewDonutInstance = null; }
   const ctx = document.getElementById('overviewDonutCanvas');
