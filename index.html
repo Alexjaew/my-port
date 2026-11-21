@@ -1916,6 +1916,28 @@ function getWithdrawnBalance() {
     .reduce((sum, r) => sum + (Number(r['เงินถอนสะสม']) || 0), 0);
 }
 
+// สถิติรวมทั้งพอร์ต (ทุกพอร์ต หุ้นไทยแปลงเป็น USD) ใช้ทั้งกล่อง Portfolio Value และแถว All Assets
+//  principalPct = (มูลค่ารวมหุ้น+เงินสด - เงินต้น) / เงินต้น     stockPct = ผลตอบแทนเทียบต้นทุนหุ้น (ไม่รวมเงินสด)
+function getPortfolioStats() {
+  if (!state.summary) return null;
+  const rows = state.summary.rows;
+  const usdRow = rows.find(r => r['หุ้น'] === 'USD');
+  const thbRate = usdRow ? Number(usdRow['thbUsdRate']) || 0 : 0;
+  let stockValue = 0, stockCost = 0;
+  rows.filter(r => r['หุ้น'] !== 'USD').forEach(r => {
+    const k = isThaiPortName(r['ชื่อ port']) ? thbRate : 1;   // ไม่มีเรท -> ตัดพอร์ตไทยออก เหมือนที่อื่น
+    stockValue += (Number(r['มูลค่าปัจจุบัน']) || 0) * k;
+    stockCost += (Number(r['ทุน  FIFO']) || 0) * k;
+  });
+  const total = stockValue + Math.max(getCashBalance(), 0);
+  const principal = getPrincipalBalance() - getWithdrawnBalance();
+  return {
+    total, principal,
+    principalPct: principal > 0 ? (total - principal) / principal : null,
+    stockPct: stockCost > 0 ? (stockValue - stockCost) / stockCost : null
+  };
+}
+
 function renderHero() {
   const rows = getFilteredSummaryRows();
   const isThai = isThaiPortSelected();
@@ -1932,10 +1954,14 @@ function renderHero() {
   // ===== ตัวใหญ่: ผลตอบแทนรวม % =====
   const profit = marketValue - costValue;
   const profitPct = costValue ? profit / costValue : 0;
-  document.getElementById('heroLabel').textContent = '';
+  // ดูทุกพอร์ต (All): เลขใหญ่ = % เทียบเงินต้น (รวมเงินสด) / ดูทีละพอร์ต: % เทียบต้นทุนหุ้นของพอร์ตนั้น
+  const stats = getPortfolioStats();
+  let bigPct = profitPct, bigLabel = 'Return on cost';
+  if (state.port === 'ALL' && stats && stats.principalPct != null) { bigPct = stats.principalPct; bigLabel = 'Return on principal'; }
+  document.getElementById('heroLabel').textContent = bigLabel;
   const heroValEl = document.getElementById('heroValue');
-  heroValEl.textContent = fmtPct(profitPct);
-  heroValEl.style.color = profit >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
+  heroValEl.textContent = fmtPct(bigPct);
+  heroValEl.style.color = bigPct >= 0 ? 'var(--hero-gain-text)' : 'var(--hero-loss-text)';
   document.getElementById('heroDelta').style.display = 'none';
 
   // ===== แถวล่าง: หุ้น % | เงินสด % · $ =====
@@ -2172,15 +2198,17 @@ function renderOverviewCard() {
   const principalUp = principalPL >= 0;
   
   section.style.display = 'block';
-  // หัวการ์ด (มองเห็นในหน้าหลัก) = % ผลตอบแทนเทียบเงินต้น ส่วนมูลค่ารวมปัจจุบันอยู่ด้านบนในการ์ดที่กางออก
+  // หัวการ์ด (เห็นในหน้าหลัก) = % ผลตอบแทนเทียบต้นทุนหุ้น (ส่วน % เทียบเงินต้นไปอยู่ที่กล่อง Portfolio Value ด้านบน)
+  // ทั้งแถวและการ์ดไม่แสดงจำนวนเงิน ยกเว้นเงินสด
+  const st = getPortfolioStats();
   const ovHead = document.getElementById('ovHeadTotal');
   if (ovHead) {
-    if (principalUsd > 0) {
-      ovHead.innerHTML = '<small style="font:500 10px var(--sans);color:var(--ink-soft);margin-right:6px">on principal</small>' + fmtPct(principalPLPct);
-      ovHead.style.color = principalUp ? 'var(--gain)' : 'var(--loss)';
-      ovHead.title = 'Return on principal (current total value vs. principal after withdrawals)';
+    if (st && st.stockPct != null) {
+      ovHead.innerHTML = '<small style="font:500 10px var(--sans);color:var(--ink-soft);margin-right:6px">on cost</small>' + fmtPct(st.stockPct);
+      ovHead.style.color = st.stockPct >= 0 ? 'var(--gain)' : 'var(--loss)';
+      ovHead.title = 'Return on stock cost (all stocks, excluding cash)';
     } else {
-      ovHead.textContent = '$' + fmt(totalWithCash);   // ยังไม่มีเงินต้น ใช้มูลค่ารวมเหมือนเดิม
+      ovHead.textContent = '—';
       ovHead.style.color = '';
       ovHead.title = '';
     }
@@ -2191,11 +2219,11 @@ function renderOverviewCard() {
       <div class="overview-breakdown-dot" style="background:${c.color}"></div>
       <div class="overview-breakdown-label">${name}</div>
       <div class="overview-breakdown-pct">${(c.value / grandTotal * 100).toFixed(1)}%</div>
-      <div class="overview-breakdown-value">$${fmt(c.value)}${usdToThb ? `<small>${thbOf(name, c)}</small>` : ''}</div>
+      <div class="overview-breakdown-value">${c.noPL ? '$' + fmt(c.value) : ''}</div>
     </div>
   `).join('');
 
-  // แบบ A: บล็อกแยกสกุลเงินตามจริง ไม่แปลงค่า ดูตัวเลขแม่นๆ ของแต่ละหมวดพร้อมกัน
+  // กล่องแยกหมวด: โชว์เฉพาะ % ผลตอบแทน (คำนวณในสกุลเงินของหมวดนั้น) ส่วนเงินสดโชว์จำนวนเงิน
   const nativeCardsHtml = activeCats.map(([name, c]) => {
     if (c.noPL) {
       return `
@@ -2213,26 +2241,13 @@ function renderOverviewCard() {
       <div class="overview-native-card">
         <div class="overview-native-dot" style="background:${c.color}"></div>
         <div class="overview-native-label">${name}</div>
-        <div class="overview-native-value">${c.sym}${fmt(c.rawValue)}</div>
-        <div class="overview-native-pl ${up?'up':'down'}">${up?'+':''}${c.sym}${fmt(pl)} (${fmtPct(plPct)})</div>
+        <div class="overview-native-value" style="color:${up ? 'var(--gain)' : 'var(--loss)'}">${fmtPct(plPct)}</div>
       </div>
     `;
   }).join('');
 
   card.innerHTML = `
-    <div class="overview-total-label">Total value of all assets</div>
-    <div class="overview-total-value">$${fmt(totalWithCash)}</div>
-        <div class="overview-total-thb">${usdToThb ? `≈ ${totalThb} ` : ''}<button type="button" class="fx-edit" id="fxEditBtn" title="Set the rate to match the Dime app">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} THB${fxManual > 0 ? ' (custom)' : (FX_OFFSET ? ' (mid-rate ' + (FX_OFFSET < 0 ? '−' : '+') + Math.abs(FX_OFFSET).toFixed(2) + ')' : ' (market rate)')}` : 'Set THB rate'} ✎</button></div>
-    ${principalUsd > 0 ? `
-    <div class="overview-cost-row">
-      <div>
-        <div class="overview-total-label">Principal (net of withdrawals)</div>
-        <div class="overview-cost-value">$${fmt(principalUsd)}${principalThb ? `<small>≈ ${principalThb}</small>` : ''}</div>
-      </div>
-      <div class="overview-native-pl ${principalUp ? 'up' : 'down'}" style="text-align:right">
-        ${principalUp ? '+' : '-'}$${fmt(Math.abs(principalPL))}<br>${fmtPct(principalPLPct)}
-      </div>
-    </div>` : ''}
+    <div class="overview-total-thb" style="margin-top:2px"><button type="button" class="fx-edit" id="fxEditBtn" title="Set the rate to match the Dime app">${usdToThb ? `1 USD = ${fmt(usdToThb, 2)} THB${fxManual > 0 ? ' (custom)' : (FX_OFFSET ? ' (mid-rate ' + (FX_OFFSET < 0 ? '−' : '+') + Math.abs(FX_OFFSET).toFixed(2) + ')' : ' (market rate)')}` : 'Set THB rate'} ✎</button></div>
     <div class="overview-chart-row">
       <div class="overview-donut-wrap"><canvas id="overviewDonutCanvas"></canvas></div>
       <div class="overview-breakdown">${breakdownHtml}</div>
@@ -2240,7 +2255,7 @@ function renderOverviewCard() {
     <div class="overview-native-row">${nativeCardsHtml}</div>
     <details class="overview-disclaimer">
       <summary>Currency conversion note</summary>
-      <div>Thai Stocks totals are converted from THB to USD at the current exchange rate (${thbRate ? '1 USD ≈ ' + fmt(1/thbRate,2) + ' THB' : 'rate unavailable'}) for an overview estimate only. The real figures in the SET100 portfolio remain in THB, and the per-currency boxes show the actual unconverted values.</div>
+      <div>Thai Stocks are converted from THB to USD at the current exchange rate (${thbRate ? '1 USD ≈ ' + fmt(1/thbRate,2) + ' THB' : 'rate unavailable'}) only to estimate the allocation weights and the overall return. Each box's return % is calculated in its own currency.</div>
     </details>
   `;
   const fxBtn = document.getElementById('fxEditBtn');
