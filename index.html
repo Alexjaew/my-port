@@ -335,7 +335,7 @@
     margin-bottom: 16px;
     width: fit-content;
     max-width: 100%;
-    overoverflow-x: auto;
+    overflow-x: auto;
   }
   .basis-btn {
     font-size: 11px; font-weight: 700; letter-spacing: 0.01em;
@@ -418,7 +418,7 @@
     font-size: 11.5px; color: var(--ink-soft); font-family: var(--mono);
     margin-top: 6px;
     white-space: nowrap;
-    overoverflow-x: auto;
+    overflow-x: auto;
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
@@ -1298,18 +1298,14 @@
     .pill-btn{margin-left:auto}
     .overview-total-value{font-size:25px}
     .fab{right:16px;bottom:max(18px,env(safe-area-inset-bottom))}
-    
+  }
 
-
-  
-/* ===== BUY / SELL สีเขียว-แดงเสมอ ===== */
+/* ===== BUY / SELL สีเขียว-แดงเสมอ (ใช้ทุกขนาดจอ) ===== */
 .action-btn.buy{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 40%,var(--line))}
 .action-btn.sell{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 40%,var(--line))}
 .txn-badge{width:auto;min-width:42px;padding:0 8px;font-size:11px;letter-spacing:.03em}
 .mini-btn[data-trade="ซื้อ"]{color:var(--gain);border-color:color-mix(in srgb,var(--gain) 40%,var(--line))}
 .mini-btn[data-trade="ขาย"]{color:var(--loss);border-color:color-mix(in srgb,var(--loss) 40%,var(--line))}
-    
-}
 
   /* v16: โลโก้หุ้น พื้นขาวให้เห็นโลโก้สีเข้มในโหมดมืด */
 .ht-logo{background:#fff}
@@ -1917,7 +1913,7 @@ function getWithdrawnBalance() {
 }
 
 // สถิติรวมทั้งพอร์ต (ทุกพอร์ต หุ้นไทยแปลงเป็น USD) ใช้ทั้งกล่อง Portfolio Value และแถว All Assets
-//  principalPct = (มูลค่ารวมหุ้น+เงินสด - เงินต้น) / เงินต้น     stockPct = ผลตอบแทนเทียบต้นทุนหุ้น (ไม่รวมเงินสด)
+//  principalPct = (มูลค่ารวม + ยอดที่ถอนแล้ว - ยอดฝากรวม) / ยอดฝากรวม     stockPct = ผลตอบแทนเทียบต้นทุนหุ้น (ไม่รวมเงินสด)
 function getPortfolioStats() {
   if (!state.summary) return null;
   const rows = state.summary.rows;
@@ -1930,10 +1926,12 @@ function getPortfolioStats() {
     stockCost += (Number(r['ทุน  FIFO']) || 0) * k;
   });
   const total = stockValue + Math.max(getCashBalance(), 0);
-  const principal = getPrincipalBalance() - getWithdrawnBalance();
+  const deposits = getPrincipalBalance();      // ยอดฝากรวมทั้งหมด (ไม่หักยอดถอน)
+  const withdrawn = getWithdrawnBalance();
   return {
-    total, principal,
-    principalPct: principal > 0 ? (total - principal) / principal : null,
+    total, deposits, withdrawn,
+    // กำไรรวม = มูลค่าปัจจุบัน + ที่ถอนไปแล้ว - ที่ฝากทั้งหมด ; หารด้วยยอดฝากรวม -> เทียบข้ามเวลาได้แม้ถอนเงิน
+    principalPct: deposits > 0 ? (total + withdrawn - deposits) / deposits : null,
     stockPct: stockCost > 0 ? (stockValue - stockCost) / stockCost : null
   };
 }
@@ -1954,10 +1952,10 @@ function renderHero() {
   // ===== ตัวใหญ่: ผลตอบแทนรวม % =====
   const profit = marketValue - costValue;
   const profitPct = costValue ? profit / costValue : 0;
-  // ดูทุกพอร์ต (All): เลขใหญ่ = % เทียบเงินต้น (รวมเงินสด) / ดูทีละพอร์ต: % เทียบต้นทุนหุ้นของพอร์ตนั้น
+  // ดูทุกพอร์ต (All): เลขใหญ่ = % เทียบยอดฝากรวม (รวมเงินสด และนับยอดที่ถอนแล้วเป็นกำไรที่ได้รับ) / ดูทีละพอร์ต: % เทียบต้นทุนหุ้นของพอร์ตนั้น
   const stats = getPortfolioStats();
   let bigPct = profitPct, bigLabel = 'Return on cost';
-  if (state.port === 'ALL' && stats && stats.principalPct != null) { bigPct = stats.principalPct; bigLabel = 'Return on principal'; }
+  if (state.port === 'ALL' && stats && stats.principalPct != null) { bigPct = stats.principalPct; bigLabel = 'Return on deposits'; }
   document.getElementById('heroLabel').textContent = bigLabel;
   const heroValEl = document.getElementById('heroValue');
   heroValEl.textContent = fmtPct(bigPct);
@@ -2181,11 +2179,6 @@ function renderOverviewCard() {
   const grandTotal = activeCats.reduce((s, [, c]) => s + c.value, 0);
   const totalWithCash = grandTotal; // เงินสดรวมอยู่ใน grandTotal แล้ว (เป็นอีกหมวดหนึ่ง)
 
-   // เงินต้น = ผลรวมรายการ "ซื้อ USD" (ยอดฝากเข้าพอร์ตทั้งหมด)
-  const principalUsd = getPrincipalBalance() - getWithdrawnBalance();
-  const principalPL = totalWithCash - principalUsd;   // มูลค่ารวมทุกสินทรัพย์ (รวมเงินสด) เทียบเงินต้น
-  const principalPLPct = principalUsd ? principalPL / principalUsd : 0;
-  const principalUp = principalPL >= 0;
   
   section.style.display = 'block';
   // หัวการ์ด (เห็นในหน้าหลัก) = % ผลตอบแทนเทียบต้นทุนหุ้น (ส่วน % เทียบเงินต้นไปอยู่ที่กล่อง Portfolio Value ด้านบน)
