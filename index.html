@@ -3410,6 +3410,17 @@ function renderLastBuy() {
   el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}`;
 }
 
+// % เปลี่ยนแปลงรายวันล่าสุดจากชีต Summary (คอลัมน์ chg%) แสดงทันทีที่เปิดแผง ไม่ต้องรอ/พึ่งกราฟ
+function renderLiveChg(r) {
+  const el = document.getElementById('drChartPct');
+  if (!el) return;
+  const raw = r ? r['chg%'] : null;
+  const v = (raw === '' || raw == null) ? NaN : Number(raw);
+  if (!isFinite(v)) { el.innerHTML = '<span style="color:var(--ink-soft)">—</span>'; return; }
+  const col = v === 0 ? 'var(--ink-soft)' : (v > 0 ? 'var(--gain)' : 'var(--loss)');
+  el.innerHTML = `<span style="color:${col}">${v > 0 ? '+' : ''}${v.toFixed(2)}%</span><small>Latest</small>`;
+}
+
 function renderDrawerSummary(r) {
   const basis = state.basis;
   const sym = currencySymbol();
@@ -3453,6 +3464,7 @@ function renderDrawerSummary(r) {
     </div>`;
   state.detailRow = r;
   renderLastBuy();
+  renderLiveChg(r);
   loadStockChart(t, 180);
 }
 
