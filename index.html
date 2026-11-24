@@ -1573,13 +1573,14 @@
   </div><!-- /#portView -->
 
 <script>
-const DEFAULT_API_URL = 'https://script.google.com/macros/s/AKfycbxqrfTAipQFjum4jBuPHVBALqpo1t_QrN9G60RV1VblmG877lWJB6Fc6VAIqjzxtAew/exec';
-
-const urlParam = new URLSearchParams(window.location.search).get('api');
-if (urlParam) {
-  localStorage.setItem('portfolio_api_url', urlParam);
-}
-let API_URL = urlParam || localStorage.getItem('portfolio_api_url') || DEFAULT_API_URL;
+// ไม่ฝัง URL / รหัสไว้ในไฟล์อีกแล้ว: ตั้งค่าครั้งเดียวผ่านปุ่ม ⚙ (เก็บในเครื่อง) หรือใส่ ?api=URL&key=รหัส ต่อท้ายลิงก์
+const _qs = new URLSearchParams(window.location.search);
+const urlParam = _qs.get('api');
+const keyParam = _qs.get('key');
+if (urlParam) localStorage.setItem('portfolio_api_url', urlParam);
+if (keyParam) localStorage.setItem('portfolio_api_key', keyParam);
+let API_URL = urlParam || localStorage.getItem('portfolio_api_url') || '';
+let API_KEY = keyParam || localStorage.getItem('portfolio_api_key') || '';
 
 const savedTheme = localStorage.getItem('portfolio_theme');
 if (savedTheme) {
@@ -1600,6 +1601,7 @@ const state = {
   summary: null,
   dashboard: null,
   transactions: [],
+  lastBuys: null,
   ports: [],
   history: [],
   dcaInputs: {},
@@ -1628,33 +1630,41 @@ function showSetupBanner(errorMsg) {
   const el = document.getElementById('setupBanner');
   el.innerHTML = `
     <div class="setup-banner">
-      ${errorMsg ? '⚠️ ' + escapeHtml(errorMsg) + '<br><br>' : ''}Paste the <strong>Web App URL</strong> of your deployed Apps Script here
-      (ending in <code>/exec</code>)
+      ${errorMsg ? '⚠️ ' + escapeHtml(errorMsg) + '<br><br>' : ''}Paste the <strong>Web App URL</strong> of your deployed Apps Script (ending in <code>/exec</code>) and the <strong>access key</strong> you created in Apps Script.
       <div class="url-input-row">
         <input type="text" id="apiUrlInput" placeholder="https://script.google.com/macros/s/xxxx/exec" value="${escapeHtml(API_URL || '')}">
-        <button id="apiUrlClear" type="button" title="Remove the saved link and use the default">✕</button>
+        <button id="apiUrlClear" type="button" title="Remove the saved URL and key">✕</button>
+      </div>
+      <div class="url-input-row">
+        <input type="password" id="apiKeyInput" placeholder="Access key" autocomplete="off" autocapitalize="off" spellcheck="false" value="${escapeHtml(API_KEY || '')}">
       </div>
       <button id="apiUrlSave">Save and connect</button>
-      <div class="setup-hint">💡 After saving, we recommend deleting the old home-screen icon and doing "Add to Home Screen" again, so the icon remembers this URL permanently even if Safari clears data for apps that have not been opened in a long time.</div>
+      <div class="setup-hint">💡 After saving, we recommend deleting the old home-screen icon and doing "Add to Home Screen" again, so the icon remembers this URL and key (they are kept in the page address) even if Safari clears data for apps that have not been opened in a long time.</div>
     </div>`;
   document.getElementById('apiUrlSave').onclick = () => {
     const val = document.getElementById('apiUrlInput').value.trim();
-    if (val) {
-      localStorage.setItem('portfolio_api_url', val);
-      API_URL = val;
-      const newUrl = new URL(window.location.href);
-      newUrl.searchParams.set('api', val);
-      history.replaceState(null, '', newUrl.toString());
-      el.innerHTML = '';
-      loadAll();
-    }
+    const key = document.getElementById('apiKeyInput').value.trim();
+    if (!val || !key) { showSetupBanner('Both the URL and the access key are required.'); return; }
+    localStorage.setItem('portfolio_api_url', val);
+    localStorage.setItem('portfolio_api_key', key);
+    API_URL = val;
+    API_KEY = key;
+    const newUrl = new URL(window.location.href);
+    newUrl.searchParams.set('api', val);
+    newUrl.searchParams.set('key', key);
+    history.replaceState(null, '', newUrl.toString());
+    el.innerHTML = '';
+    loadAll();
   };
   document.getElementById('apiUrlClear').onclick = () => {
     document.getElementById('apiUrlInput').value = '';
+    document.getElementById('apiKeyInput').value = '';
     document.getElementById('apiUrlInput').focus();
     localStorage.removeItem('portfolio_api_url');
+    localStorage.removeItem('portfolio_api_key');
     const clearedUrl = new URL(window.location.href);
     clearedUrl.searchParams.delete('api');
+    clearedUrl.searchParams.delete('key');
     history.replaceState(null, '', clearedUrl.toString());
   };
 }
@@ -1689,6 +1699,7 @@ document.getElementById('themeToggleBtn').onclick = () => {
 async function api(action, params = {}) {
   const url = new URL(API_URL);
   url.searchParams.set('action', action);
+  if (API_KEY) url.searchParams.set('key', API_KEY);
   Object.entries(params).forEach(([k,v]) => { if (v !== null) url.searchParams.set(k, v); });
   const res = await fetch(url.toString());
   return res.json();
@@ -1698,13 +1709,16 @@ async function apiPost(body) {
   const res = await fetch(API_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-    body: JSON.stringify(body)
+    body: JSON.stringify({ ...body, key: API_KEY })
   });
   return res.json();
 }
 
 async function loadAll() {
-  if (!API_URL) { showSetupBanner(); return; }
+  if (!API_URL || !API_KEY) {
+    showSetupBanner(API_URL && !API_KEY ? 'An access key is now required. Enter the key you created in Apps Script.' : '');
+    return;
+  }
 
   const ok = await loadOverview();
   if (ok) {
@@ -1743,6 +1757,14 @@ async function loadOverview() {
       return true;
     } catch (err) {
       console.error(`loadOverview attempt ${attempt} failed:`, err);
+      if (err.message === 'Unauthorized') {
+        if (!state.summary) {
+          document.getElementById('allocList').innerHTML =
+            `<div class="empty-state"><div class="icon"><i class="ti ti-lock"></i></div><div class="msg">Access key is missing or incorrect</div></div>`;
+        }
+        showSetupBanner('Access key is missing or incorrect. Enter the key you created in Apps Script.');
+        return false;
+      }
       if (attempt < MAX_ATTEMPTS) {
         if (!state.summary) {
           document.getElementById('allocList').innerHTML =
@@ -1776,6 +1798,7 @@ async function loadRest() {
     state.dashboard = dashboard;
     state.transactions = txns.rows || [];
     state.history = (history && history.rows) || [];
+    if (res.lastBuys && typeof res.lastBuys === 'object') state.lastBuys = res.lastBuys;
 
     renderHero();
     renderHeroBgChart();
@@ -1797,6 +1820,7 @@ function cacheSnapshot() {
       dashboard: state.dashboard,
       ports: state.ports,
       transactions: state.transactions,
+      lastBuys: state.lastBuys,
       history: state.history,
       ts: Date.now()
     }));
@@ -1815,6 +1839,7 @@ function renderFromSnapshot() {
     state.dashboard = snap.dashboard;
     state.ports = snap.ports || [];
     state.transactions = snap.transactions || [];
+    state.lastBuys = snap.lastBuys || null;
     state.history = snap.history || [];
     renderPortSwitch();
     renderHero();
@@ -3352,14 +3377,22 @@ function renderLastBuy() {
   const r = state.detailRow;
   if (!el || !r) return;
   const muted = (txt) => `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v" style="color:var(--ink-soft)">${txt}</span>`;
-  if (!state.transactions.length) { el.innerHTML = muted('…'); return; }   // ประวัติธุรกรรมยังโหลดไม่เสร็จ
   const ticker = r['หุ้น'], port = r['ชื่อ port'];
-  // state.transactions เรียงใหม่สุดก่อนอยู่แล้ว ตัวแรกที่เจอคือซื้อล่าสุด
-  const t = state.transactions.find(x => x['รายการ'] === ticker && x['action'] === 'ซื้อ' && (!port || x['Port'] === port));
-  if (!t) { el.innerHTML = muted('—'); return; }
-  const tsym = isThaiPortName(t['Port']) ? '฿' : '$';
-  const bp = Number(t['ราคา']) || 0;
-  const d = t['_date'] ? new Date(t['_date']) : null;
+  let hit = null;
+  if (state.lastBuys) {
+    // ข้อมูลสรุปจาก backend ครอบคลุมทั้งชีต (ไม่จำกัด 100 รายการล่าสุด)
+    hit = state.lastBuys[port + '|' + ticker] || null;
+    if (!hit) { el.innerHTML = muted('—'); return; }
+  } else {
+    // backend เวอร์ชันเก่า: หาจากรายการล่าสุดที่โหลดมา
+    if (!state.transactions.length) { el.innerHTML = muted('…'); return; }
+    const t = state.transactions.find(x => x['รายการ'] === ticker && x['action'] === 'ซื้อ' && (!port || x['Port'] === port));
+    if (!t) { el.innerHTML = muted('—'); return; }
+    hit = { price: Number(t['ราคา']) || 0, date: t['_date'], amount: Number(t['รวม $']) };
+  }
+  const tsym = isThaiPortName(port) ? '฿' : '$';
+  const bp = Number(hit.price) || 0;
+  const d = hit.date ? new Date(hit.date) : null;
   const sameYear = d && !isNaN(d) && d.getFullYear() === new Date().getFullYear();
   const dl = d && !isNaN(d)
     ? d.toLocaleDateString('en-US', sameYear ? { month: 'short', day: 'numeric' } : { month: 'short', day: 'numeric', year: 'numeric' })
@@ -3371,7 +3404,7 @@ function renderLastBuy() {
     const col = v === 0 ? 'var(--ink-soft)' : (v > 0 ? 'var(--gain)' : 'var(--loss)');
     delta = `<span class="dr-lb-d" style="color:${col}" title="vs. current price">${fmtPct(v)}</span>`;
   }
-  const amt = Number(t['รวม $']);
+  const amt = Number(hit.amount);
   const amtHtml = isFinite(amt) && amt > 0
     ? `<span class="dr-lb-amt"><small>Invested</small>${tsym}${fmt(amt)}</span>` : '';
   el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}`;
