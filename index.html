@@ -949,6 +949,8 @@
   .hr-top{display:flex;align-items:center;gap:8px}
   .hr-top b{font:700 15px var(--mono)}
   .hr-w{display:inline-flex;align-items:center;gap:4px;color:var(--accent);font:600 12px var(--mono)}
+  .hr-hold{display:inline-flex;align-items:center;gap:3px;color:var(--ink-soft);background:var(--paper-raised);border:1px solid var(--line);border-radius:999px;padding:1px 7px;font:500 10.5px var(--mono);white-space:nowrap}
+  .dr-hold{display:inline-flex;align-items:center;gap:4px;font:600 11.5px var(--mono);color:var(--ink-soft);margin-left:auto}
   .hr-sub{color:var(--ink-soft);font-size:12px;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .hr-right{text-align:right}
   .hr-val{font:700 15px var(--mono)}
@@ -1802,6 +1804,7 @@ async function loadRest() {
 
     renderHero();
     renderHeroBgChart();
+    renderHoldingsTable();
     renderTransactions();
     if (state.detailTicker) renderLastBuy();
     cacheSnapshot();
@@ -3287,6 +3290,69 @@ function logoErr(img) {
   }
 }
   
+
+// คำนวณระยะเวลาถือครองหุ้นที่ยังมีอยู่ในพอร์ต (นับจากไม้แรกของรอบการถือครองปัจจุบันหลังเคยขายล้างพอร์ต)
+// คืน { days, firstDate } หรือ null หากยังไม่มีข้อมูลธุรกรรมที่ครอบคลุม
+function getHoldingInfo(ticker, port) {
+  if (!ticker || !Array.isArray(state.transactions) || !state.transactions.length) return null;
+  const matched = state.transactions
+    .filter(t => t['รายการ'] === ticker && (!port || port === 'ALL' || t['Port'] === port))
+    .map((t, idx) => {
+      const rawDate = t['_date'] || t['Date'] || null;
+      const d = rawDate ? new Date(rawDate) : null;
+      const ts = (d && !isNaN(d.getTime())) ? d.getTime() : 0;
+      const rowNum = Number(t['_row']) || (idx + 1);
+      const remain = (t['หุ้นคงเหลือ'] !== undefined && t['หุ้นคงเหลือ'] !== '' && t['หุ้นคงเหลือ'] !== null)
+        ? Number(t['หุ้นคงเหลือ'])
+        : null;
+      return {
+        ts,
+        rowNum,
+        action: t['action'],
+        remain,
+        dateObj: (d && !isNaN(d.getTime())) ? d : null
+      };
+    })
+    .filter(x => x.ts > 0)
+    .sort((a, b) => (a.ts !== b.ts) ? (a.ts - b.ts) : (a.rowNum - b.rowNum));
+
+  if (!matched.length) return null;
+
+  // หาจุดสุดท้ายที่หุ้นคงเหลือเป็น 0 (ขายล้างพอร์ตรอบก่อนหน้า)
+  let startIdx = 0;
+  for (let i = 0; i < matched.length; i++) {
+    if (matched[i].remain !== null && Math.abs(matched[i].remain) < 1e-6) {
+      startIdx = i + 1;
+    }
+  }
+
+  const activeBuys = matched.slice(startIdx).filter(x => x.action === 'ซื้อ');
+  if (!activeBuys.length) return null;
+
+  const firstBuy = activeBuys[0];
+  const now = new Date();
+  const days = Math.max(0, Math.floor((now.getTime() - firstBuy.ts) / 86400000));
+  return { days, firstDate: firstBuy.dateObj };
+}
+
+function formatHoldingDuration(days) {
+  if (days === null || days === undefined || isNaN(days)) return '';
+  if (days < 30) return `${days}d held`;
+  const months = Math.floor(days / 30);
+  const remDays = days % 30;
+  return remDays > 0 ? `${days}d (${months}m ${remDays}d)` : `${days}d (${months}m)`;
+}
+
+function renderHoldingBadge(ticker, port) {
+  const info = getHoldingInfo(ticker, port);
+  if (!info) return '';
+  const label = formatHoldingDuration(info.days);
+  const titleDate = info.firstDate
+    ? `Since ${info.firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+    : '';
+  return `<span class="hr-hold" title="${escapeHtml(titleDate)}"><i class="ti ti-clock"></i>${escapeHtml(label)}</span>`;
+}
+
 function renderHoldingsTable() {
   const box = document.getElementById('holdingsTable');
   if (!box) return;
@@ -3337,7 +3403,7 @@ function renderHoldingsTable() {
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="${logoSources(t)[0]}" data-t="${t}" alt="" loading="lazy" onerror="logoErr(this)"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
-               <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span>${tgLabel}</div>
+               <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span>${renderHoldingBadge(t, r['ชื่อ port'])}${tgLabel}</div>
         <div class="hr-sub">${sub}</div>
         <div class="hr-bar"><div class="hr-bar-fill" style="width:${barW.toFixed(1)}%;background:${barColor}"></div></div>
       </div>
@@ -3407,7 +3473,11 @@ function renderLastBuy() {
   const amt = Number(hit.amount);
   const amtHtml = isFinite(amt) && amt > 0
     ? `<span class="dr-lb-amt"><small>Invested</small>${tsym}${fmt(amt)}</span>` : '';
-  el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}`;
+  const holdInfo = getHoldingInfo(ticker, port);
+  const holdHtml = holdInfo
+    ? `<span class="dr-hold" title="${holdInfo.firstDate ? 'First buy: ' + holdInfo.firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}"><i class="ti ti-clock"></i>${escapeHtml(formatHoldingDuration(holdInfo.days))}</span>`
+    : '';
+  el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}${holdHtml}`;
 }
 
 // % เปลี่ยนแปลงรายวันล่าสุดจากชีต Summary (คอลัมน์ chg%) แสดงทันทีที่เปิดแผง ไม่ต้องรอ/พึ่งกราฟ
