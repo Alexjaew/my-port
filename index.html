@@ -3403,7 +3403,7 @@ function renderHoldingsTable() {
     return `<div class="hrow ht-row" data-i="${i}">
       <span class="ht-logo"><img src="${logoSources(t)[0]}" data-t="${t}" alt="" loading="lazy" onerror="logoErr(this)"><span class="ht-fb" style="display:none;background:${color}">${String(t).charAt(0)}</span></span>
       <div class="hr-mid">
-               <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span>${renderHoldingBadge(t, r['ชื่อ port'])}${tgLabel}</div>
+               <div class="hr-top"><b>${t}</b><span class="hr-w"><i class="ti ti-chart-pie-2"></i>${weight.toFixed(1)}%</span>${tgLabel}</div>
         <div class="hr-sub">${sub}</div>
         <div class="hr-bar"><div class="hr-bar-fill" style="width:${barW.toFixed(1)}%;background:${barColor}"></div></div>
       </div>
