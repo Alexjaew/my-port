@@ -19,6 +19,9 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js" defer></script>
   
 <style>
+  /* ชื่อหุ้น + ระยะเวลาถือ ในหัวแผงรายละเอียด */
+.drawer-title{display:flex;align-items:center;gap:8px}
+.drawer-title .hr-hold{font-size:11px;padding:2px 8px;font-weight:600}
   :root {
     --ink: #0E1116;
     --ink-soft: #4A5160;
@@ -1806,7 +1809,7 @@ async function loadRest() {
     renderHeroBgChart();
     renderHoldingsTable();
     renderTransactions();
-    if (state.detailTicker) renderLastBuy();
+    if (state.detailTicker) { renderLastBuy(); renderDrawerTitle(state.detailRow); }
     cacheSnapshot();
   } catch (err) {
     console.error('loadRest failed:', err);
@@ -3473,11 +3476,8 @@ function renderLastBuy() {
   const amt = Number(hit.amount);
   const amtHtml = isFinite(amt) && amt > 0
     ? `<span class="dr-lb-amt"><small>Invested</small>${tsym}${fmt(amt)}</span>` : '';
-  const holdInfo = getHoldingInfo(ticker, port);
-  const holdHtml = holdInfo
-    ? `<span class="dr-hold" title="${holdInfo.firstDate ? 'First buy: ' + holdInfo.firstDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}"><i class="ti ti-clock"></i>${escapeHtml(formatHoldingDuration(holdInfo.days))}</span>`
-    : '';
-  el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}${holdHtml}`;
+  
+  el.innerHTML = `<span class="dr-lb-l">Last Buy</span><span class="dr-lb-v">${tsym}${fmt(bp)}</span><span class="dr-lb-dt">${dl}</span>${amtHtml}${delta}`;
 }
 
 // % เปลี่ยนแปลงรายวันล่าสุดจากชีต Summary (คอลัมน์ chg%) แสดงทันทีที่เปิดแผง ไม่ต้องรอ/พึ่งกราฟ
@@ -3490,7 +3490,12 @@ function renderLiveChg(r) {
   const col = v === 0 ? 'var(--ink-soft)' : (v > 0 ? 'var(--gain)' : 'var(--loss)');
   el.innerHTML = `<span style="color:${col}">${v > 0 ? '+' : ''}${v.toFixed(2)}%</span><small>Latest</small>`;
 }
-
+function renderDrawerTitle(r) {
+  const el = document.getElementById('drawerTitle');
+  if (!el || !r) return;
+  const t = r['หุ้น'];
+  el.innerHTML = `<span>${escapeHtml(t)}</span>${renderHoldingBadge(t, r['ชื่อ port'])}`;
+}
 function renderDrawerSummary(r) {
   const basis = state.basis;
   const sym = currencySymbol();
@@ -3498,7 +3503,7 @@ function renderDrawerSummary(r) {
   const pp = Number(basis === 'AVG' ? r['กำไร% AVG'] : r['กำไร% FIFO']) || 0;
   const up = pp >= 0;
   const tile = (l, v, c) => `<div class="dr-tile"><div class="dr-l">${l}</div><div class="dr-v ${c || ''}">${v}</div></div>`;
-  document.getElementById('drawerTitle').textContent = t;
+  renderDrawerTitle(r);
   document.getElementById('drawerActions').innerHTML =
     `<button class="mini-btn" data-trade="ซื้อ" data-ticker="${t}">BUY</button>` +
     `<button class="mini-btn" data-trade="ขาย" data-ticker="${t}">SELL</button>`;
